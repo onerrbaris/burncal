@@ -326,3 +326,46 @@ En büyük 20 hücre-ayda (0,25°): Çukurova hücreleri %94 tarım; Manavgat (T
 ### Söylenebilecek olan
 
 Resmî yangın istatistikleri ormana ulaşan yangınları kapsıyor. Türkiye'de uydu hotspotlarının çoğunun düştüğü tarım arazisi yanmasının açık, tutarlı, uzun dönemli ve bölgesel bir kaydı yok; uyumlaştırılmış 25 yıllık aylık seri bu boşluğu doldurur ve envanterin "seyrekleşiyor" varsayımına gözleme dayalı bir karşılaştırma sunar.
+
+## 12. Tarım arazisinde yanmanın 20 yıllık eğilimi (14 Kasım, gece)
+
+Kod ve sonuçlar: `analysis/agri_trend/` (`prep.py`, `run.py`, `extra.py`, `charts.py`, `out/`, üç grafik). Ana grafik: `analysis/agri_trend/fig1_cropland_annual.png`. Arazi örtüsü: ESA WorldCover 2021, dokuz karo (11. bölümdeki altı karo + N39E027 + Güneydoğu için N36E039 ve N36E042). Bölgeler kutu, il sınırı değil.
+
+Tarım arazisine düşen hotspot serisi üç bağımsız yoldan kuruldu: yalnızca MODIS (2003–2025, uyumlaştırma yok), yalnızca VIIRS (2012–2025), uyumlaştırılmış (2012 öncesi MODIS × yalnızca tarım tespitlerinden hesaplanan bölgesel aylık çarpan).
+
+| Bölge | MODIS 2003–25 | VIIRS 2012–25 | Uyumlaştırılmış 2003–25 | Son dönem / ilk dönem | Karar |
+|---|---|---|---|---|---|
+| Çukurova | −%7,6/yıl (p<0,001) | −%9,8 (p<0,001) | −%6,9 (p<0,001) | −%68 | Net düşüş, üç seri uyumlu |
+| Güneydoğu buğday kuşağı | +%2,2 (p=0,09) | −%0,3 (p=0,75) | +%2,4 (p=0,16) | +%18 | Düşüş yok |
+| Kapsanan alanın tamamı | −%0,9 (p=0,32) | −%3,2 (p=0,33) | −%1,2 (p=0,29) | −%37 | Net eğilim yok |
+| Konya ovası | −%2,0 (p=0,32) | −%7,3 (p=0,08) | −%4,1 (p=0,04) | −%66 | Sağlam değil (yalnızca 2021–25'ten geliyor) |
+| Antalya–Muğla kıyısı, Eskişehir | | | | | Seri çok küçük (yılda ~110 ve ~360) |
+
+Eğim Theil–Sen (seri ortalamasına göre yıllık %), p Mann–Kendall. Dönem karşılaştırması 2003–2010 ile 2018–2025.
+
+- **Çukurova sağlamlık kontrolleri:** 2003–2020 ile sınırlanınca MODIS −%6,3 (p<0,001); yalnızca Terra −%9,2, yalnızca Aqua −%6,6; VIIRS'ten 2022 ve 2024 çıkarılınca −%8,5 (p=0,001).
+- **Düşüş anız mevsiminde yoğun:** Çukurova'da tarım arazisindeki MODIS tespitleri Haziran'da yılda 695'ten (2003–07) 40'a (2021–25); Ekim–Mayıs 491'den 57'ye; Ağustos–Eylül 572'den 194'e.
+- **Güneydoğu'da Haziran (buğday) için iki sensörde de eğilim yok.** Ulusal envanterin "seyrekleşiyor" varsayımı (11. bölüm) orada gözlemle desteklenmiyor.
+- 2009 ve 2011, Konya, Eskişehir ve Güneydoğu'da çok yüksek; nedeni incelenmedi.
+
+### Türe özel çarpan
+
+VIIRS/MODIS oranı arazi örtüsüne göre farklı: kapsanan alanda tarım ~3,4, ağaç örtüsü ~3,0; Çukurova'da 4,35 ve 2,91. Tüm sınıflardan hesaplanan tek çarpan ağaç örtüsü serisini +%17,5 yanlı tahmin ediyor (yıllık hata %19); sınıfa özel çarpanla yanlılık +%1, yıllık hata %8. Tarım serisinde fark küçük (aylık %11,8'e karşı %12,2; tek çarpan %3–8 eksik tahmin ediyor).
+
+### Gösterilemeyenler
+
+- **Orman yangını eğilimi savunulamaz.** Antalya–Muğla'da 23 yıllık ağaç örtüsü toplamının %58'i 2021, ilk üç yıl %68.
+- **"Orman kenarındaki tarla ateşi" deseni yok.** Tespitin ~1,5–1,9 km çevresinde ağaç payı ≥%20 olan tarım tespitleri: kapsanan alanda %2,5, Çukurova'da %9,1, Antalya–Muğla'da %29 ama yılda yalnızca ~32 tespit (kalıcılık 0,09). Çukurova'daki "ağaç" pikselleri büyük olasılıkla meyve bahçesi.
+- WorldCover meyve bahçelerini ağaç sınıfına koyuyor: Çukurova ve Güneydoğu'da "ağaç örtüsü" serisi tarım takvimini izliyor. Ağaç sınıfı yalnızca ormanlık kıyıda orman anlamına gelir.
+
+### Sınırlar
+
+- Tarım arazisindeki hotspot'un anız yakma olduğu kanıtlanmış değil.
+- Düşüşün nedeni ayrıştırılamıyor: denetim de, ürün deseni ya da arazi kullanımı değişimi de olabilir.
+- Arazi örtüsü tek yıl (2021), merkez pikselden okunuyor; 375 m'lik VIIRS ve özellikle 1 km'lik MODIS pikseli için kaba.
+- Çukurova'da tarım için VIIRS/MODIS oranı 2021'den sonra 4,34'ten 5,55'e çıkıyor (yörünge kayması); bu yüzden 2003–2020 kontrolleri ayrıca verildi.
+- Mann–Kendall otokorelasyonu hesaba katmıyor.
+
+### Savunulabilecek cümle
+
+Çukurova'da aynı MODIS cihazlarının tarım arazisinde tespit ettiği ateşler 2003–07 ile 2021–25 arasında yaklaşık %70 azaldı; VIIRS bağımsız olarak 2012–16 ile 2021–25 arasında −%64 gösteriyor. Ülkenin en büyük yakma alanı olan Güneydoğu buğday kuşağında düşüş yok.

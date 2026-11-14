@@ -16,6 +16,9 @@ Yeni `ARCHITECTURE.md`'yi ekipçe onayla (4 vitrin bölgesi, statik site, sunucu
 - **Olay kümeleme denemesi (gece, en fazla 2 saat).** Amaç: büyük yangınlarda MODIS tespiti başına VIIRS tespitinin azalmasını yakalamak (2021-08 Marmaris/Milas +%38 aşırı tahmin). Yapılacak: MED/COAST'ta MODIS noktalarını yer + gün yakınlığına göre olaylara grupla (tarih için `data/raw` yeniden okunmalı; `med/cache/det_region` yalnızca yıl/ay içeriyor), olay başına VIIRS/MODIS oranını olay büyüklüğü ve FRP'ye göre modelle, `analysis/med/evaluate.py` ölçüleriyle bir yıl dışarıda bırakarak aylık çarpanla kıyasla (WAPE, yanlılık, yıl sıra korelasyonu; bölge, 1°, 0,25°). Sonuç ne olursa olsun `docs/REPORT.md`'ye yazılacak. Ortamda pandas/scikit-learn kurulu değil.
 - Terra/Aqua ayrı ağırlığı ürüne al (`analysis/med/evaluate.py:135`; bölge aylık %15,3 → %14,7).
 
+## Ürün fikri (karar değil, tasarımda değerlendirilecek)
+- **Türe ayrılmış takvim ve tarla ateşi eğilimi haritaya eklenebilir.** Bulgu: Çukurova'da tarım arazisindeki ateşler 20 yılda ~%70 azalmış, Güneydoğu'da azalmamış; üç bağımsız seri uyumlu (`docs/REPORT.md` 12. bölüm, `analysis/agri_trend/fig1_cropland_annual.png`). Olası biçim: tarla ateşi / orman yangını için iki ayrı takvim (türe özel çarpanla), Çukurova–Güneydoğu karşılaştırması, 2021 orman yangınları ikinci sahne. Orman kenarı katmanı ve Eskişehir denendi, gösterilebilir sonuç çıkmadı.
+
 ## Team to-do (humans)
 - FIRMS MAP_KEY iste: https://firms.modaps.eosdis.nasa.gov/api/map_key/ → `.env` içine `FIRMS_MAP_KEY=...` (commit'leme)
 - Teslim kılavuzuna (video süresi) tarayıcıdan bak. ("Resources" sekmesine bakıldı: yalnızca FIRMS listeleniyor. "Teams" sekmesi bu challenge için 841 takım gösteriyor.)

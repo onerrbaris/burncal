@@ -15,5 +15,6 @@ analysis/cache/
 analysis/agri/tiles/
 analysis/agri/cache/
 analysis/agri/dl.log
+analysis/agri_trend/cache/
 analysis/out/jobs/
 *.pkl

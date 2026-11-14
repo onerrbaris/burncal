@@ -1,0 +1,7 @@
+region,crop_n,edge10_pct,edge20_pct,edge30_pct,edge20_per_yr,edge20_day_pct,nonedge_day_pct,edge20_med_frp,nonedge_med_frp,tree_fire_per_yr,cells_ge5,persist_spearman,top10_cells_share_pct
+Covered,296681,6.2,2.5,1.2,527,90.5,78.3,4.2,4.6,1966,258,0.34,27.6
+Southeast,146171,0.7,0.1,0.0,13,80.9,70.6,4.3,4.7,102,10,0.33,66.5
+Cukurova,43365,22.5,9.1,4.1,281,96.2,97.0,5.0,5.8,286,80,0.72,51.4
+Konya,23970,0.3,0.1,0.0,1,75.0,85.8,3.1,5.1,6,0,,100.0
+AntMugla,1547,42.4,28.9,19.6,32,75.8,90.5,3.5,3.5,587,27,0.09,37.1
+Eskisehir,5035,1.3,0.4,0.2,2,95.2,90.8,4.3,4.4,14,0,,76.2
