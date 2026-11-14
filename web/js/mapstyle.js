@@ -1,7 +1,8 @@
 // Harita stili: uydu tabanı + 3B arazi + yakınlaştıkça açılan vektör detay + il katmanları.
 // Karo kaynakları anahtarsızdır; değiştirmek için yalnızca SOURCES bloğunu düzenleyin.
 
-export const RAMP = ['#3b1408', '#7a2409', '#b93b0c', '#e8651a', '#ff9a3c', '#ffd27a'];
+// Açık sarıdan koyu kırmızıya (az -> çok); parlaklık tek yönde azalır.
+export const RAMP = ['#fffbe0', '#ffe9a0', '#fec45c', '#fd8d3c', '#ec4a25', '#b10026'];
 export const rampStops = RAMP.flatMap((c, i) => [i / (RAMP.length - 1), c]);
 
 const FONT = ['Noto Sans Bold'];
@@ -40,7 +41,7 @@ const place = (id, classes, minzoom, size0, size1, color) => ({
 export function buildStyle(provinces, labels) {
   return {
     version: 8,
-    projection: { type: 'globe' },
+    projection: { type: 'mercator' },
     glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
     sky: {
       'sky-color': '#081425', 'horizon-color': '#6f8fb0', 'fog-color': '#0a1422',
@@ -59,7 +60,6 @@ export function buildStyle(provinces, labels) {
       provinces: { type: 'geojson', data: provinces, promoteId: 'name' },
       provLabels: { type: 'geojson', data: labels },
     },
-    terrain: { source: 'dem', exaggeration: 1.35 },
     layers: [
       { id: 'bg', type: 'background', paint: { 'background-color': '#04070c' } },
       {
@@ -97,6 +97,12 @@ export function buildStyle(provinces, labels) {
             9, ['case', ['boolean', ['feature-state', 'sel'], false], 0.16, 0.4],
             12, 0.08],
         },
+      },
+      { // Ormanlık alan (OpenStreetMap arazi örtüsü); yalnızca yakınlaşınca görünür.
+        id: 'forest', type: 'fill', source: 'omt', 'source-layer': 'landcover', minzoom: 6,
+        filter: ['==', ['get', 'class'], 'wood'],
+        paint: { 'fill-color': '#2f7d4f', 'fill-antialias': false,
+          'fill-opacity': ['interpolate', ['linear'], ['zoom'], 6, 0, 7.5, 0.42, 12, 0.34] },
       },
       {
         id: 'prov-hover', type: 'fill', source: 'provinces',
@@ -172,6 +178,7 @@ export function buildStyle(provinces, labels) {
 
 export const LAYER_GROUPS = {
   fill: ['prov-fill'],
+  forest: ['forest'],
   labels: ['prov-label', 'place-city', 'place-village', 'place-small', 'water-name', 'road-name'],
   roads: ['road-minor', 'road-mid', 'road-major', 'buildings'],
 };

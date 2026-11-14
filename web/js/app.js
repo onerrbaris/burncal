@@ -4,7 +4,8 @@ import { MONTHS, fmt, quantile, monthBars, calendar, compare } from './charts.js
 
 const $ = (s) => document.querySelector(s);
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const FAST = REDUCED || new URLSearchParams(location.search).has('hizli');
+// MVP: hafif mod varsayılan; kamera uçuşları ve animasyonlar için adrese ?sinematik ekleyin.
+const FAST = REDUCED || !new URLSearchParams(location.search).has('sinematik');
 const TR_BOUNDS = [[25.6, 35.7], [44.9, 42.2]];
 const up = (s) => s.toLocaleUpperCase('tr');
 const low = (s) => s.toLocaleLowerCase('tr');
@@ -87,17 +88,29 @@ function goHome(duration = 2600) {
 }
 
 function move(cam, duration) {
-  if (FAST) map.jumpTo(cam);
-  else map.flyTo({ ...cam, duration, curve: 1.5, essential: true });
+  if (REDUCED) return map.jumpTo(cam);
+  if (!FAST) return map.flyTo({ ...cam, duration, curve: 1.5, essential: true });
+  // Hafif mod: kısa, yumuşak bir süzülme (yavaş başlar, yavaş durur); eğim az tutulur.
+  const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+  map.flyTo({ ...cam, pitch: Math.min(cam.pitch ?? 0, 30), bearing: 0, duration: 1500, curve: 1.15, easing: ease, essential: true });
 }
 
+// Renk, ilin o yılki sıralamasına göre verilir (çeyreklik ölçek): birkaç çok yüksek il
+// diğerlerini tek renge sıkıştırmasın.
+let legendVals = [];
 function paintMap() {
   const mx = maxTotal[state.sensor];
+  const tot = {};
+  for (const f of geo.features) { const n = f.properties.name; tot[n] = mx ? total(n) : null; }
+  legendVals = Object.values(tot).filter((t) => t != null).sort((a, b) => a - b);
+  const last = Math.max(1, legendVals.length - 1);
   for (const f of geo.features) {
-    const name = f.properties.name, t = mx ? total(name) : null;
-    map.setFeatureState({ source: 'provinces', id: name },
-      { v: t == null ? -1 : Math.sqrt(t / mx), sel: name === state.sel });
+    const name = f.properties.name, t = tot[name];
+    let v = -1;
+    if (t != null) { let lo = 0; while (lo < legendVals.length && legendVals[lo] < t) lo++; v = lo / last; }
+    map.setFeatureState({ source: 'provinces', id: name }, { v, sel: name === state.sel });
   }
+  renderLegend();
 }
 
 function startOrbit() {
@@ -116,7 +129,8 @@ function stopOrbit() { orbitOK = false; cancelAnimationFrame(orbitRaf); }
 function initMap() {
   map = new maplibregl.Map({
     container: 'map', style: buildStyle(geo, geometry()),
-    center: [24, 28], zoom: 1.5, pitch: 0, minZoom: 1.2, maxZoom: 17, maxPitch: 78,
+    center: [35.2, 39], zoom: 5.2, pitch: 0, minZoom: 4.6, maxZoom: 12, maxPitch: 60,
+    maxBounds: [[19, 31], [51, 46]], pixelRatio: 1,
     attributionControl: false, fadeDuration: 200,
   });
   map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
@@ -256,8 +270,9 @@ function togglePlay() {
 
 function renderLegend() {
   const mx = maxTotal[state.sensor];
-  $('#legend').innerHTML = mx ? `<b>Yıllık tespit · il</b><div class="bar" style="background:linear-gradient(90deg,${RAMP.join(',')})"></div>
-    <div class="ends"><span>0</span><span>${fmt(mx / 4)}</span><span>${fmt(mx)}</span></div>` : '';
+  const lv = legendVals, n = lv.length;
+  $('#legend').innerHTML = mx && n ? `<b>Yıllık tespit · iller sıralı</b><div class="bar" style="background:linear-gradient(90deg,${RAMP.join(',')})"></div>
+    <div class="ends"><span>${fmt(lv[0])}</span><span>${fmt(lv[n >> 1])}</span><span>${fmt(lv[n - 1])}</span></div>` : '';
 }
 
 function renderRank() {

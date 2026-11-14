@@ -2,9 +2,9 @@
   --ink: #f2ede4;
   --ink-2: #b9c0c9;
   --ink-3: #7d8792;
-  --line: rgba(255, 255, 255, 0.12);
-  --glass: rgba(7, 11, 17, 0.82);
-  --glass-2: rgba(16, 22, 31, 0.92);
+  --line: rgba(255, 255, 255, 0.08);
+  --glass: rgba(27, 27, 29, 0.9);
+  --glass-2: rgba(33, 33, 36, 0.95);
   --ember: #ff7a1a;
   --ember-2: #ffb35c;
   --ember-dim: rgba(255, 122, 26, 0.18);
@@ -15,7 +15,7 @@
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 * { box-sizing: border-box; }
-html, body { height: 100%; margin: 0; overflow: hidden; background: #04070c; color: var(--ink);
+html, body { height: 100%; margin: 0; overflow: hidden; background: #0c0c0d; color: var(--ink);
   font: 14px/1.45 var(--body); -webkit-font-smoothing: antialiased; }
 button, input { font: inherit; color: inherit; }
 button { cursor: pointer; }
@@ -283,3 +283,8 @@ body.booting .dock { transform: translateY(8px); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+/* MVP hafif mod: tam ekran harman katmanı ve bulanık cam, harita üzerinde her karede yeniden birleştirme gerektiriyor. */
+.grain { display: none; }
+.glass { backdrop-filter: none; -webkit-backdrop-filter: none; background: var(--glass);
+  border-radius: 12px; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.32); }
