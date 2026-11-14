@@ -1,0 +1,30 @@
+/* Haritayı kaplamayan küçük yıl kontrolü. */
+.dock { align-items: flex-end; }
+.dock .timeline { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%);
+  width: min(480px, calc(100vw - 220px)); min-height: 48px; flex: none;
+  gap: 10px; padding: 7px 10px; border-radius: 12px; }
+body.has-panel .dock .timeline { margin-right: 0; }
+.timeline .play { width: 32px; height: 32px; }
+.timeline .play svg { width: 15px; height: 15px; }
+.timeline .yearbox { min-width: 48px; }
+.timeline .yearbox > span { font-size: 9px; }
+.timeline #yearOut { font-size: 21px; }
+.timeline .track { min-width: 60px; padding-top: 0; }
+.timeline .ticks { display: none; }
+.scale-control { flex: none; position: relative; }
+.scale-control summary { list-style: none; cursor: pointer; padding: 8px 7px; border-radius: 7px;
+  font-size: 11px; color: var(--ink-2); border: 1px solid var(--line); }
+.scale-control summary::-webkit-details-marker { display: none; }
+.scale-control summary:hover, .scale-control[open] summary { color: var(--ink); background: var(--surface-3); }
+.scale-control .legend { position: absolute; bottom: calc(100% + 14px); right: -10px;
+  width: 210px; padding: 12px; border: 1px solid var(--line); border-radius: 10px;
+  background: var(--surface); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+body.has-panel .scale-control .legend { display: block; }
+@media (max-width: 1100px) { .scale-control .legend { display: block; } }
+@media (max-width: 760px) {
+  .dock .timeline { left: 94px; right: 10px; width: auto; bottom: 22px; transform: none; gap: 7px; padding: 7px; }
+  .timeline .yearbox { min-width: 43px; }
+  .timeline #yearOut { font-size: 19px; }
+  .timeline .track { min-width: 30px; }
+  .scale-control summary { padding: 8px 4px; font-size: 10px; }
+}
