@@ -56,3 +56,5 @@ Next step — Masaüstü Türkiye atlasını tarayıcıda gözden geçir. fronte
 Next step — 13 il için MODIS ve VIIRS sekmelerini masaüstünde incele. Uydu altlığı yerel, Birleşmiş sekmesi boş.
 
 Next step — Masaüstü 3B arazi kamerası ve animasyonlu takvim penceresi için kullanıcı geri bildirimi al.
+
+Next step — 81 ilin MODIS (2000–2025) ve VIIRS (2012–2025) takvimlerini haritada incele. Birleşmiş sekmesi boş.
