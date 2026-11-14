@@ -19,6 +19,10 @@ Yeni `ARCHITECTURE.md`'yi ekipçe onayla (4 vitrin bölgesi, statik site, sunucu
 ## Ürün fikri (karar değil, tasarımda değerlendirilecek)
 - **Türe ayrılmış takvim ve tarla ateşi eğilimi haritaya eklenebilir.** Bulgu: Çukurova'da tarım arazisindeki ateşler 20 yılda ~%70 azalmış, Güneydoğu'da azalmamış; üç bağımsız seri uyumlu (`docs/REPORT.md` 12. bölüm, `analysis/agri_trend/fig1_cropland_annual.png`). Olası biçim: tarla ateşi / orman yangını için iki ayrı takvim (türe özel çarpanla), Çukurova–Güneydoğu karşılaştırması, 2021 orman yangınları ikinci sahne. Orman kenarı katmanı ve Eskişehir denendi, gösterilebilir sonuç çıkmadı.
 
+## Birleşmiş sekmesi için veri hazır
+- `frontend/harmonized-data.js` ve `frontend/harmonized.csv` (`scripts/build_harmonized.py`). 81 il, 2000–2025, sayım ilden, çarpan ilin İBBS-2 bölgesinden. Bağlama satırları, önerilen demo illeri (Adana, Şanlıurfa, Antalya) ve filtre uyarısı: `docs/DEMO_ILLER.md`. Atlas dosyalarına dokunulmadı.
+- Güven: 10 il yüksek, 37 orta, 34 düşük. Arayüzde rozet olarak gösterilmesi önerilir.
+
 ## Team to-do (humans)
 - FIRMS MAP_KEY iste: https://firms.modaps.eosdis.nasa.gov/api/map_key/ → `.env` içine `FIRMS_MAP_KEY=...` (commit'leme)
 - Teslim kılavuzuna (video süresi) tarayıcıdan bak. ("Resources" sekmesine bakıldı: yalnızca FIRMS listeleniyor. "Teams" sekmesi bu challenge için 841 takım gösteriyor.)
