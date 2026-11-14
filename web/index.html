@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BurnCal · Anadolu Atlası</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="vendor/maplibre-gl.css">
+<link rel="stylesheet" href="css/atlas.css">
+</head>
+<body>
+<div id="map" aria-label="Türkiye ateş atlası haritası"></div>
+<div class="fx vignette" aria-hidden="true"></div>
+<div class="fx grain" aria-hidden="true"></div>
+
+<header class="topbar">
+  <div class="brand glass">
+    <span class="mark" aria-hidden="true"></span>
+    <div>
+      <strong>BURNCAL</strong>
+      <span>Anadolu Atlası</span>
+    </div>
+    <span id="sampleBadge" class="pill warn" hidden title="Bu sayılar örnek veridir; gerçek FIRMS verisi bağlanınca kaybolur.">Örnek veri</span>
+  </div>
+
+  <nav class="seg glass" id="sensorTabs" role="tablist" aria-label="Sensör">
+    <span class="seg-ind" aria-hidden="true"></span>
+  </nav>
+
+  <div class="tools">
+    <label class="search glass">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="9" cy="9" r="5.5"/><path d="M13.5 13.5 18 18"/></svg>
+      <input id="search" list="provList" placeholder="İl ara…" autocomplete="off" aria-label="İl ara">
+      <datalist id="provList"></datalist>
+    </label>
+    <div class="pop">
+      <button class="icon-btn glass" id="layersBtn" aria-expanded="false" aria-controls="layersMenu" title="Katmanlar">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m10 3 7.5 4L10 11 2.5 7z"/><path d="m2.5 11 7.5 4 7.5-4"/></svg>
+      </button>
+      <div class="menu glass" id="layersMenu" hidden>
+        <h3>Katmanlar</h3>
+        <label><input type="checkbox" data-layer="fill" checked><span></span>İl yoğunluğu</label>
+        <label><input type="checkbox" data-layer="labels" checked><span></span>Etiketler</label>
+        <label><input type="checkbox" data-layer="roads" checked><span></span>Yollar ve binalar</label>
+        <label><input type="checkbox" data-layer="terrain" checked><span></span>3B arazi</label>
+      </div>
+    </div>
+  </div>
+</header>
+
+<aside class="rank glass" id="rank" aria-label="İl sıralaması">
+  <h3><span id="rankTitle">Sıralama</span><button id="rankToggle" class="mini" aria-expanded="true" title="Daralt">–</button></h3>
+  <ol id="rankList"></ol>
+</aside>
+
+<aside class="panel glass" id="panel" aria-live="polite" hidden>
+  <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+  <div id="panelBody"></div>
+</aside>
+
+<footer class="dock">
+  <div class="hud glass">
+    <div class="hud-btns">
+      <button id="zoomIn" title="Yakınlaş (+)">+</button>
+      <button id="zoomOut" title="Uzaklaş (−)">−</button>
+      <button id="north" title="Kuzeye çevir"><svg id="needle" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2 13.5 10h-7z" fill="#ff7a1a"/><path d="M10 18 6.5 10h7z" fill="#cfd6de"/></svg></button>
+      <button id="home" title="Türkiye görünümü (H)"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 9.5 10 3l7 6.5M5 8.5V17h10V8.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button>
+    </div>
+    <dl id="readout"></dl>
+    <p class="keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> hareket · <kbd>Q</kbd><kbd>E</kbd> döndür · <kbd>R</kbd><kbd>F</kbd> eğim</p>
+  </div>
+
+  <div class="timeline glass">
+    <button id="play" class="play" aria-label="Yılları oynat" title="Yılları oynat (boşluk)">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path class="i-play" d="M6 4l10 6-10 6z"/><path class="i-pause" d="M5 4h4v12H5zM11 4h4v12h-4z"/></svg>
+    </button>
+    <output id="yearOut" for="year">—</output>
+    <div class="track">
+      <input type="range" id="year" step="1" aria-label="Yıl">
+      <div class="ticks" id="yearTicks" aria-hidden="true"></div>
+    </div>
+    <div class="legend" id="legend"></div>
+  </div>
+</footer>
+
+<div id="tip" role="tooltip" hidden></div>
+
+<div id="intro">
+  <div>
+    <p>NASA Space Apps 2026</p>
+    <h1>BurnCal</h1>
+    <span>MODIS · VIIRS · 2001–2025</span>
+  </div>
+</div>
+
+<script src="vendor/maplibre-gl.js"></script>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

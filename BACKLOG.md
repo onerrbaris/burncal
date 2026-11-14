@@ -19,6 +19,13 @@ Yeni `ARCHITECTURE.md`'yi ekipçe onayla (4 vitrin bölgesi, statik site, sunucu
 ## Ürün fikri (karar değil, tasarımda değerlendirilecek)
 - **Türe ayrılmış takvim ve tarla ateşi eğilimi haritaya eklenebilir.** Bulgu: Çukurova'da tarım arazisindeki ateşler 20 yılda ~%70 azalmış, Güneydoğu'da azalmamış; üç bağımsız seri uyumlu (`docs/REPORT.md` 12. bölüm, `analysis/agri_trend/fig1_cropland_annual.png`). Olası biçim: tarla ateşi / orman yangını için iki ayrı takvim (türe özel çarpanla), Çukurova–Güneydoğu karşılaştırması, 2021 orman yangınları ikinci sahne. Orman kenarı katmanı ve Eskişehir denendi, gösterilebilir sonuç çıkmadı.
 
+## İkinci ön yüz: `web/` (masa reposundan taşındı)
+- `Blockchaindeveloper43/masa` reposundaki atlas ön yüzü (MapLibre küre, uydu, arazi) `web/` klasörüne kopyalandı. `frontend/` klasörüne dokunulmadı; hangisinin ana ürün olacağı ekip kararı.
+- `web/` içinde hazır olanlar: birleşmiş seri (2001–2025), yıl × ay takvimi, medyana göre karşılaştırma, güven rozeti, CSV indirme, il arama.
+- Veri: `python scripts/build_atlas_json.py` → `web/data/atlas.json`. Girdileri `frontend/atlas-data.js` ve `frontend/harmonized-data.js`; ikisinden biri yeniden üretilince çalıştırılmalı.
+- Çalıştırma: `cd web && python -m http.server 8000`, sonra http://localhost:8000 (dosyadan doğrudan açılmaz).
+- **Yapılmadı:** tarayıcıda görsel kontrol (dosyalar sunuluyor, betikler ayrıştırılıyor, 81 il adı eşleşiyor; sayfa açılıp bakılmadı). Çevrimdışı güvenlik: uydu, yol/etiket ve arazi karoları ile yazı tipi internetten geliyor; ağ yoksa harita boş kalır. `frontend/terrain.jpg` yerel yedek katman olarak eklenebilir. GitHub Pages iş akışı taşınmadı.
+
 ## Birleşmiş sekmesi için veri hazır
 - `frontend/harmonized-data.js` ve `frontend/harmonized.csv` (`scripts/build_harmonized.py`). 81 il, 2000–2025, sayım ilden, çarpan ilin İBBS-2 bölgesinden. Bağlama satırları, önerilen demo illeri (Adana, Şanlıurfa, Antalya) ve filtre uyarısı: `docs/DEMO_ILLER.md`. Atlas dosyalarına dokunulmadı.
 - Güven: 10 il yüksek, 37 orta, 34 düşük. Arayüzde rozet olarak gösterilmesi önerilir.
