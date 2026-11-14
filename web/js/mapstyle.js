@@ -59,6 +59,7 @@ export function buildStyle(provinces, labels) {
       demShade: DEM,
       provinces: { type: 'geojson', data: provinces, promoteId: 'name' },
       provLabels: { type: 'geojson', data: labels },
+      pts: { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
     },
     layers: [
       { id: 'bg', type: 'background', paint: { 'background-color': '#04070c' } },
@@ -103,6 +104,15 @@ export function buildStyle(provinces, labels) {
         filter: ['==', ['get', 'class'], 'wood'],
         paint: { 'fill-color': '#2f7d4f', 'fill-antialias': false,
           'fill-opacity': ['interpolate', ['linear'], ['zoom'], 6, 0, 7.5, 0.42, 12, 0.34] },
+      },
+      { // Tek tek uydu tespitleri (seçili yıl); yalnızca yakınlaşınca görünür.
+        id: 'pts', type: 'circle', source: 'pts', minzoom: 6.2,
+        paint: {
+          'circle-radius': ['interpolate', ['exponential', 2], ['zoom'], 6.2, 1.6, 8, 3, 10, 3.6, 12, 6.5],
+          'circle-color': '#ff2d1a', 'circle-stroke-color': '#3a0700',
+          'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 7, 0, 9, 0.6],
+          'circle-opacity': ['interpolate', ['linear'], ['zoom'], 6.2, 0, 7, 0.85],
+        },
       },
       {
         id: 'prov-hover', type: 'fill', source: 'provinces',
@@ -179,6 +189,7 @@ export function buildStyle(provinces, labels) {
 export const LAYER_GROUPS = {
   fill: ['prov-fill'],
   forest: ['forest'],
+  points: ['pts'],
   labels: ['prov-label', 'place-city', 'place-village', 'place-small', 'water-name', 'road-name'],
   roads: ['road-minor', 'road-mid', 'road-major', 'buildings'],
 };

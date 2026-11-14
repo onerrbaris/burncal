@@ -95,6 +95,34 @@ function move(cam, duration) {
   map.flyTo({ ...cam, pitch: Math.min(cam.pitch ?? 0, 30), bearing: 0, duration: 1500, curve: 1.15, easing: ease, essential: true });
 }
 
+// Ateş noktaları: seçili yılın tespitleri. Birleşmiş görünümde 2012'den önce yalnızca MODIS vardır.
+const ptCache = {};
+let ptKey = '';
+const ptSensor = () => (state.sensor === 'modis' || (state.sensor === 'merged' && state.year < 2012) ? 'modis' : 'viirs');
+async function updatePoints() {
+  const src = map && map.getSource('pts');
+  if (!src || !state.year) return;
+  const s = ptSensor(), y = state.year, key = y + s;
+  if (key === ptKey) return;
+  ptKey = key;
+  try {
+    const d = ptCache[y] || (ptCache[y] = await fetch(`data/points/${y}.json`).then((r) => (r.ok ? r.json() : {})));
+    if (ptKey !== key) return;
+    const a = d[s] || [], features = [];
+    for (let i = 0; i < a.length; i += 3) {
+      features.push({ type: 'Feature', properties: { m: a[i + 2] }, geometry: { type: 'Point', coordinates: [a[i] / 1000, a[i + 1] / 1000] } });
+    }
+    src.setData({ type: 'FeatureCollection', features });
+    // Nokta, yakın görünümde sensörün piksel ayak izi kadar yer kaplar (VIIRS ~375 m, MODIS ~1 km):
+    // ateş bu dairenin içinde bir yerdedir. 38° enlemde z12'de 1 piksel ~30 m.
+    const m = s === 'modis';
+    map.setPaintProperty('pts', 'circle-radius',
+      ['interpolate', ['exponential', 2], ['zoom'], 6.2, 1.6, 8, 3, 10, m ? 4.6 : 3.6, 12, m ? 17 : 6.5]);
+    map.setPaintProperty('pts', 'circle-opacity',
+      ['interpolate', ['linear'], ['zoom'], 6.2, 0, 7, 0.85, 10, m ? 0.7 : 0.85, 12, m ? 0.45 : 0.7]);
+  } catch (e) { ptKey = ''; }
+}
+
 // Renk, ilin o yılki sıralamasına göre verilir (çeyreklik ölçek): birkaç çok yüksek il
 // diğerlerini tek renge sıkıştırmasın.
 let legendVals = [];
@@ -111,6 +139,7 @@ function paintMap() {
     map.setFeatureState({ source: 'provinces', id: name }, { v, sel: name === state.sel });
   }
   renderLegend();
+  updatePoints();
 }
 
 function startOrbit() {
@@ -272,7 +301,8 @@ function renderLegend() {
   const mx = maxTotal[state.sensor];
   const lv = legendVals, n = lv.length;
   $('#legend').innerHTML = mx && n ? `<b>Yıllık tespit · iller sıralı</b><div class="bar" style="background:linear-gradient(90deg,${RAMP.join(',')})"></div>
-    <div class="ends"><span>${fmt(lv[0])}</span><span>${fmt(lv[n >> 1])}</span><span>${fmt(lv[n - 1])}</span></div>` : '';
+    <div class="ends"><span>${fmt(lv[0])}</span><span>${fmt(lv[n >> 1])}</span><span>${fmt(lv[n - 1])}</span></div>
+    <div class="ends"><span>Kırmızı noktalar: ${ptSensor() === 'modis' ? 'MODIS' : 'VIIRS'} tespitleri (yakınlaşınca)</span></div>` : '';
 }
 
 function renderRank() {
