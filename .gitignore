@@ -12,5 +12,8 @@ dist/
 
 # analysis artefacts
 analysis/cache/
+analysis/agri/tiles/
+analysis/agri/cache/
+analysis/agri/dl.log
 analysis/out/jobs/
 *.pkl

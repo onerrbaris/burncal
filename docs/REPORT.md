@@ -270,3 +270,59 @@ Terra-tek dönem (2000 – 2002 ortası) bölgede yalnızca bölge/yıl düzeyin
 - Güvenilir değil: 1° aylık; 0,5° ve altı; 2000–2002 için bölge/yıl dışındaki her şey.
 
 Sınanmadı: gerçek il poligonları, modellerin birleşimi (Terra/Aqua ağırlığı + β), tarama açısı düzeltmesi.
+
+## 11. Tarımsal yanma: kayıtlar ve kendi verimizdeki pay (14 Kasım, akşam)
+
+Kod ve sonuçlar: `analysis/agri/` (`prep.py`, `run.py`, CSV'ler). Yeniden üretim:
+`analysis\agri\.venv\Scripts\python.exe -I analysis\agri\prep.py`, ardından
+`analysis\agri\.venv\Scripts\python.exe -W ignore -I analysis\agri\run.py N36E027,N36E030,N36E033,N36E036,N39E030,N39E033`.
+
+### Türkiye'de tarımsal yanmayı kim kaydediyor
+
+"Kimse kaydetmiyor" demek yanlış; doğrusu şu:
+
+- Orman teşkilatı anızı çıkış nedeni olarak kaydediyor, ama yalnızca orman yangını saydığı olaylarda. 2008–2018: yılda ortalama 2.365 yangın, 8.763 ha; ihmal kaynaklı yangınlar içinde anız %30 ile birinci neden (sayıya mı alana mı göre olduğu belgede yazmıyor). https://cdniys.tarimorman.gov.tr/api/File/GetFile/330/Sayfa/1416/1778/DosyaGaleri/20._orman_yanginlariyla_mucadelede_yenilikci_yaklasimlar.pdf
+- Kurumun ham verisi açık değil; tarım arazisi yangınlarının yalnızca küçük bir kısmını içeriyor (Coskuner 2022).
+- İdari para cezaları yalnızca dağınık il haberlerinde; ulusal ya da il bazında yıllık seri bulunamadı (doğrulanmadı, arama sonucu).
+- Anız yakmayı uyduyla izleyen bir bakanlık sistemi bulunamadı.
+- Ulusal sera gazı envanteri (NID 2024, kategori 3.F) gözleme dayanmıyor: ekili alan × varsayılan yanma oranı. Yakmanın "yasak, büyük ölçüde kontrol altında ve giderek seyrekleştiği" yazıyor. https://unfccc.int/sites/default/files/resource/TUR_NID_2024.pdf
+- Yıllık anız yangını sayısı ve alanı zaman serisi olarak yayımlanmıyor. "Tarladan ormana yayılan" ya da "kontrol altına alınamayan anız yangını" diye bir istatistik yok.
+- Uydu tabanlı literatür payı zaten göstermiş: Coskuner 2022 (2015–2019) MODIS tespitlerinin %78,9'u, VIIRS tespitlerinin %62,7'si tarım arazisinde, orman ~%2,6; Baldassarre 2020 (MODIS, 2003–2019) dört aktif yangından üçü tarım arazisinde. https://medfor.eu/node/975 Bunlar makale; açık, çok yıllı, aylık ve bölgesel bir seri sunan araç bulunamadı.
+
+### Kendi verimizde arazi örtüsü payı
+
+ESA WorldCover 2021 (10 m), hotspot merkezindeki piksel. Altı karo indirilebildi: enlem 36–39 / boylam 27–39 ve enlem 39–42 / boylam 30–36 (Akdeniz, Çukurova, İç Anadolu). Maskeli VIIRS hotspotlarının ~%53'ü bu alanda. Trakya, Ege, Güneydoğu, Doğu ve Karadeniz kapsanmadı.
+
+| Sensör | Tarım | Otlak | Ağaç | Yapılaşmış |
+|---|---|---|---|---|
+| VIIRS 2012–2025 | %71,2 | %13,3 | %9,5 | %2,0 |
+| MODIS 2000–2025 | %67,5 | %12,8 | %8,6 | %7,1 |
+
+- VIIRS tarım payı aya göre: Tem %50 (en düşük), Eyl–Ara %77–81.
+- Yıla göre çoğu yıl %72–83; 2021'de %37,5 (ağaç %40: Manavgat ve Marmaris), 2025'te %49 (ağaç %25).
+- Kapsanan alanda tarım arazisindeki VIIRS hotspot sayısı (yıl toplamı × tarım payı): 2013–2016 ortalaması ~17.400, 2022–2025 ortalaması ~8.000. Yıldan yıla oynaklık büyük (2014: ~8.200, 2015: ~25.300); eğilim sınanmadı, yalnızca S-NPP dönemi, Güneydoğu dahil değil.
+
+### Bölge kutuları (VIIRS, 14 yıl ortalaması, arazi örtüsü kullanılmadan)
+
+| Bölge | Yıllık ort. | Ülke payı | Tepe ay (payı) | Gündüz | 
+|---|---|---|---|---|
+| Türkiye | 30.800 | %100 | Eyl (%20,6) | %75,6 |
+| Güneydoğu buğday kuşağı | 11.947 | %38,8 | Haz (%20,6) | %70,2 |
+| Çukurova | 3.768 | %12,2 | Ağu (%38,7; Ağu+Eyl %76) | %95,1 |
+| Konya ovası | 2.009 | %6,5 | Kas (%25,6) | %84,8 |
+| Trakya | 1.057 | %3,4 | Eki (%43,5) | %91,8 |
+| Antalya–Muğla orman kıyısı | 999 | %3,2 | Ağu (%17,3; Haz–Eki yayılmış) | %52,6 |
+
+Dört tarım kutusu ülke hotspotlarının ~%61'i, orman kıyısı kutusu %3. Tarım kutuları keskin tepeli ve neredeyse tamamen gündüz; orman kutusu yaza yayılmış ve gece payı yüksek.
+
+En büyük 20 hücre-ayda (0,25°): Çukurova hücreleri %94 tarım; Manavgat (Tem 2021) ve Marmaris (Ağu 2021) hücreleri %1–2 tarım, %68–82 ağaç.
+
+### Sınırlar
+
+- Etiket 375 m'lik ayak izinin değil, merkezdeki 10 m'lik pikselin sınıfı. Arazi örtüsü tek yıl (2021); tüm dönem için sabit varsayıldı.
+- Tarım arazisindeki hotspot anız yakma demek değildir; ayrım yapılmadı.
+- Bu analizde sabit kaynak maskesi 1.298 hücre olarak raporlandı; 4. bölümdeki 8.875 hücreyle farkı (genişletme öncesi/sonrası olabilir) incelenmedi.
+
+### Söylenebilecek olan
+
+Resmî yangın istatistikleri ormana ulaşan yangınları kapsıyor. Türkiye'de uydu hotspotlarının çoğunun düştüğü tarım arazisi yanmasının açık, tutarlı, uzun dönemli ve bölgesel bir kaydı yok; uyumlaştırılmış 25 yıllık aylık seri bu boşluğu doldurur ve envanterin "seyrekleşiyor" varsayımına gözleme dayalı bir karşılaştırma sunar.
