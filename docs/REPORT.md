@@ -154,7 +154,7 @@ MODIS–VIIRS dönüşümü, iki özdeş MODIS cihazı arasındaki dönüşüm k
 
 ## 9. Yapay zekâ kullanımı
 
-Keşif, analiz kodu ve bu rapor Claude Code ile üretildi (Claude Fable 5.2 yönetici, Claude Opus ve Sonnet alt ajanlar). Sayılar gerçek FIRMS verisi üzerinde çalıştırılan koddan gelir.
+Keşif, analiz kodu ve raporun hazırlanmasında yapay zekâ destekli kodlama araçlarından yararlanıldı. Yöntem kararları ekip tarafından verildi; tüm sayılar gerçek FIRMS verisi üzerinde çalıştırılan koddan gelir ve `analysis/` altındaki betiklerle yeniden üretilebilir.
 
 ## 10. Akdeniz bölgesi çalışması (14 Kasım, öğleden sonra)
 

@@ -137,20 +137,20 @@ Numbers in the blocks above are illustrative.
 
 | # | Task | Notes |
 | --- | --- | --- |
-| T1 | `scripts/fetch_firms.py`: download country archive, all years, resumable | Sonnet. Turkey first; any country by name |
-| T2 | Mock generator + backend skeleton serving the contract | Sonnet. `backend/`, `shared/mock/` |
-| T3 | Frontend scaffold: map, presets, calendar heatmap, from mocks | Sonnet. `frontend/` |
-| T4 | `scripts/build_dataset.py`: clean + typed parquet | Sonnet |
-| T5 | Harmonization model + validation → `calibration.json` | **Opus**. The scientific core |
-| T6 | Live `/api/calendar` (aggregate, percentiles, season, insights) | Opus |
-| T7 | Live `/api/harmonization` + `/api/hotspots.csv` | Sonnet |
-| T8 | Frontend: validation panel, insights, raw/harmonized toggle, CSV download | Sonnet |
-| T9 | Draw-your-own AOI (polygon/rectangle) | Sonnet |
-| T10 | Deploy backend + frontend, static fallback JSONs | Sonnet + lead |
-| T11 | 2026 current year via FIRMS API (needs MAP_KEY) | Sonnet |
-| T12 | Cropland vs wildland split (WorldCover) | Opus, stretch |
-| T13 | More countries (Greece, Portugal, …), province presets | Sonnet, stretch |
-| T14 | Integration review ("find what breaks") before deploy and before submission | Opus, fresh agent |
+| T1 | `scripts/fetch_firms.py`: download country archive, all years, resumable | Turkey first; any country by name |
+| T2 | Mock generator + backend skeleton serving the contract | `backend/`, `shared/mock/` |
+| T3 | Frontend scaffold: map, presets, calendar heatmap, from mocks | `frontend/` |
+| T4 | `scripts/build_dataset.py`: clean + typed parquet |  |
+| T5 | Harmonization model + validation → `calibration.json` | The scientific core |
+| T6 | Live `/api/calendar` (aggregate, percentiles, season, insights) |  |
+| T7 | Live `/api/harmonization` + `/api/hotspots.csv` |  |
+| T8 | Frontend: validation panel, insights, raw/harmonized toggle, CSV download |  |
+| T9 | Draw-your-own AOI (polygon/rectangle) |  |
+| T10 | Deploy backend + frontend, static fallback JSONs |  |
+| T11 | 2026 current year via FIRMS API (needs MAP_KEY) |  |
+| T12 | Cropland vs wildland split (WorldCover) | stretch |
+| T13 | More countries (Greece, Portugal, …), province presets | stretch |
+| T14 | Integration review ("find what breaks") before deploy and before submission | fresh agent |
 | T15 | Slides (7), README with sources, license, AI-use statement | final mode |
 
 ## Rejected alternatives
