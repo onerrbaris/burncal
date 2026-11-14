@@ -145,12 +145,70 @@ function move(cam, duration) {
 // Ateş noktaları: seçili yılın tespitleri (5'li gruplar: x, y, gün, frp, il). 2012'den önce yalnızca MODIS vardır.
 const ptCache = {};
 let ptKey = '', ptStyle = '', ptTimer = 0;
+let ptDrawn = null, ptPopup = null, ptHoverRaf = 0, ptMouse = null;
+const ptCurrentKey = () => `${state.year}${ptSensor()}${state.win}`;
+const pointsVisible = () => ready && map.getZoom() >= 6.2 && map.getLayoutProperty('pts', 'visibility') !== 'none';
+function closePointPopup() { ptPopup?.remove(); ptPopup = null; }
+// Çizime verilen diziyi paylaşır; yeni istek ya da ayrı nokta feature'ları oluşturmaz.
+function pointHits(point) {
+  if (!pointsVisible() || !ptDrawn || ptDrawn.key !== ptCurrentKey()) return null;
+  const { a, y, s } = ptDrawn;
+  let nearest = -1, distance = Infinity, count = 0, first = 367, last = 0;
+  // Ön eleme: imlecin ±8 piksellik kutusunu enlem/boylama çevir, yalnızca içindeki noktaları ekrana izdüşür.
+  // Böylece fare hareketinde 35 bin map.project yerine birkaç tanesi çalışır.
+  const c = [[-9, -9], [9, -9], [-9, 9], [9, 9]].map(([dx, dy]) => map.unproject([point.x + dx, point.y + dy]));
+  const x0 = Math.min(...c.map((q) => q.lng)) * 1000, x1 = Math.max(...c.map((q) => q.lng)) * 1000;
+  const y0 = Math.min(...c.map((q) => q.lat)) * 1000, y1 = Math.max(...c.map((q) => q.lat)) * 1000;
+  for (let i = 0; i < a.length; i += 5) {
+    if (a[i] < x0 || a[i] > x1 || a[i + 1] < y0 || a[i + 1] > y1) continue;
+    if (!fullWin() && !inWin(new Date(Date.UTC(y, 0, a[i + 2])).getUTCMonth())) continue;
+    const p = map.project([a[i] / 1000, a[i + 1] / 1000]);
+    const d = (p.x - point.x) ** 2 + (p.y - point.y) ** 2;
+    if (d > 64) continue;
+    count++; first = Math.min(first, a[i + 2]); last = Math.max(last, a[i + 2]);
+    if (d < distance) { distance = d; nearest = i; }
+  }
+  return nearest < 0 ? null : { a, y, s, i: nearest, count, first, last };
+}
+function openPointPopup(hit) {
+  closePointPopup(); hideTip(); stopOrbit();
+  const { a, y, s, i, count, first, last } = hit;
+  const dt = new Date(Date.UTC(y, 0, a[i + 2])), m = dt.getUTCMonth();
+  const name = geo.features[a[i + 4]]?.properties.name;
+  const date = (d) => `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
+  const start = new Date(Date.UTC(y, 0, first)), end = new Date(Date.UTC(y, 0, last));
+  const span = first === last ? date(start) : start.getUTCMonth() === end.getUTCMonth()
+    ? `${start.getUTCDate()}–${date(end)}` : `${date(start)}–${date(end)}`;
+  const nrt = data.meta.nrt_from?.[s] && dt.toISOString().slice(0, 7) >= data.meta.nrt_from[s];
+  const body = document.createElement('div');
+  const line = (tag, text) => { const el = document.createElement(tag); el.textContent = text; body.append(el); };
+  line('b', `En yakın tespit: ${date(dt)} ${y}`);
+  line('p', `${s === 'viirs' ? 'VIIRS S-NPP' : 'MODIS'} · ${a[i + 3].toLocaleString('tr-TR')} MW FRP`);
+  line('p', `${name || 'İl bilinmiyor'} · ${nrt ? 'yakın gerçek zamanlı (NRT)' : 'arşiv (SP)'}`);
+  if (count > 1) line('p', `Bu konumda ${count} tespit: ${span}`);
+  line('small', `Konum ${s === 'viirs' ? '±375 m (VIIRS)' : '±1 km (MODIS)'}: sensör pikselinin merkezi`);
+  if (name) {
+    const link = document.createElement('a');
+    link.href = '#panel'; link.className = 'link'; link.textContent = 'Bu ayı takvimde aç';
+    link.onclick = (e) => {
+      e.preventDefault(); stopPlay(); closePointPopup();
+      state.month = m; state.tab = 'calendar';
+      state.from = Math.min(state.from, y); state.to = Math.max(state.to, y);
+      setYear(y); select(name);
+    };
+    body.append(link);
+  }
+  ptPopup = new maplibregl.Popup({ className: 'point-popup', maxWidth: '290px', closeOnClick: false, offset: 10 })
+    .setLngLat([a[i] / 1000, a[i + 1] / 1000]).setDOMContent(body).addTo(map);
+  ptPopup.getElement().querySelector('.maplibregl-popup-close-button')?.setAttribute('aria-label', 'Bilgi balonunu kapat');
+}
 const PT_MINZOOM = 5.8; // katman 6.2'de görünür olur; biraz önce hazırlanır
 const ptSensor = () => (state.sensor !== 'merged' ? state.sensor : state.year < 2012 ? 'modis' : 'viirs');
 const loadYear = (y) => ptCache[y] || (ptCache[y] = fetch(`data/points/${y}.json`).then((r) => (r.ok ? r.json() : {})).catch(() => { delete ptCache[y]; return {}; }));
 // Bir yılın noktaları on binlerce tespittir. Yalnızca noktalar görünürken ve yıl değişimi durulunca
 // yüklenir; böylece yıl kaydırıcısı ve oynatma, uzak görünümde haritayı yeniden kurmaz.
 function updatePoints() {
+  if (!pointsVisible() || (ptDrawn && ptDrawn.key !== ptCurrentKey())) closePointPopup();
   clearTimeout(ptTimer);
   ptTimer = setTimeout(loadPoints, 160);
 }
@@ -170,6 +228,7 @@ async function loadPoints() {
     }
     // Tek çok-noktalı geometri: on binlerce ayrı nesne kurmaktan çok daha hafif.
     src.setData({ type: 'Feature', properties: {}, geometry: { type: 'MultiPoint', coordinates } });
+    ptDrawn = { a, y, s, key };
     if (ptStyle === s) return;
     ptStyle = s;
     // Nokta, yakın görünümde sensörün piksel ayak izi kadar yer kaplar (VIIRS ~375 m, MODIS ~1 km):
@@ -246,11 +305,35 @@ function initMap() {
     if (hovered) map.setFeatureState({ source: 'provinces', id: hovered }, { hover: false });
     hovered = null; map.getCanvas().style.cursor = ''; hideTip();
   });
-  map.on('click', 'prov-hover', (e) => select(e.features[0].properties.name));
+  // Tek tıklama yolu: nokta önceliklidir, boş yerde mevcut il seçimi sürer.
+  map.on('click', (e) => {
+    const hit = pointHits(e.point);
+    if (hit) return openPointPopup(hit);
+    closePointPopup();
+    const f = map.queryRenderedFeatures(e.point, { layers: ['prov-hover'] })[0];
+    if (f) select(f.properties.name);
+  });
+  map.on('mousemove', (e) => {
+    ptMouse = e.point;
+    if (ptHoverRaf) return;
+    ptHoverRaf = requestAnimationFrame(() => {
+      ptHoverRaf = 0;
+      const hit = ptMouse && pointHits(ptMouse);
+      map.getCanvas().style.cursor = hit || hovered ? 'pointer' : '';
+      if (hit) hideTip();
+    });
+  });
+  map.getCanvas().addEventListener('mouseleave', () => {
+    ptMouse = null; cancelAnimationFrame(ptHoverRaf); ptHoverRaf = 0;
+    map.getCanvas().style.cursor = '';
+  });
 
   for (const ev of ['mousedown', 'touchstart', 'wheel']) map.on(ev, stopOrbit);
   map.on('rotate', () => { $('#needle').style.transform = `rotate(${-map.getBearing()}deg)`; });
-  map.on('zoom', () => { if (map.getZoom() >= PT_MINZOOM) updatePoints(); });
+  map.on('zoom', () => {
+    if (!pointsVisible()) closePointPopup();
+    if (map.getZoom() >= PT_MINZOOM) updatePoints();
+  });
 
   // Seçili il sınırında akan çizgi (yalnızca sinematik modda).
   const dash = [[0, 4, 3], [0.5, 4, 2.5], [1, 4, 2], [1.5, 4, 1.5], [2, 4, 1], [2.5, 4, 0.5], [3, 4, 0],
@@ -317,6 +400,7 @@ function moveIndicator() {
   ind.style.transform = `translateX(${b.offsetLeft}px)`;
 }
 function setSensor(key) {
+  closePointPopup();
   state.sensor = key;
   for (const b of document.querySelectorAll('#sensorTabs button')) {
     const on = b.dataset.key === key;
@@ -333,6 +417,7 @@ function setSensor(key) {
   setYear(Math.min(hi, Math.max(lo, state.year ?? hi)));
 }
 function setYear(y) {
+  if (+y !== state.year) closePointPopup();
   state.year = +y;
   const [lo, hi] = RANGE, slider = $('#year');
   slider.value = y;
@@ -749,6 +834,7 @@ function bind() {
     const g = e.target.dataset.layer, on = e.target.checked;
     if (g === 'terrain') return map.setTerrain(on ? { source: 'dem', exaggeration: 1.35 } : null);
     for (const id of LAYER_GROUPS[g]) map.setLayoutProperty(id, 'visibility', on ? 'visible' : 'none');
+    if (g === 'points' && !on) closePointPopup();
     if (g === 'points' && on) updatePoints();
   });
 
