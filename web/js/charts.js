@@ -1,7 +1,7 @@
 // Panel grafikleri: elle yazılmış SVG. Tek ölçek, tek renk tonu (kor), nötr mürekkep.
 // Bu dosyadaki istatistik işlevleri (inRange, reading, sentence, peaks, csvRows, hotspotRows) saf işlevlerdir;
 // tarayıcı dışında Node ile de sınanabilir.
-import { RAMP } from './mapstyle.js';
+import { RAMP } from './mapstyle.js?v=20261115c';
 
 export const MONTHS = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
 export const MON3 = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
@@ -76,11 +76,11 @@ export function sentence(r, label) {
     else place = `${per} dönemindeki ${r.n} ${M} ayının ${r.below} tanesinden yüksek`;
   }
   let k;
-  if (r.med < 3) k = `medyan ${fmt(r.med)}`;   // küçük medyana oran ("∞ katı") verilmez
+  if (r.med < 3) k = `orta değer ${fmt(r.med)}`;   // küçük medyana oran ("∞ katı") verilmez
   else {
     const q = r.v / r.med;
-    k = Math.abs(q - 1) < 0.05 ? 'medyan düzeyinde'
-      : q > 1 ? `medyanın ${q < 10 ? dec(q) : fmt(q)} katı` : `medyanın altında (medyan ${fmt(r.med)})`;
+    k = Math.abs(q - 1) < 0.05 ? 'olağan düzeyde'
+      : q > 1 ? `orta değerin ${q < 10 ? dec(q) : fmt(q)} katı` : `orta değerin altında (orta değer ${fmt(r.med)})`;
   }
   return `${head}${place}, ${k}.`;
 }
@@ -210,7 +210,7 @@ export function calendar(years, from, to, sel, opt) {
       const rdg = rd(yy, i), lv = rdg?.level, part = partial(yy, i);
       const fill = v === 0 ? 'rgba(255,255,255,0.06)' : rampColor(Math.sqrt(v / max));
       const tipLv = lv && lv !== 'normal' ? ` · ${LEVELS[lv].label}` : '';
-      const tipPct = rdg?.pct != null ? `<br>%${Math.round(rdg.pct)}. yüzdelik · medyan ${fmt(rdg.med)}` : '';
+      const tipPct = rdg?.pct != null ? `<br>%${Math.round(rdg.pct)}. yüzdelik · orta değer ${fmt(rdg.med)}` : '';
       const tipPart = part ? `<br>Ay sürüyor: 1–${through} ${MONTHS[i]}; diğer yılların aynı günleriyle kıyaslandı` : '';
       s += `<rect x="${x}" y="${y0 + 1}" width="${cw - 2}" height="${ch - 2}" rx="2.5" fill="${fill}" class="cell${out ? ' out' : ''}${part ? ' part' : ''}" data-year="${yy}" data-month="${i}" data-tip="${esc(`<b>${MONTHS[i]} ${yy}</b>${fmt(v)} tespit${tipLv}${tipPct}${tipPart}`)}"/>`;
       const cx = x + (cw - 2) / 2, cy = y0 + ch / 2;
@@ -249,9 +249,9 @@ export function compare(ref, row, selYear, selMonth, partialMonth) {
     if (v != null) s += bar(x0 + bw * 0.3, bw * 0.4, y(v), base, 'bar' + (i === partialMonth ? ' part' : ''));
     s += `<line x1="${x0 + 1}" x2="${x0 + bw - 1}" y1="${y(med[i])}" y2="${y(med[i])}" class="median"/>`;
     if (i === selMonth) s += `<rect x="${x0 + 0.5}" y="${base + 2}" width="${bw - 1}" height="3" rx="1.5" class="msel"/>`;
-    const ratio = v != null && med[i] >= 3 ? ` · medyanın ${(v / med[i]).toLocaleString('tr-TR', { maximumFractionDigits: 1 })} katı` : '';
-    const val = v == null ? 'henüz veri yok' : fmt(v) + (i === partialMonth ? ' (ay sürüyor; medyan aynı günlerden)' : '');
-    s += `<rect x="${x0}" y="0" width="${bw}" height="${h - 18}" class="hit"${v == null ? '' : ` data-year="${selYear}" data-month="${i}"`} data-tip="${esc(`<b>${MONTHS[i]}</b>${selYear}: ${val}${ratio}<br>Medyan: ${fmt(med[i])} · Orta %50: ${fmt(q1[i])}–${fmt(q3[i])}`)}"/>`;
+    const ratio = v != null && med[i] >= 3 ? ` · orta değerin ${(v / med[i]).toLocaleString('tr-TR', { maximumFractionDigits: 1 })} katı` : '';
+    const val = v == null ? 'henüz veri yok' : fmt(v) + (i === partialMonth ? ' (ay sürüyor; orta değer aynı günlerden)' : '');
+    s += `<rect x="${x0}" y="0" width="${bw}" height="${h - 18}" class="hit"${v == null ? '' : ` data-year="${selYear}" data-month="${i}"`} data-tip="${esc(`<b>${MONTHS[i]}</b>${selYear}: ${val}${ratio}<br>Orta değer: ${fmt(med[i])} · Olağan aralık: ${fmt(q1[i])}–${fmt(q3[i])}`)}"/>`;
   });
   return { svg: `<svg viewBox="0 0 ${W} ${h}" role="img" aria-label="${selYear} yılı ile dönemin medyanının karşılaştırması">${s}</svg>`, med };
 }

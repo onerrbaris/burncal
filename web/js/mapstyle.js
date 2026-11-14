@@ -97,8 +97,8 @@ export function buildStyle(provinces, labels) {
             ['<', ['coalesce', ['feature-state', 'v'], -1], 0], 'rgba(0,0,0,0)',
             ['interpolate', ['linear'], ['coalesce', ['feature-state', 'v'], 0], ...rampStops]],
           'fill-opacity': ['interpolate', ['linear'], ['zoom'],
-            6, ['case', ['boolean', ['feature-state', 'sel'], false], 0.42, 0.66],
-            9, ['case', ['boolean', ['feature-state', 'sel'], false], 0.16, 0.4],
+            6, ['case', ['boolean', ['feature-state', 'sel'], false], 0.34, 0.56],
+            9, ['case', ['boolean', ['feature-state', 'sel'], false], 0.14, 0.34],
             12, 0.08],
         },
       },
@@ -139,7 +139,7 @@ export function buildStyle(provinces, labels) {
       {
         id: 'prov-line', type: 'line', source: 'provinces',
         paint: {
-          'line-color': ['case', ['boolean', ['feature-state', 'hover'], false], '#ffffff', 'rgba(255,255,255,0.55)'],
+          'line-color': ['case', ['boolean', ['feature-state', 'hover'], false], '#ffffff', 'rgba(255,255,255,0.38)'],
           'line-width': ['interpolate', ['linear'], ['zoom'], 3, 0.2, 6, 0.7, 10, 1.4],
           'line-opacity': ['interpolate', ['linear'], ['zoom'], 3, 0.25, 5, 0.6],
         },
@@ -152,12 +152,12 @@ export function buildStyle(provinces, labels) {
       },
       {
         id: 'sel-glow', type: 'line', source: 'provinces', filter: ['==', ['get', 'name'], ''],
-        paint: { 'line-color': '#ff7a1a', 'line-width': 14, 'line-blur': 12, 'line-opacity': 0.75 },
+        paint: { 'line-color': '#ff8a3d', 'line-width': 12, 'line-blur': 10, 'line-opacity': 0.55 },
       },
       {
         id: 'sel-line', type: 'line', source: 'provinces', filter: ['==', ['get', 'name'], ''],
         layout: { 'line-join': 'round' },
-        paint: { 'line-color': '#ffe2b8', 'line-width': 2.4, 'line-dasharray': [2, 2] },
+        paint: { 'line-color': '#ffd2ad', 'line-width': 2.2 },
       },
       {
         id: 'water-name', type: 'symbol', source: 'omt', 'source-layer': 'water_name',
