@@ -38,6 +38,7 @@ Sunum (7 slayt) ve teslim formu. Veri güncellemek için: `python scripts/fetch_
 - Deploy için Render + Vercel hesapları
 
 ## Done
+- 15 Kas: Son görselden ölçülen #49659B tüm su yüzeylerine uygulandı; önbellek sürümleri yenilendi, JS ve stil doğrulandı.
 - 15 Kas: Son renk örneğinden ölçülen #A6D6E3 tüm su yüzeylerine uygulandı; önbellek sürümleri yenilendi, JS ve stil doğrulandı.
 - 15 Kas: Su rengi ekli PNG pikselinden birebir #BED9F7 olarak ölçülüp uygulandı; app.js ve mapstyle.js önbellek sürümleri yenilendi.
 - 15 Kas: Kullanıcının yeni renk örneğine göre tüm su yüzeyleri açık pastel maviye (#bbd9f3) çevrildi; düz ve opak görünüm korundu.
