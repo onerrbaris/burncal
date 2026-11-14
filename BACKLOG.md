@@ -47,3 +47,5 @@ Yeni `ARCHITECTURE.md`'yi ekipçe onayla (4 vitrin bölgesi, statik site, sunucu
 
 ## Kurulum notu
 `backend/`, `scripts/make_mocks.py`, `requirements.txt` yarım kalmış, doğrulanmamış dosyalar; repoda yok.
+
+Next step — Masaüstü Türkiye atlasını tarayıcıda gözden geçir. frontend/index.html üzerinden 81 il seçilir, yalnız İzmir için 2012–2025 VIIRS aylık gözlemleri vardır.
