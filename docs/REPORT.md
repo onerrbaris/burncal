@@ -155,3 +155,67 @@ MODIS–VIIRS dönüşümü, iki özdeş MODIS cihazı arasındaki dönüşüm k
 ## 9. Yapay zekâ kullanımı
 
 Keşif, analiz kodu ve bu rapor Claude Code ile üretildi (Claude Fable 5.2 yönetici, Claude Opus ve Sonnet alt ajanlar). Sayılar gerçek FIRMS verisi üzerinde çalıştırılan koddan gelir.
+
+## 10. Akdeniz bölgesi çalışması (14 Kasım, öğleden sonra)
+
+Kod ve sonuçlar: `analysis/med/` (`metrics.csv`, `factors_MED.json`, `factors_COAST.json`, `events_*.csv`). Bölgeler kutu olarak tanımlandı, gerçek il sınırları kullanılmadı: MED = boylam 29–37, enlem 35,8–38,4; COAST = MED + Ege kıyısı (boylam 26–29, enlem 36,5–39,5). Ölçü ham hotspot sayısı; doğrulama yine bir yıl dışarıda bırakılarak.
+
+### Bölgesel çarpanlar
+
+| | Oca | Şub | Mar | Nis | May | Haz | Tem | Ağu | Eyl | Eki | Kas | Ara |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| MED | 3,39 | 2,75 | 3,15 | 2,04 | 1,51 | 2,49 | 2,96 | 4,04 | 4,45 | 3,61 | 2,20 | 2,38 |
+| COAST | 3,82 | 3,01 | 3,38 | 2,29 | 1,52 | 2,46 | 2,96 | 3,85 | 4,44 | 3,62 | 2,28 | 2,59 |
+| Ulusal | 3,00 | 2,89 | 3,37 | 2,89 | 1,19 | 1,99 | 3,04 | 4,18 | 4,67 | 3,79 | 2,49 | 2,86 |
+
+Bölgesel çarpanlar ulusal olanları geçiyor ama az: bölge aylık %15,3'e karşı %16,6; yıllık %6,2'ye karşı %7,1. Ulusal çarpanlar MED'de +%3,8 yanlı. Yangın sezonunda (Tem–Eki) fark yalnızca %3–5; asıl fark Nisan–Haziran ve kışta.
+
+### Bölge içi doğruluk (MED, bölgesel aylık çarpan, WAPE)
+
+| | Bölge | ~1° | ~0,5° | ~0,25° |
+|---|---|---|---|---|
+| Yıllık | %6,2 | %23,0 | %29,0 | %37,3 |
+| Yangın sezonu (Haz–Eki) | %6,5 | %23,0 | %29,2 | %37,2 |
+| Aylık | %15,3 | %37,7 | %47,0 | %58,1 |
+| Düzeltmesiz, aylık | %70,1 | %73,3 | %75,4 | %78,0 |
+
+Yıl sıra korelasyonu: bölge yıllık 0,99; 1° yıllık 0,83; 1° aylık 0,48; 0,25° aylık 0,44. %90 aralığın kapsaması bölgede %79 (14 değere dayanıyor), 1° yıllıkta %85.
+
+Bu çalışmada aynı hücreler için Poisson tabanı çok daha düşük çıktı (0,25° aylık %18). Önceki bölümdeki %50 taban MODIS hücre-gün hedefi içindi; VIIRS sayım hedefinde geçerli değil. Poisson, kümelenmiş tespitler için zayıf bir tabandır; Terra→Aqua karşılaştırması bölge içinde yeniden yapılmadı.
+
+### Hata azaltma denemeleri
+
+| Fikir | Sonuç |
+|---|---|
+| Terra ve Aqua'ya ayrı aylık ağırlık | Küçük ama tutarlı kazanç: bölge aylık %14,7, yıllık %5,7. Tutulabilir. |
+| Yalnızca Aqua | Daha kötü (0,25° aylık %65,7). |
+| Daha az mevsim parametresi (harmonik, 4 mevsim) | Kazanç yok; 12 serbest çarpan aşırı uyum yapmıyor. |
+| Etkinliğe bağlı çarpan (β = 0,88), bölge toplamına uygulanmış | Bölge yıllık %4,1, sezon %4,9. Kutularda etkisi yok. 2021-08 aşırı tahminini düzeltiyor, 2021-07'yi eksik tahmin ediyor. |
+| Aynı şey kutu bazında | Reddedildi: −%16 yanlılık, toplanabilir değil. |
+| Anız/orman ayrımı (mevsimsellikten türetilmiş vekil) | Kazanç yok. |
+| Küçük alan için bölgeden ödünç alma | Reddedildi: WAPE düşüyor ama yıl sıralaması çöküyor (0,25° aylık ρ 0,44 → 0,22). |
+| Düşük güvenlileri atmak | Etkisiz. Yalnızca yüksek güven ya da yalnızca gündüz: daha kötü. |
+
+Terra-tek dönem (2000 – 2002 ortası) bölgede yalnızca bölge/yıl düzeyinde kullanılabilir: yıllık %12,9, aylık %23,7.
+
+### Büyük olaylar (COAST, dışarıda bırakılmış)
+
+| Ay | VIIRS gözlem | Tahmin |
+|---|---|---|
+| 2015-09 | 5966 | 6039 |
+| 2021-08 | 5486 | 7566 (+%38) |
+| 2021-07 | 4469 | 4794 |
+| 2016-08 | 4394 | 3919 |
+| 2013-08 | 4158 | 3945 |
+
+- En büyük yangın aylarının çoğu orman yangını değil, Çukurova/Adana ovasındaki tarımsal yakma.
+- 2021-07 Manavgat 0,25° hücrede iyi: 1048 gözlem, 1084 tahmin.
+- 2021-08 Marmaris/Milas aşırı tahmin ediliyor (bir hücrede 359'a karşı 750): çok büyük yangınlarda MODIS tespiti başına VIIRS tespiti azalıyor.
+- En büyük 50 hücre-ayda (0,25°) hata %17,6, %94'ü 2 katın içinde.
+
+### Bölge için güvenilir çözünürlük
+
+- Güvenilir: tüm bölge (yıl, sezon, ay); ~1° birimler yıllık ve sezonluk toplamda; tekil büyük olaylar 0,25° aylıkta bile ~%20 içinde.
+- Güvenilir değil: 1° aylık; 0,5° ve altı; 2000–2002 için bölge/yıl dışındaki her şey.
+
+Sınanmadı: gerçek il poligonları, modellerin birleşimi (Terra/Aqua ağırlığı + β), tarama açısı düzeltmesi.
