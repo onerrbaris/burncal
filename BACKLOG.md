@@ -1,6 +1,6 @@
 # BACKLOG
 
-Repo: https://github.com/onerrbaris/burncal (private). Bulgular: `docs/REPORT.md`. `ARCHITECTURE.md` taslaktır.
+Repo: https://github.com/onerrbaris/burncal (private). Yeni oturum: önce `docs/HANDOFF.md`. Bulgular: `docs/REPORT.md`. `ARCHITECTURE.md` taslaktır.
 
 ## Next step
 Ürün yönüne karar ver (öneri: Akdeniz için il/bölge ölçeğinde yıllık + yangın sezonu yanma takvimi, orman ve tarım birlikte). Karar verilince ARCHITECTURE.md yeniden yazılacak ve inşa başlayacak.
