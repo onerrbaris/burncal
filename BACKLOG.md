@@ -3,13 +3,12 @@
 Repo: https://github.com/onerrbaris/burncal (private). Yeni oturum: önce `docs/HANDOFF.md`. Bulgular: `docs/REPORT.md`. `ARCHITECTURE.md` taslaktır.
 
 ## Next step
-ARCHITECTURE.md'yi yeni ürün yönüne göre yeniden yaz (3–4 illik gruplar, aylık takvim), sözleşmeyi Barış'a göster, sonra inşaya başla. Grup ölçeği kutularla ölçüldü (aşağıda, Done); çarpan gruba özel olmalı, aylık görünüm küçük gruplarda düşük güven rozetiyle. **Ekip içi bitiş: 15 Kasım saat 15:00** (resmî kapanış 23:59).
+Yeni `ARCHITECTURE.md`'yi ekipçe onayla (26 İBBS-2 bölgesi, statik site, sunucu yok), sonra T1–T5'i başlat. Yeni yöntem araştırması yok. **Ekip içi bitiş: 15 Kasım saat 15:00** (resmî kapanış 23:59).
 
 ## In progress
 - (yok)
 
 ## Open
-- ARCHITECTURE.md'yi rapora göre güncelle (aylık birim, konum maskesi, ölçeğe göre güven, il grupları)
 - İl gruplarını gerçek il poligonlarıyla tanımla (3–4 komşu il, benzer yanma rejimi) ve hatayı yeniden ölç. Kutularla ilk ölçüm yapıldı: `analysis/med/subregions.py`.
 - Gerçek il sınırlarıyla doğrulama (şimdiye kadar kutularla yapıldı)
 - Eleştiri yanıtı: `docs/CLAUDE_RESPONSE_TO_REVIEW.md` (deneyler `analysis/experiments/review_2026_11_14/`). Açık kalanlar o dosyanın "Yapılmayanlar" bölümünde; ilki gerçek il poligonları (geoBoundaries `data/raw/boundaries/` altında, `shapely` kurulu). Öne çıkan bulgu: zamana ileri testte hata LOYO'nun ~1,5 katı; `invarea_w` ürün adayı.
@@ -33,6 +32,8 @@ ARCHITECTURE.md'yi yeni ürün yönüne göre yeniden yaz (3–4 illik gruplar, 
 - Karşılaştırma (14 Kas akşam): resmî uyumlaştırılmış hotspot sayım ürünü yok; NASA tarafı yanık alan/FRP üzerinden gidiyor (GFED5NRT en yakın yöntem, Coskuner 2022 Türkiye için 3,9 kat). Challenge metni açıkça hotspot sayısı ve aylık karşılaştırma istiyor. Eksiklerimiz: ürün, bağımsız doğrulama, NOAA-20/21 köprüsü, gerçek arazi örtüsü.
 
 ## Decisions
+- 14 Kas gece – Hedef yerel etkinlik; jüri konu uzmanı değil. Öncelik çalışan ürün ve sunum; yöntem araştırması durduruldu.
+- 14 Kas gece – Alan birimi İBBS-2 (26 bölge, tüm Türkiye). Sunucu yok, her şey önceden hesaplanmış statik JSON. Serbest çizilen alan yok. Sözleşme `ARCHITECTURE.md` içinde yeniden yazıldı (8 günlük dönem ve `/api` uçları kalktı).
 - 14 Kas akşam – Ürün yönü: bölgesel takvim. Birim tek il ya da tüm coğrafi bölge değil, 3–4 ili içine alan gruplar; amaç hata oranını düşürmek (rapora göre ~1°–200 km ölçeği yıllıkta %17–23, tek il ölçeği belirgin biçimde daha kötü).
 - 14 Kas akşam – Ekip içi bitiş 15 Kasım 15:00. Bu saatten sonra yalnızca teslim işleri.
 - 14 Kas akşam – Sıra: önce uçtan uca çalışan ürün, sonra NOAA-20/21 köprüsü, sonra bağımsız doğrulama. Olay kümeleme denemesi bırakıldı.
