@@ -54,3 +54,5 @@ Yeni `ARCHITECTURE.md`'yi ekipçe onayla (4 vitrin bölgesi, statik site, sunucu
 Next step — Masaüstü Türkiye atlasını tarayıcıda gözden geçir. frontend/index.html üzerinden 81 il seçilir, yalnız İzmir için 2012–2025 VIIRS aylık gözlemleri vardır.
 
 Next step — 13 il için MODIS ve VIIRS sekmelerini masaüstünde incele. Uydu altlığı yerel, Birleşmiş sekmesi boş.
+
+Next step — Masaüstü 3B arazi kamerası ve animasyonlu takvim penceresi için kullanıcı geri bildirimi al.
