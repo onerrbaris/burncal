@@ -1,12 +1,15 @@
 """Atlas arayuzunun (web/) okudugu web/data/atlas.json dosyasini uretir.
 
-Girdi (ikisi de repoda):
-  frontend/atlas-data.js       -> MODIS ve VIIRS il serileri (scripts/build_izmir_atlas.py)
-  frontend/harmonized-data.js  -> birlesmis seri ve dogrulama (scripts/build_harmonized.py)
+Girdi (ikisi de repoda, scripts/build_harmonized.py uretir):
+  frontend/harmonized.csv      -> il x ay: birlesmis deger, kaynak, ham MODIS ve ham VIIRS sayilari.
+                                  Uc sekme de bu dosyadan gelir; ham sayilar birlesmis seriyle ayni
+                                  sabit kaynak (konum) maskesinden gecmistir.
+  frontend/harmonized-data.js  -> dogrulama, bolge carpanlari, 2012 basamak olculeri
 
-Bu iki dosyadan biri yeniden uretildiginde calistirin:
+Yalnizca standart kutuphane (pandas gerekmez). Girdiler yeniden uretildiginde calistirin:
     python scripts/build_atlas_json.py
 """
+import csv
 import json
 import sys
 from pathlib import Path
@@ -16,11 +19,15 @@ SRC = ROOT / "frontend"   # il serileri burada uretiliyor
 FE = ROOT / "web"         # atlas arayuzu
 OUT = FE / "data" / "atlas.json"
 ALIAS = {"Afyonkarahisar": "Afyon", "Hakkâri": "Hakkari"}   # harita dosyasindaki adlar
+MASK = "sabit kaynaklar (sanayi vb.) üç sekmede de aynı konum maskesiyle ayıklandı"
 NOTES = {
-    "modis": "Kaynak: NASA FIRMS MODIS (Terra + Aqua), type = 0 tespitleri.",
-    "viirs": "Kaynak: NASA FIRMS VIIRS S-NPP 375 m, type = 0 tespitleri.",
-    "merged": "VIIRS-eşdeğeri sayı: 2012-02'den itibaren VIIRS gözlemi, öncesi MODIS × bölgesel aylık çarpan.",
+    "modis": f"Kaynak: NASA FIRMS MODIS (Terra + Aqua) ham sayı; {MASK}.",
+    "viirs": f"Kaynak: NASA FIRMS VIIRS S-NPP 375 m ham sayı; {MASK}.",
+    "merged": "VIIRS-eşdeğeri tespit: 2012-02'den itibaren VIIRS gözlemi (uydu kesintisi günleri MODIS × çarpanla dolduruldu), "
+              f"öncesi MODIS × bölgesel aylık çarpan; {MASK}.",
 }
+COLS = {"modis": "raw_modis", "viirs": "raw_viirs", "merged": "value"}
+LABELS = {"modis": "MODIS", "viirs": "VIIRS", "merged": "Birleşmiş"}
 
 
 def load_js(path):
@@ -28,41 +35,56 @@ def load_js(path):
     return json.loads(text[text.index("{"):text.rindex("}") + 1])
 
 
+def num(s):
+    if s == "":
+        return None
+    v = float(s)
+    return int(v) if v.is_integer() else round(v, 1)
+
+
 def main():
     names = {f["properties"]["name"] for f in
              json.loads((FE / "data" / "tr-provinces.json").read_text(encoding="utf-8"))["features"]}
-    atlas, harm = load_js(SRC / "atlas-data.js"), load_js(SRC / "harmonized-data.js")
-    sources = {"modis": ("MODIS", atlas["series"]["MODIS"]), "viirs": ("VIIRS", atlas["series"]["VIIRS"]),
-               "merged": ("Birleşmiş", harm["series"])}
-    provinces, sensors, unknown = {}, {}, set()
-    for key, (label, by_prov) in sources.items():
-        years = set()
-        for name, series in by_prov.items():
-            name = ALIAS.get(name, name)
+    harm = load_js(SRC / "harmonized-data.js")
+    raw, unknown = {}, set()   # raw[key][il][yil] = 12 ay
+    with open(SRC / "harmonized.csv", encoding="utf-8", newline="") as f:
+        for r in csv.DictReader(f):
+            name = ALIAS.get(r["province"], r["province"])
             if name not in names:
                 unknown.add(name)
                 continue
-            # eksik ayi olan yil (2000: MODIS Kasim'da basliyor) takvime alinmaz
-            full = {y: row for y, row in series.items() if all(v is not None for v in row)}
+            y, m = r["year"], int(r["month"]) - 1
+            for key, col in COLS.items():
+                raw.setdefault(key, {}).setdefault(name, {}).setdefault(y, [None] * 12)[m] = num(r[col])
+    provinces, sensors = {}, {}
+    for key, by_prov in raw.items():
+        years = set()
+        for name, series in by_prov.items():
+            # eksik ayi olan yil (2000: MODIS Kasim'da basliyor; VIIRS 2012 oncesi yok) takvime alinmaz
+            full = {y: row for y, row in sorted(series.items()) if all(v is not None for v in row)}
             if full:
                 provinces.setdefault(name, {})[key] = full
                 years.update(int(y) for y in full)
-        sensors[key] = {"label": label, "from": min(years), "to": max(years)}
+        sensors[key] = {"label": LABELS[key], "from": min(years), "to": max(years)}
     validation = {}
     for name, p in harm["provinces"].items():
         name = ALIAS.get(name, name)
         if name not in names:
             unknown.add(name)
             continue
-        validation[name] = {k: p[k] for k in ("region", "confidence", "annual_wape", "monthly_wape")}
+        validation[name] = {k: p[k] for k in ("region", "confidence", "annual_wape", "monthly_wape", "mean_annual",
+                                              "step_raw", "step_harmonized", "step_modis")}
     if unknown:
         sys.exit(f"Haritada karsiligi olmayan il adlari: {sorted(unknown)} (ALIAS'a ekleyin)")
     assert len(provinces) == 81 and len(validation) == 81
-    data = {"meta": {"sample": False, "generated": "scripts/build_atlas_json.py",
-                     "harmonized_at": harm["meta"]["generated_at"], "notes": NOTES, "sensors": sensors},
-            "provinces": provinces, "validation": validation}
+    assert all(set(p) == set(COLS) for p in provinces.values())
+    regions = {c: {"name": r["name"], "factors": r["factors"]} for c, r in harm["regions"].items()}
+    meta = {"sample": False, "generated": "scripts/build_atlas_json.py", "harmonized_at": harm["meta"]["generated_at"],
+            "notes": NOTES, "sensors": sensors, "viirs_from": harm["meta"]["viirs_from"],
+            "last_month": f"{sensors['merged']['to']}-12", "unit": "VIIRS-eşdeğeri tespit"}
+    data = {"meta": meta, "provinces": provinces, "validation": validation, "regions": regions}
     OUT.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
-    print(f"yazildi: {OUT} ({OUT.stat().st_size} bayt, {len(provinces)} il)\n{sensors}")
+    print(f"yazildi: {OUT} ({OUT.stat().st_size} bayt, {len(provinces)} il, {len(regions)} bolge)\n{sensors}")
 
 
 if __name__ == "__main__":
