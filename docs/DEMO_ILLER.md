@@ -49,4 +49,4 @@ const info = harmonized.provinces[name];          // confidence, annual_wape, mo
 
 Birleşmiş seri sabit kaynakları konum maskesiyle ayıklıyor; MODIS ve VIIRS sekmeleri `type == 0` kullanıyor. İzmir 2025: maskeyle 1.453, `type == 0` ile 1.910. İzmir çevresinde maskenin attığı `type 0` tespitlerinin %95'i gece ve aynı hücrelerde tekrarlıyor (sanayi tesisi). Ülke genelinde maske `type 0` tespitlerinin %3,2'sini atıyor. Üç sekmenin de aynı maskeyi kullanması önerilir.
 
-Yeniden üretim: `analysisgri\.venv\Scripts\python.exe scripts/build_harmonized.py --force` (~60 sn; il sınırlarını yoksa kendisi indirir).
+Yeniden üretim: `analysis\agri\.venv\Scripts\python.exe scripts/build_harmonized.py --force` (~60 sn; il sınırlarını yoksa kendisi indirir).
