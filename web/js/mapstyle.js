@@ -6,6 +6,7 @@ export const RAMP = ['#fffbe0', '#ffe9a0', '#fec45c', '#fd8d3c', '#ec4a25', '#b1
 export const rampStops = RAMP.flatMap((c, i) => [i / (RAMP.length - 1), c]);
 
 const FONT = ['Noto Sans Bold'];
+const CITY_FONT = ['Noto Sans Regular'];
 const FONT_IT = ['Noto Sans Italic'];
 const NAME = ['coalesce', ['get', 'name:tr'], ['get', 'name']];
 const DEM = {
@@ -30,12 +31,14 @@ const place = (id, classes, minzoom, size0, size1, color) => ({
   id, type: 'symbol', source: 'omt', 'source-layer': 'place', minzoom,
   filter: ['in', ['get', 'class'], ['literal', classes]],
   layout: {
-    'text-field': NAME, 'text-font': FONT,
+    'text-field': NAME, 'text-font': CITY_FONT,
     'text-size': ['interpolate', ['linear'], ['zoom'], minzoom, size0, 15, size1],
-    'text-letter-spacing': 0.04, 'text-max-width': 8,
+    'text-letter-spacing': 0.015, 'text-max-width': 8,
     'symbol-sort-key': ['coalesce', ['get', 'rank'], 99],
   },
-  paint: { 'text-color': color, 'text-halo-color': 'rgba(4,8,14,0.9)', 'text-halo-width': 1.6 },
+  paint: { 'text-color': color, 'text-halo-color': 'rgba(4,8,14,0.9)', 'text-halo-width': 1.3,
+    'text-halo-blur': 0.4,
+    'text-opacity': ['interpolate', ['linear'], ['zoom'], minzoom, 0, minzoom + 0.6, 1] },
 });
 
 export function buildStyle(provinces, labels) {
@@ -163,18 +166,20 @@ export function buildStyle(provinces, labels) {
         paint: { 'text-color': '#9cc6e6', 'text-halo-color': 'rgba(2,14,26,0.8)', 'text-halo-width': 1.2 },
       },
       {
-        id: 'prov-label', type: 'symbol', source: 'provLabels', minzoom: 4.4, maxzoom: 7.6,
+        // Uzakta harita sade kalır; il adları yaklaşınca belirir, yerleşim adlarına devreder.
+        id: 'prov-label', type: 'symbol', source: 'provLabels', minzoom: 6.4, maxzoom: 8.2,
         layout: {
-          'text-field': ['get', 'label'], 'text-font': FONT, 'text-letter-spacing': 0.1,
-          'text-size': ['interpolate', ['linear'], ['zoom'], 4.4, 9, 7.6, 15],
+          'text-field': ['get', 'name'], 'text-font': CITY_FONT, 'text-letter-spacing': 0.015,
+          'text-size': ['interpolate', ['linear'], ['zoom'], 6.4, 12, 8.2, 15],
           'symbol-sort-key': ['case', ['get', 'hasData'], 0, 1],
         },
         paint: {
-          'text-color': ['case', ['get', 'hasData'], '#ffe9cf', 'rgba(255,255,255,0.62)'],
-          'text-halo-color': 'rgba(4,8,14,0.92)', 'text-halo-width': 1.6,
+          'text-color': ['case', ['get', 'hasData'], '#f2ede4', 'rgba(242,237,228,0.62)'],
+          'text-halo-color': 'rgba(4,8,14,0.9)', 'text-halo-width': 1.3, 'text-halo-blur': 0.4,
+          'text-opacity': ['interpolate', ['linear'], ['zoom'], 6.4, 0, 7, 1, 7.6, 1, 8.2, 0],
         },
       },
-      place('place-city', ['city', 'town'], 7.6, 12, 22, '#ffffff'),
+      place('place-city', ['city', 'town'], 7.6, 12, 19, '#f2ede4'),
       place('place-village', ['village', 'suburb'], 10.5, 10, 15, '#e3e8ee'),
       place('place-small', ['hamlet', 'neighbourhood', 'quarter'], 13, 10, 13, '#cdd5de'),
       {
