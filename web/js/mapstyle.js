@@ -103,7 +103,7 @@ export function buildStyle(provinces, labels) {
       // Deniz, göl ve diğer su yüzeyleri: uydu dokusunu ve il rengini örten mat mavi.
       {
         id: 'sea-tint', type: 'fill', source: 'omt', 'source-layer': 'water',
-        paint: { 'fill-color': '#203f62', 'fill-opacity': 1 },
+        paint: { 'fill-color': '#bbd9f3', 'fill-opacity': 1 },
       },
       { // Tek tek uydu tespitleri (seçili yıl); yalnızca yakınlaşınca görünür.
         id: 'pts', type: 'circle', source: 'pts', minzoom: 6.2,
