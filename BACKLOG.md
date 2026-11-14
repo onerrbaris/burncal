@@ -3,7 +3,7 @@
 Repo: https://github.com/onerrbaris/burncal (private). Yeni oturum: önce `docs/HANDOFF.md`. Bulgular: `docs/REPORT.md`. `ARCHITECTURE.md` taslaktır.
 
 ## Next step
-Yeni `ARCHITECTURE.md`'yi ekipçe onayla (26 İBBS-2 bölgesi, statik site, sunucu yok), sonra T1–T5'i başlat. Yeni yöntem araştırması yok. **Ekip içi bitiş: 15 Kasım saat 15:00** (resmî kapanış 23:59).
+Yeni `ARCHITECTURE.md`'yi ekipçe onayla (4 vitrin bölgesi, statik site, sunucu yok), sonra T1–T5'i başlat. Yeni yöntem araştırması yok. **Ekip içi bitiş: 15 Kasım saat 15:00** (resmî kapanış 23:59).
 
 ## In progress
 - (yok)
@@ -32,6 +32,7 @@ Yeni `ARCHITECTURE.md`'yi ekipçe onayla (26 İBBS-2 bölgesi, statik site, sunu
 - Karşılaştırma (14 Kas akşam): resmî uyumlaştırılmış hotspot sayım ürünü yok; NASA tarafı yanık alan/FRP üzerinden gidiyor (GFED5NRT en yakın yöntem, Coskuner 2022 Türkiye için 3,9 kat). Challenge metni açıkça hotspot sayısı ve aylık karşılaştırma istiyor. Eksiklerimiz: ürün, bağımsız doğrulama, NOAA-20/21 köprüsü, gerçek arazi örtüsü.
 
 ## Decisions
+- 14 Kas gece – Yayında yalnızca 4 vitrin bölgesi (TR61, TR62, TR63, TR32); demoyu ekip sürer, jüriye bölge seçtirilmez. Betik 26 bölgeyi üretebilir, yayın listesi `SHOWCASE`.
 - 14 Kas gece – Hedef yerel etkinlik; jüri konu uzmanı değil. Öncelik çalışan ürün ve sunum; yöntem araştırması durduruldu.
 - 14 Kas gece – Alan birimi İBBS-2 (26 bölge, tüm Türkiye). Sunucu yok, her şey önceden hesaplanmış statik JSON. Serbest çizilen alan yok. Sözleşme `ARCHITECTURE.md` içinde yeniden yazıldı (8 günlük dönem ve `/api` uçları kalktı).
 - 14 Kas akşam – Ürün yönü: bölgesel takvim. Birim tek il ya da tüm coğrafi bölge değil, 3–4 ili içine alan gruplar; amaç hata oranını düşürmek (rapora göre ~1°–200 km ölçeği yıllıkta %17–23, tek il ölçeği belirgin biçimde daha kötü).

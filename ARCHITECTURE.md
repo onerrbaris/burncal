@@ -13,7 +13,7 @@ Bölgeni seç → 2000'den bugüne tek ölçekte aylık yanma takvimi, bu ayın 
 
 ## Demo hikâyesi (60 saniye)
 
-1. Türkiye haritası, 26 bölge. Jüriden biri kendi şehrini seçer.
+1. Türkiye haritası, elle doğrulanmış 4 vitrin bölgesi. Demoyu biz süreriz; jüriye bölge seçtirilmez. Antalya bölgesiyle başlanır.
 2. **Ham veri:** 2012'de yanma 3–4 katına çıkmış görünür. Bu yangın değil, uydu değişimi.
 3. **Uyumlaştır düğmesi:** basamak kaybolur. Antalya bölgesinde 2021 tek başına öne çıkar.
 4. "Bu ay nerede?" kartı: son ay, tarihsel medyana göre yüzdelik ve düz bir cümle.
@@ -23,7 +23,7 @@ Bölgeni seç → 2000'den bugüne tek ölçekte aylık yanma takvimi, bu ayın 
 ## Kapsam kararları
 
 - **Alan birimi: İBBS-2 (NUTS-2) bölgeleri**, 26 adet, çoğu 3–4 il (TR61 Antalya–Isparta–Burdur, TR62 Adana–Mersin, TR63 Hatay–Kahramanmaraş–Osmaniye, TR32 Aydın–Denizli–Muğla …). Resmî, savunulabilir, "3–4 il" kararını karşılıyor. Tek illik bölgeler (İstanbul, Ankara, İzmir) olduğu gibi kalır.
-- **Tüm Türkiye**, yalnızca Akdeniz değil: jüri kendi şehrini görebilmeli. Akdeniz bölgeleri vitrin.
+- **Yayında yalnızca 4 vitrin bölgesi:** TR61 Antalya–Isparta–Burdur, TR62 Adana–Mersin, TR63 Hatay–Kahramanmaraş–Osmaniye, TR32 Aydın–Denizli–Muğla. Hepsi hatanın ölçüldüğü ve arazi örtüsü karolarının indiği alanda. Betik 26 bölgeyi de üretebilir; hangilerinin yayınlanacağı tek bir listeyle belirlenir (`SHOWCASE`). Listeye bölge eklemek, o bölgenin takvimine elle bakıldıktan sonra olur.
 - **Zaman birimi ay.** Ölçü: VIIRS-eşdeğeri hotspot sayısı.
 - **Çarpan bölgeye özel** (12 aylık çarpan, bölgenin kendi örtüşme verisinden). Veri az olan bölgede komşularla birleşik çarpan; hangisinin kullanıldığı çıktıda yazar.
 - **Sunucu yok.** Her şey önceden hesaplanıp statik JSON olarak yayınlanır. Çizilen serbest alan yok (challenge'da isteğe bağlı; küçük alanda sonuç güvenilmez).
@@ -92,7 +92,7 @@ Metinler şablondan, hesaplanmış sayılarla üretilir; çalışma anında dil 
 |---|---|---|---|
 | T1 | Mock sözleşme dosyaları (2 bölge, gerçekçi sayılar) | `shared/mock/` | Ön yüz buradan başlar |
 | T2 | `scripts/build_site_data.py`: il poligonları → İBBS-2, maske, bölge × ay, çarpan, doğrulama, JSON + CSV | `scripts/`, `frontend/public/data/` | Zor iş. `analysis/med/` ve `analysis/experiments/.../lib.py` yeniden kullanılır |
-| T3 | Ön yüz iskeleti: harita (bölgeler rozet ve son aya göre renkli), bölge seçimi | `frontend/` | Mock'tan |
+| T3 | Ön yüz iskeleti: harita (vitrin bölgeleri son aya göre renkli, diğerleri gri), bölge seçimi | `frontend/` | Mock'tan |
 | T4 | Takvim ısı haritası (yıl × 12 ay), ham/uyumlaştırılmış düğmesi, erişilebilir renk skalası | `frontend/src/` | Demonun kalbi |
 | T5 | "Bu ay nerede" kartı, yıllık sıralama, kritik aylar, doğrulama paneli, CSV indirme | `frontend/src/` | |
 | T6 | Gerçek veriye bağla, yayınla | — | Bütünleşme incelemesi burada |
@@ -108,6 +108,7 @@ T2 ile T3–T5 paralel yürür; dosyaları ayrıktır.
 - **Arka uç / API:** 26 sabit bölge için gereksiz; yayın ve çökme riski.
 - **8 günlük dönem:** her ölçekte aylıktan kötü.
 - **Tek ülke çarpanı:** komşu bölgelerde ±%18 kalıcı yanlılık, takvimde sahte 2012 basamağı.
+- **Tüm bölgeleri yayınlamak, jüriye bölge seçtirmek:** Akdeniz dışında hata ölçülmedi; demoda kontrol edilmemiş sonuç riski.
 - **Küresel kapsam, ikinci ülke:** hedef yerel etkinlik; zaman yok.
 - **Karmaşık modeller (regresyon, boosting, olay kümeleme):** küçük ölçekte yıl sıralamasını bozuyor ya da kazancı tek aya özgü.
 
