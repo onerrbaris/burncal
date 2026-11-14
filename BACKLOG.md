@@ -3,7 +3,7 @@
 Repo: https://github.com/onerrbaris/burncal (private). Yeni oturum: önce `docs/HANDOFF.md`. Bulgular: `docs/REPORT.md`. `ARCHITECTURE.md` taslaktır.
 
 ## Next step
-15 Kasım: `web/` arayüzündeki yeni parçaları (tarih aralığı, ay kartı, Zirveler, Uyum sekmesi, CSV) gerçek tarayıcıda elle dene; CSV'yi Excel'de aç. Sonra sunum (7 slayt) ve teslim formu. **Ekip içi bitiş: 15 Kasım saat 15:00** (resmî kapanış 23:59).
+FIRMS MAP_KEY gelince: `.env` içine `FIRMS_MAP_KEY=...`, sonra `python scripts/fetch_firms_recent.py` → `build_harmonized.py --force` → `build_points.py` → `build_atlas_json.py`; sitede 2026'nın göründüğünü ve "ay sürüyor" kartını kontrol et. Ardından sunum (7 slayt) ve teslim formu. İngilizce arayüz en sona (kullanıcı kararı).
 
 ## In progress
 - (yok)
@@ -36,6 +36,7 @@ Repo: https://github.com/onerrbaris/burncal (private). Yeni oturum: önce `docs/
 - Deploy için Render + Vercel hesapları
 
 ## Done
+- 15 Kas: Arayüz sadeleşti (sensör sekmeleri, WASD, konum göstergesi, "Aylar" sekmesi kalktı; efektler kaldı). İle tıklayınca yumuşak yakınlaşma artık Windows "animasyon efektleri" kapalıyken de oynuyor (sebep buydu: tarayıcı prefers-reduced-motion bildiriyordu). Eklenenler: ay penceresi (yangın sezonu), tespit listesi CSV'si (sayılar paneldeki ham sayılarla birebir), grafik PNG/SVG, OGM sekmesi (ulusal 2001–2025 + 2025 OBM; uydu–OGM Spearman 0,04 / alan −0,33, sebebi tarım), süren ay/yıl için aynı-günler kıyası. 2026 için `scripts/fetch_firms_recent.py` hazır, MAP_KEY bekliyor. Yarım yıl yolu `BURNCAL_CUTOFF=2025-09-13` ile Chrome'da denendi.
 - Keşif: FIRMS arşivi + API, challenge kuralları, rakipler
 - Türkiye verisi indirildi (`python scripts/fetch_firms.py`)
 - Uyumlaştırma yöntemi çalışması: iki yön, seyreltme, gürültü tabanı, filtre duyarlılığı (`analysis/`)

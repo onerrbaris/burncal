@@ -1,52 +1,82 @@
 /* global maplibregl */
 import { buildStyle, LAYER_GROUPS, RAMP } from './mapstyle.js';
-import { MONTHS, LEVELS, fmt, quantile, inRange, reading, sentence, peaks, sourceOf, csvRows,
-  monthBars, calendar, calendarKey, compare, stepChart } from './charts.js';
+import { MONTHS, MON3, LEVELS, fmt, quantile, inRange, reading, sentence, peaks, sourceOf, csvRows, hotspotRows,
+  calendar, calendarKey, compare, stepChart } from './charts.js';
 
 const $ = (s) => document.querySelector(s);
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
-// MVP: hafif mod varsayılan; kamera uçuşları ve animasyonlar için adrese ?sinematik ekleyin.
+// MVP: hafif mod varsayılan; uzun kamera uçuşları ve sürekli animasyonlar için adrese ?sinematik ekleyin.
 const FAST = REDUCED || !new URLSearchParams(location.search).has('sinematik');
 const TR_BOUNDS = [[25.6, 35.7], [44.9, 42.2]];
 const up = (s) => s.toLocaleUpperCase('tr');
 const low = (s) => s.toLocaleLowerCase('tr');
+const KEY = 'merged';   // harita ve panel her zaman uyumlaştırılmış seriyi gösterir; ham sensörler "Uyum" sekmesinde
 
-// Sekmeler. "merged" verisi atlas.json'a eklendiğinde sekme kendiliğinden dolar.
-const SENSORS = [
-  { key: 'modis', label: 'MODIS' },
-  { key: 'viirs', label: 'VIIRS' },
-  { key: 'merged', label: 'Birleşmiş' },
-];
-const TABS = [['months', 'Aylar'], ['calendar', 'Takvim'], ['compare', 'Kıyas'], ['peaks', 'Zirveler'], ['step', 'Uyum']];
+const TABS = [['calendar', 'Takvim'], ['compare', 'Kıyas'], ['peaks', 'Zirveler'], ['step', 'Uyum'], ['ogm', 'OGM']];
 
-// month: okunan ay (0–11, varsayılan son veri ayı Aralık); from/to: dönem; custom: dönemi kullanıcı mı seçti.
-const state = { sensor: 'merged', year: null, month: 11, from: null, to: null, custom: false, sel: null, tab: 'months', playing: false };
-let data, geo, map, timer, ready = false, hovered = null, orbitOK = false, orbitRaf = 0;
-const bboxes = {}, maxTotal = {}, ranges = {};
+// month: okunan ay (0–11); from/to: dönem yılları; win: sezon penceresi [ilk ay, son ay]; custom: dönemi kullanıcı mı seçti.
+const state = { year: null, month: 11, from: null, to: null, win: [0, 11], custom: false, sel: null, tab: 'calendar', playing: false };
+let data, geo, ogm, map, timer, ready = false, hovered = null, orbitOK = false, orbitRaf = 0;
+let RANGE, LY, LM, LD, PARTIAL;   // seri aralığı; son veri yılı, ayı (0–11), günü; son yıl bitmemiş mi
+const bboxes = {}, provIdx = {};
 
 // ── Veri ────────────────────────────────────────────────
-const sum = (a) => a.reduce((x, y) => x + y, 0);
-const series = (name, sensor = state.sensor) => data.provinces[name]?.[sensor] || null;
-const total = (name, year = state.year, sensor = state.sensor) => {
-  const row = series(name, sensor)?.[year];
-  return row ? sum(row) : null;
-};
+const sum = (a) => a.reduce((x, y) => x + (y ?? 0), 0);
+const series = (name) => data.provinces[name]?.[KEY] || null;
+const fullWin = () => state.win[0] === 0 && state.win[1] === 11;
+const inWin = (m) => m >= state.win[0] && m <= state.win[1];
+const winLabel = () => (fullWin() ? '' : `${MON3[state.win[0]]}–${MON3[state.win[1]]}`);
+const isPartial = (y, m) => PARTIAL && y === LY && m === LM;
+const throughLabel = () => `${LD} ${MONTHS[LM]} ${LY}`;
+
+// Seçili yılın sezon penceresindeki toplamı (harita, sıralama, KPI).
+function total(name, year = state.year) {
+  const row = series(name)?.[year];
+  return row ? sum(row.filter((_, m) => inWin(m))) : null;
+}
+
+// Bitmemiş yılla adil kıyas: her yılın aynı takvim penceresi (pencerede, son veri gününe kadar).
+function likeTotal(name, y) {
+  const row = series(name)?.[y];
+  if (!row) return null;
+  let t = 0;
+  for (let m = state.win[0]; m <= Math.min(state.win[1], LM - 1); m++) t += row[m] ?? 0;
+  if (inWin(LM)) {
+    const i = data.partial.years.indexOf(y);
+    t += y === LY ? row[LM] ?? 0 : data.partial.mtd[name]?.[i] ?? 0;
+  }
+  return t;
+}
+
+// Süren ay için bütün yılların aynı günleri yerleştirilmiş seri: yarım ay, yarım aylarla kıyaslanır.
+const cmpCache = {};
+function cmpYears(name) {
+  if (!PARTIAL) return series(name);
+  if (cmpCache[name]) return cmpCache[name];
+  const out = {}, mtd = data.partial.mtd[name] || [];
+  for (const [y, row] of Object.entries(series(name) || {})) {
+    const i = data.partial.years.indexOf(+y), r = row.slice();
+    if (+y !== LY && i >= 0) r[LM] = mtd[i];
+    out[y] = r;
+  }
+  return (cmpCache[name] = out);
+}
+// Ay okuması: süren ay için cmpYears, diğer aylar için tam seri.
+const rdFor = (name) => (y, m) => reading(isPartial(y, m) ? cmpYears(name) : series(name), y, m, state.from, state.to);
 
 function indexData() {
-  for (const { key } of SENSORS) {
-    let lo = Infinity, hi = -Infinity, mx = 0;
-    for (const p of Object.values(data.provinces)) {
-      for (const [y, row] of Object.entries(p[key] || {})) {
-        lo = Math.min(lo, +y); hi = Math.max(hi, +y); mx = Math.max(mx, sum(row));
-      }
-    }
-    if (hi >= lo) { ranges[key] = [lo, hi]; maxTotal[key] = mx || 1; }
-  }
+  let lo = Infinity, hi = -Infinity;
+  for (const p of Object.values(data.provinces)) for (const y of Object.keys(p[KEY] || {})) { lo = Math.min(lo, +y); hi = Math.max(hi, +y); }
+  RANGE = [lo, hi];
+  const t = (data.meta.data_through || `${hi}-12-31`).split('-').map(Number);
+  [LY, LM, LD] = [t[0], t[1] - 1, t[2]];
+  PARTIAL = !!data.partial && !(LM === 11 && LD === 31);
+  state.month = LM;
 }
 
 function geometry() {
   const labels = [];
-  for (const f of geo.features) {
+  geo.features.forEach((f, idx) => {
     const polys = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates;
     let b = [180, 90, -180, -90], best = null, bestArea = -1;
     for (const poly of polys) {
@@ -61,9 +91,10 @@ function geometry() {
     }
     const name = f.properties.name;
     bboxes[name] = [[b[0], b[1]], [b[2], b[3]]];
+    provIdx[name] = idx;
     labels.push({ type: 'Feature', geometry: { type: 'Point', coordinates: best },
       properties: { name, label: up(name), hasData: !!data.provinces[name] } });
-  }
+  });
   return { type: 'FeatureCollection', features: labels };
 }
 
@@ -89,19 +120,21 @@ function goHome(duration = 2600) {
   move({ ...cam, pitch: 38, bearing: 0, padding: pads() }, duration);
 }
 
+// Kamera geçişi. Hafif modda (varsayılan) kısa, yumuşak bir süzülme: yavaş başlar, yavaş durur.
+// "essential": işletim sisteminde animasyonlar kapalı olsa da (Windows "animasyon efektleri") bu kısa
+// geçiş oynar; sürekli dönen kamera ve akan sınır çizgisi o durumda kapalı kalır.
 function move(cam, duration) {
-  if (REDUCED) return map.jumpTo(cam);
   if (!FAST) return map.flyTo({ ...cam, duration, curve: 1.5, essential: true });
-  // Hafif mod: kısa, yumuşak bir süzülme (yavaş başlar, yavaş durur); eğim az tutulur.
   const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
-  map.flyTo({ ...cam, pitch: Math.min(cam.pitch ?? 0, 30), bearing: 0, duration: 1500, curve: 1.15, easing: ease, essential: true });
+  map.flyTo({ ...cam, pitch: Math.min(cam.pitch ?? 0, 30), bearing: 0, duration: 1400, curve: 1.2, easing: ease, essential: true });
 }
 
-// Ateş noktaları: seçili yılın tespitleri. Birleşmiş görünümde 2012'den önce yalnızca MODIS vardır.
+// Ateş noktaları: seçili yılın tespitleri (5'li gruplar: x, y, gün, frp, il). 2012'den önce yalnızca MODIS vardır.
 const ptCache = {};
 let ptKey = '', ptStyle = '', ptTimer = 0;
 const PT_MINZOOM = 5.8; // katman 6.2'de görünür olur; biraz önce hazırlanır
-const ptSensor = () => (state.sensor === 'modis' || (state.sensor === 'merged' && state.year < 2012) ? 'modis' : 'viirs');
+const ptSensor = () => (state.year < 2012 ? 'modis' : 'viirs');
+const loadYear = (y) => ptCache[y] || (ptCache[y] = fetch(`data/points/${y}.json`).then((r) => (r.ok ? r.json() : {})).catch(() => { delete ptCache[y]; return {}; }));
 // Bir yılın noktaları on binlerce tespittir. Yalnızca noktalar görünürken ve yıl değişimi durulunca
 // yüklenir; böylece yıl kaydırıcısı ve oynatma, uzak görünümde haritayı yeniden kurmaz.
 function updatePoints() {
@@ -112,14 +145,16 @@ async function loadPoints() {
   const src = map && map.getSource('pts');
   if (!src || !state.year || map.getZoom() < PT_MINZOOM) return;
   if (map.getLayoutProperty('pts', 'visibility') === 'none') return;
-  const s = ptSensor(), y = state.year, key = y + s;
+  const s = ptSensor(), y = state.year, key = `${y}${s}${state.win}`;
   if (key === ptKey) return;
   ptKey = key;
   try {
-    const d = ptCache[y] || (ptCache[y] = await fetch(`data/points/${y}.json`).then((r) => (r.ok ? r.json() : {})));
+    const d = await loadYear(y);
     if (ptKey !== key) return;
-    const a = d[s] || [], coordinates = new Array(a.length / 3);
-    for (let i = 0, j = 0; i < a.length; i += 3, j++) coordinates[j] = [a[i] / 1000, a[i + 1] / 1000];
+    const a = d[s] || [], coordinates = [];
+    for (let i = 0; i < a.length; i += 5) {
+      if (fullWin() || inWin(new Date(Date.UTC(y, 0, a[i + 2])).getUTCMonth())) coordinates.push([a[i] / 1000, a[i + 1] / 1000]);
+    }
     // Tek çok-noktalı geometri: on binlerce ayrı nesne kurmaktan çok daha hafif.
     src.setData({ type: 'Feature', properties: {}, geometry: { type: 'MultiPoint', coordinates } });
     if (ptStyle === s) return;
@@ -138,9 +173,8 @@ async function loadPoints() {
 // diğerlerini tek renge sıkıştırmasın.
 let legendVals = [];
 function paintMap() {
-  const mx = maxTotal[state.sensor];
   const tot = {};
-  for (const f of geo.features) { const n = f.properties.name; tot[n] = mx ? total(n) : null; }
+  for (const f of geo.features) { const n = f.properties.name; tot[n] = total(n); }
   legendVals = Object.values(tot).filter((t) => t != null).sort((a, b) => a - b);
   const last = Math.max(1, legendVals.length - 1);
   for (const f of geo.features) {
@@ -174,7 +208,6 @@ function initMap() {
     attributionControl: false, fadeDuration: 200,
   });
   map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
-  map.keyboard.disable(); // kendi WASD/ok tuşu döngümüz var
   window.__map = map;
 
   map.on('load', () => {
@@ -194,7 +227,7 @@ function initMap() {
       map.getCanvas().style.cursor = 'pointer';
     }
     const t = total(name);
-    showTip(`<b>${name}</b>${t == null ? 'Veri yok' : `${fmt(t)} tespit · ${state.year}`}`, e.originalEvent.clientX, e.originalEvent.clientY);
+    showTip(`<b>${name}</b>${t == null ? 'Veri yok' : `${fmt(t)} tespit · ${periodLabel()}`}`, e.originalEvent.clientX, e.originalEvent.clientY);
   });
   map.on('mouseleave', 'prov-hover', () => {
     if (hovered) map.setFeatureState({ source: 'provinces', id: hovered }, { hover: false });
@@ -203,11 +236,10 @@ function initMap() {
   map.on('click', 'prov-hover', (e) => select(e.features[0].properties.name));
 
   for (const ev of ['mousedown', 'touchstart', 'wheel']) map.on(ev, stopOrbit);
-  map.on('move', readout);
+  map.on('rotate', () => { $('#needle').style.transform = `rotate(${-map.getBearing()}deg)`; });
   map.on('zoom', () => { if (map.getZoom() >= PT_MINZOOM) updatePoints(); });
-  readout();
 
-  // Seçili il sınırında akan çizgi.
+  // Seçili il sınırında akan çizgi (yalnızca sinematik modda).
   const dash = [[0, 4, 3], [0.5, 4, 2.5], [1, 4, 2], [1.5, 4, 1.5], [2, 4, 1], [2.5, 4, 0.5], [3, 4, 0],
     [0, 0.5, 3, 3.5], [0, 1, 3, 3], [0, 1.5, 3, 2.5], [0, 2, 3, 2], [0, 2.5, 3, 1.5], [0, 3, 3, 1], [0, 3.5, 3, 0.5]];
   let di = 0;
@@ -218,18 +250,18 @@ function initMap() {
   }, 70);
 }
 
-function readout() {
-  const c = map.getCenter();
-  $('#readout').innerHTML = [['Enlem', c.lat.toFixed(3) + '°'], ['Boylam', c.lng.toFixed(3) + '°'], ['Yakınlık', map.getZoom().toFixed(1)]]
-    .map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('');
-  $('#needle').style.transform = `rotate(${-map.getBearing()}deg)`;
+// "2026 (13 Kas itibarıyla)", "2021 · Haz–Eki" gibi kısa dönem etiketi.
+function periodLabel(y = state.year) {
+  const w = winLabel();
+  const part = PARTIAL && y === LY && inWin(LM) ? ` (${LD} ${MON3[LM]} itibarıyla)` : '';
+  return `${y}${w ? ' · ' + w : ''}${part}`;
 }
 
 // ── Seçim ───────────────────────────────────────────────
 function select(name, fly = true) {
   stopOrbit();
   state.sel = name;
-  document.body.classList.toggle('has-panel', !!name || !ranges[state.sensor]);
+  document.body.classList.toggle('has-panel', !!name);
   const f = ['==', ['get', 'name'], name || ''];
   map.setFilter('sel-glow', f); map.setFilter('sel-line', f);
   paintMap(); renderPanel(); renderRank();
@@ -242,78 +274,39 @@ function select(name, fly = true) {
   map.once('moveend', startOrbit);
 }
 
-// ── Sensör sekmeleri ────────────────────────────────────
-function renderSensors() {
-  const nav = $('#sensorTabs');
-  for (const s of SENSORS) {
-    const r = ranges[s.key];
-    const b = document.createElement('button');
-    b.role = 'tab'; b.dataset.key = s.key;
-    b.innerHTML = `<b>${s.label}</b><small>${r ? `${r[0]}–${r[1]}` : 'yakında'}</small>`;
-    b.onclick = () => setSensor(s.key);
-    nav.append(b);
-  }
-  nav.addEventListener('keydown', (e) => {
-    const d = { ArrowRight: 1, ArrowLeft: -1 }[e.key];
-    if (!d) return;
-    const i = SENSORS.findIndex((s) => s.key === state.sensor);
-    const next = SENSORS[(i + d + SENSORS.length) % SENSORS.length].key;
-    setSensor(next); nav.querySelector(`[data-key=${next}]`).focus(); e.stopPropagation();
-  });
-  addEventListener('resize', moveIndicator);
-  document.fonts?.ready.then(moveIndicator);
-}
-function moveIndicator() {
-  const b = $(`#sensorTabs [data-key=${state.sensor}]`), ind = $('.seg-ind');
-  ind.style.width = b.offsetWidth + 'px';
-  ind.style.transform = `translateX(${b.offsetLeft}px)`;
-}
-function setSensor(key) {
-  state.sensor = key;
-  for (const b of document.querySelectorAll('#sensorTabs button')) {
-    const on = b.dataset.key === key;
-    b.setAttribute('aria-selected', on); b.tabIndex = on ? 0 : -1;
-  }
-  moveIndicator();
-  const r = ranges[key], slider = $('#year');
-  slider.disabled = !r; $('#play').disabled = !r;
-  if (r) {
-    slider.min = r[0]; slider.max = r[1];
-    state.year = Math.min(r[1], Math.max(r[0], state.year ?? r[1]));
-    clampRange();
-    $('#yearTicks').innerHTML = Array.from({ length: r[1] - r[0] + 1 }, (_, i) => r[0] + i)
-      .map((y) => `<span>${y === r[0] || y === r[1] || (y % 5 === 0 && y - r[0] > 1 && r[1] - y > 1) ? y : ''}</span>`).join('');
-  } else stopPlay();
-  renderLegend();
-  setYear(state.year);
-}
-
 // ── Yıl ─────────────────────────────────────────────────
+function initYears() {
+  const [lo, hi] = RANGE, slider = $('#year');
+  slider.min = lo; slider.max = hi;
+  state.year = hi;
+  clampRange();
+  $('#yearTicks').innerHTML = Array.from({ length: hi - lo + 1 }, (_, i) => lo + i)
+    .map((y) => `<span>${y === lo || y === hi || (y % 5 === 0 && y - lo > 1 && hi - y > 1) ? y : ''}</span>`).join('');
+  setYear(hi);
+}
 function setYear(y) {
   state.year = +y;
-  const r = ranges[state.sensor], slider = $('#year');
-  if (r) {
-    slider.value = y;
-    slider.style.setProperty('--p', ((y - r[0]) / (r[1] - r[0])) * 100 + '%');
-  }
-  $('#yearOut').textContent = r ? y : '—';
-  document.body.classList.toggle('has-panel', !!state.sel || !r);
+  const [lo, hi] = RANGE, slider = $('#year');
+  slider.value = y;
+  slider.style.setProperty('--p', ((y - lo) / (hi - lo)) * 100 + '%');
+  $('#yearOut').textContent = y;
+  // Bitmemiş yılda okunacak ay, henüz verisi olmayan bir ay kalmasın.
+  if (PARTIAL && state.year === LY && state.month > LM) state.month = LM;
   if (ready) paintMap();
   renderPanel(); renderRank();
 }
 function stopPlay() { state.playing = false; clearInterval(timer); $('#play').classList.remove('on'); }
 function togglePlay() {
-  if (state.playing || !ranges[state.sensor]) return stopPlay();
+  if (state.playing) return stopPlay();
   state.playing = true; $('#play').classList.add('on');
-  const [lo, hi] = ranges[state.sensor];
+  const [lo, hi] = RANGE;
   if (state.year >= hi) setYear(lo);
   timer = setInterval(() => (state.year >= hi ? stopPlay() : setYear(state.year + 1)), 1100);
 }
 
 function renderLegend() {
-  const mx = maxTotal[state.sensor];
   const lv = legendVals, n = lv.length;
-  $('#legend').innerHTML = mx && n ? `<b>Yıllık tespit · iller sıralı</b><div class="bar" style="background:linear-gradient(90deg,${RAMP.join(',')})"></div>
+  $('#legend').innerHTML = n ? `<b>${fullWin() ? 'Yıllık' : winLabel()} tespit · iller sıralı</b><div class="bar" style="background:linear-gradient(90deg,${RAMP.join(',')})"></div>
     <div class="ends"><span>${fmt(lv[0])}</span><span>${fmt(lv[n >> 1])}</span><span>${fmt(lv[n - 1])}</span></div>
     <div class="ends"><span>Kırmızı noktalar: ${ptSensor() === 'modis' ? 'MODIS' : 'VIIRS'} tespitleri (yakınlaşınca)</span></div>` : '';
 }
@@ -323,36 +316,34 @@ function renderRank() {
     .sort((a, b) => b[1] - a[1]).slice(0, 6);
   $('#rank').hidden = !rows.length;
   if (!rows.length) return;
-  $('#rankTitle').textContent = `En yoğun iller · ${state.year}`;
+  $('#rankTitle').textContent = `En yoğun iller · ${periodLabel()}`;
   $('#rankList').innerHTML = rows.map(([n, t], i) =>
     `<li><button data-name="${n}" class="${n === state.sel ? 'on' : ''}"><i>${i + 1}</i><span>${n}</span><em>${fmt(t)}</em>
-     <u style="width:calc((100% - 34px) * ${t / rows[0][1]})"></u></button></li>`).join('');
+     <u style="width:calc((100% - 34px) * ${rows[0][1] ? t / rows[0][1] : 0})"></u></button></li>`).join('');
 }
 
 // ── Panel ───────────────────────────────────────────────
-const chips = () => `<div class="chips">${Object.keys(data.provinces).sort((a, b) => a.localeCompare(b, 'tr'))
-  .map((n) => `<button data-name="${n}">${n}</button>`).join('')}</div>`;
 const head = (eyebrow, title) => `<div class="p-head"><span class="eyebrow">${eyebrow}</span><h2>${title}</h2>
   <button class="close" aria-label="Paneli kapat" title="Kapat (Esc)">×</button></div>`;
 const dec = (n, d = 1) => n.toLocaleString('tr-TR', { minimumFractionDigits: d, maximumFractionDigits: d });
 const viirsYear = () => +(data.meta.viirs_from || '2012-02').slice(0, 4);
 
-// Dönem: kullanıcı seçmediyse etkin sensörün tüm yılları; seçtiyse sensör aralığına kırpılır.
+// Dönem: kullanıcı seçmediyse bütün yıllar; seçtiyse seri aralığına kırpılır.
 function clampRange() {
-  const r = ranges[state.sensor];
-  if (!r) return;
+  const r = RANGE;
   let f = state.custom ? Math.max(r[0], state.from) : r[0], t = state.custom ? Math.min(r[1], state.to) : r[1];
   if (!(f <= t)) { f = r[0]; t = r[1]; state.custom = false; }
   state.from = f; state.to = t;
 }
 
 function rangeRow() {
-  const r = ranges[state.sensor], n = state.to - state.from + 1, full = state.from === r[0] && state.to === r[1];
-  const opt = (sel, lo, hi) => {
+  const r = RANGE, n = state.to - state.from + 1, full = state.from === r[0] && state.to === r[1];
+  const opt = (sel, lo, hi, lab = (v) => v) => {
     let o = '';
-    for (let y = lo; y <= hi; y++) o += `<option${y === sel ? ' selected' : ''}>${y}</option>`;
+    for (let v = lo; v <= hi; v++) o += `<option value="${v}"${v === sel ? ' selected' : ''}>${lab(v)}</option>`;
     return o;
   };
+  const season = state.win[0] === 5 && state.win[1] === 9;
   return `<div class="range" role="group" aria-label="Dönem seçimi">
       <span class="lbl">Dönem</span>
       <select id="rFrom" aria-label="Dönem başlangıç yılı">${opt(state.from, r[0], state.to)}</select>
@@ -361,127 +352,171 @@ function rangeRow() {
       <small>${n} yıl</small>
       ${full ? '' : '<button class="link" id="rAll">Tüm yıllar</button>'}
     </div>
-    <p class="range-note">Takvim, medyan, yüzdelik, zirveler ve CSV bu döneme göre hesaplanır.</p>`;
+    <div class="range" role="group" aria-label="Ay aralığı">
+      <span class="lbl">Aylar</span>
+      <select id="wFrom" aria-label="İlk ay">${opt(state.win[0], 0, state.win[1], (m) => MON3[m])}</select>
+      <span aria-hidden="true">–</span>
+      <select id="wTo" aria-label="Son ay">${opt(state.win[1], state.win[0], 11, (m) => MON3[m])}</select>
+      ${season ? '' : '<button class="link" id="wSeason" title="Haziran–Ekim">Yangın sezonu</button>'}
+      ${fullWin() ? '' : '<button class="link" id="wAll">Bütün yıl</button>'}
+    </div>
+    <p class="range-note">Toplamlar, takvim, medyan, zirveler, harita ve indirilen dosyalar bu döneme göre hesaplanır.</p>`;
 }
 
 // "Bu ay tarihsel medyana göre nerede?" kartı: seçili ay (varsayılan: son veri ayı).
-function readCard(years, val, label) {
-  const y = state.year, m = state.month, rng = ranges[state.sensor];
-  const r = reading(years, y, m, state.from, state.to);
+function readCard(name, val) {
+  const y = state.year, m = state.month;
+  const r = rdFor(name)(y, m);
   if (!r) return '';
-  const latest = y === rng[1] && m === 11, lv = r.level ? LEVELS[r.level] : null;
-  let src = `${label} ham sayı`;
-  if (state.sensor === 'merged') {
-    const reg = val && data.regions?.[val.region];
-    src = sourceOf(y, m, data.meta.viirs_from) === 'viirs' ? 'VIIRS gözlemi' : `MODIS × ${reg ? dec(reg.factors[m], 2) : 'çarpan'}`;
-  }
-  const months = MONTHS.map((n, i) => `<option value="${i}"${i === m ? ' selected' : ''}>${n}</option>`).join('');
+  const latest = y === LY && m === LM, part = isPartial(y, m), lv = r.level ? LEVELS[r.level] : null;
+  const reg = val && data.regions?.[val.region];
+  const src = sourceOf(y, m, data.meta.viirs_from) === 'viirs' ? 'VIIRS gözlemi' : `MODIS × ${reg ? dec(reg.factors[m], 2) : 'çarpan'}`;
+  const lastM = y === LY ? LM : 11;
+  const months = MONTHS.map((n, i) => (i > lastM ? '' : `<option value="${i}"${i === m ? ' selected' : ''}>${n}</option>`)).join('');
+  const label = part ? `1–${LD} ${MONTHS[m]} ${y}` : null;
   return `<section class="read${r.level ? ' lv-' + r.level : ''}" aria-label="Seçili ayın dönem medyanına göre yeri">
       <div class="read-top">
         <select id="mSel" aria-label="Okunacak ay">${months}</select><b>${y}</b>
-        ${latest ? '<span class="pill">son veri</span>' : '<button class="link" id="latest">Son aya dön</button>'}
+        ${latest ? `<span class="pill">${part ? 'ay sürüyor' : 'son veri'}</span>` : '<button class="link" id="latest">Son aya dön</button>'}
         ${lv ? `<span class="lvl" title="Aynı takvim ayının dönemdeki diğer yıllarına göre: 25. yüzdeliğin altı düşük, 25–75 normal, 75–95 yüksek, 95 üstü olağanüstü.">${lv.mark ? lv.mark + ' ' : ''}${lv.label}</span>` : ''}
       </div>
-      <p class="say">${sentence(r)}</p>
+      <p class="say">${sentence(r, label)}</p>
       <dl class="nums">
         <div><dt>Değer</dt><dd>${fmt(r.v)}</dd></div>
         <div><dt>Medyan ${state.from}–${state.to}</dt><dd>${fmt(r.med)}</dd></div>
         <div><dt>Yüzdelik</dt><dd>${r.pct == null ? '—' : '%' + Math.round(r.pct)}</dd></div>
         <div><dt>Kaynak</dt><dd>${src}</dd></div>
       </dl>
-      <p class="fine">Veri ${MONTHS[11]} ${rng[1]} ile bitiyor. Takvimde bir hücreye ya da aylık sütuna tıklayarak başka bir ayı okuyun.</p>
+      <p class="fine">${part ? `Ay henüz bitmedi: her yılın 1–${LD} ${MONTHS[m]} değerleriyle kıyaslandı. ` : ''}Veri ${throughLabel()} tarihine kadar. Takvimde bir hücreye ya da Kıyas'ta bir sütuna tıklayarak başka bir ayı okuyun.</p>
     </section>`;
 }
 
 function caution(val) {
-  if (state.sensor !== 'merged' || val?.confidence !== 'low') return '';
+  if (val?.confidence !== 'low') return '';
   const why = val.mean_annual < 100
     ? `Bu ilde yılda ortalama ${fmt(val.mean_annual)} tespit var; aylık sayılar güvenilir bir okuma için çok az.`
     : `Bu ilde doğrulama hatası yüksek (yıllık %${Math.round(val.annual_wape * 100)}); aylık okumalar güvenilir değil.`;
   return `<div class="caution" role="note"><b>Dikkat:</b> ${why} Yıllık toplamlara ve uzun dönem örüntüsüne bakın.</div>`;
 }
 
-function peaksView(years) {
-  const { topYears, topMonths } = peaks(years, state.from, state.to);
-  const list = (rows, attrs, name, on) => `<ol class="top">${rows.map((r, i) => `<li><button ${attrs(r)} class="${on(r) ? 'on' : ''}">
-      <i>${i + 1}</i><span>${name(r)}</span><em>${fmt(r.at(-1))}</em><u style="width:calc((100% - 34px) * ${rows[0].at(-1) ? r.at(-1) / rows[0].at(-1) : 0})"></u></button></li>`).join('')}</ol>`;
-  return `<h4>En yüksek yıllar · ${state.from}–${state.to}</h4><p>Yıllık toplam; tıklayınca o yıl seçilir.</p>
-    ${list(topYears, ([y]) => `data-year="${y}"`, ([y]) => y, ([y]) => y === state.year)}
+function peaksView(name, years) {
+  const { topYears, topMonths } = peaks(years, state.from, state.to, state.win, (y) => total(name, y));
+  const list = (rows, attrs, label, on) => `<ol class="top">${rows.map((r, i) => `<li><button ${attrs(r)} class="${on(r) ? 'on' : ''}">
+      <i>${i + 1}</i><span>${label(r)}</span><em>${fmt(r.at(-1))}</em><u style="width:calc((100% - 34px) * ${rows[0].at(-1) ? r.at(-1) / rows[0].at(-1) : 0})"></u></button></li>`).join('')}</ol>`;
+  const w = winLabel();
+  return `<h4>En yüksek yıllar · ${state.from}–${state.to}${w ? ' · ' + w : ''}</h4><p>${w ? `${w} toplamı` : 'Yıllık toplam'}; tıklayınca o yıl seçilir.</p>
+    ${list(topYears, ([y]) => `data-year="${y}"`, ([y]) => (PARTIAL && y === LY ? `${y} <small>(${LD} ${MON3[LM]} itibarıyla)</small>` : y), ([y]) => y === state.year)}
     <h4 class="gap">En yüksek aylar</h4><p>Tek tek ayların değeri; tıklayınca o ay okunur.</p>
-    ${list(topMonths, ([y, m]) => `data-year="${y}" data-month="${m}"`, ([y, m]) => `${MONTHS[m]} ${y}`, ([y, m]) => y === state.year && m === state.month)}`;
+    ${list(topMonths, ([y, m]) => `data-year="${y}" data-month="${m}"`, ([y, m]) => `${MONTHS[m]} ${y}${isPartial(y, m) ? ` <small>(1–${LD})</small>` : ''}`, ([y, m]) => y === state.year && m === state.month)}`;
 }
 
 function stepView(p, val) {
   const vy = viirsYear(), reg = val && data.regions?.[val.region];
   const fac = reg ? `<p class="fine">${vy} öncesi çarpan, ${val.region} bölgesi (${reg.name}), ay ay:</p>
-    <div class="fac">${reg.factors.map((f, i) => `<span><i>${MONTHS[i].slice(0, 3)}</i>${dec(f)}</span>`).join('')}</div>` : '';
+    <div class="fac">${reg.factors.map((f, i) => `<span><i>${MON3[i]}</i>${dec(f)}</span>`).join('')}</div>` : '';
   const step = val?.step_raw != null ? `<p class="say">2009–2011'den 2012–2014'e ortalama yıllık değişim: ham seride ×${dec(val.step_raw, 2)},
     birleşmiş seride ×${dec(val.step_harmonized, 2)}. MODIS tek başına ×${dec(val.step_modis, 2)} gösteriyor; birleşmiş seri buna yakın olmalı.</p>` : '';
+  const lastFull = PARTIAL ? LY - 1 : LY;
   return `<h4>Ham seri ve birleşmiş seri</h4>
     <p>Yıllık toplam. Ham seri ${vy}'ye kadar MODIS, sonra VIIRS sayar; VIIRS daha küçük ateşleri de gördüğü için ${vy}'de yapay bir sıçrama oluşur.
-    Birleşmiş seri ${vy} öncesini MODIS × bölgesel aylık çarpanla VIIRS ölçeğine taşır.</p>
+    Birleşmiş seri ${vy} öncesini MODIS × bölgesel aylık çarpanla VIIRS ölçeğine taşır.${PARTIAL ? ` ${LY} bitmediği için çizilmedi.` : ''}</p>
     <div class="key"><span><i class="raw"></i>Ham (MODIS → VIIRS)</span><span><i class="harm"></i>Birleşmiş</span>
       <span><i class="dot o"></i>MODIS × çarpan</span><span><i class="dot"></i>VIIRS gözlemi</span></div>
-    ${stepChart(p, vy, state.year)}${step}${fac}`;
+    ${stepChart(p, vy, state.year, lastFull)}${step}${fac}`;
+}
+
+// OGM'nin bildirdiği orman yangınları ile uydu tespitleri (Türkiye geneli, yıllık).
+function ogmView(name) {
+  if (!ogm) return '<p>OGM verisi yüklenemedi.</p>';
+  const lastFull = PARTIAL ? LY - 1 : LY;
+  const ys = Object.keys(ogm.national).map(Number).filter((y) => y >= RANGE[0] && y <= lastFull).sort((a, b) => a - b);
+  const sat = ys.map((y) => sum(Object.keys(data.provinces).map((n) => sum(series(n)?.[y] || []))));
+  const fires = ys.map((y) => ogm.national[y].fires), ha = ys.map((y) => ogm.national[y].ha);
+  // Spearman sıra korelasyonu: hangi yıllar yüksek, iki kaynak aynı sırayı veriyor mu?
+  const rank = (a) => { const o = a.map((v, i) => [v, i]).sort((x, y) => x[0] - y[0]), r = []; o.forEach(([, i], k) => { r[i] = k; }); return r; };
+  const rho = (a, b) => { const ra = rank(a), rb = rank(b), n = a.length; return 1 - (6 * ra.reduce((s, v, i) => s + (v - rb[i]) ** 2, 0)) / (n * (n * n - 1)); };
+  const W = 340, H = 190, L = 34, R = 34, T = 14, B = 22, ih = H - T - B;
+  const x = (i) => L + 4 + (i / (ys.length - 1)) * (W - L - R - 8);
+  const mS = Math.max(...sat) * 1.05, mF = Math.max(...fires) * 1.05;
+  const yS = (v) => T + ih - (v / mS) * ih, yF = (v) => T + ih - (v / mF) * ih;
+  let s = `<line x1="${L}" x2="${W - R}" y1="${T + ih}" y2="${T + ih}" class="grid base"/>`;
+  s += `<text x="${L - 6}" y="${T + 4}" class="tick" text-anchor="end">${fmt(mS / 1000)}b</text><text x="${W - R + 6}" y="${T + 4}" class="tick">${fmt(mF)}</text>`;
+  ys.forEach((y, i) => {
+    const bw = Math.max(3, (W - L - R) / ys.length - 3);
+    s += `<rect x="${x(i) - bw / 2}" y="${yF(fires[i])}" width="${bw}" height="${T + ih - yF(fires[i])}" rx="1.5" class="band"/>`;
+    if (y === ys[0] || y === ys.at(-1) || y % 5 === 0) s += `<text x="${x(i)}" y="${H - 6}" class="tick${y === state.year ? ' on' : ''}" text-anchor="middle">${y}</text>`;
+  });
+  s += `<path d="${sat.map((v, i) => `${i ? 'L' : 'M'}${x(i)},${yS(v)}`).join('')}" class="ln-harm"/>`;
+  ys.forEach((y, i) => {
+    s += `<circle cx="${x(i)}" cy="${yS(sat[i])}" r="${y === state.year ? 4 : 2.6}" class="pt-harm${y === state.year ? ' on' : ''}"/>`;
+    s += `<rect x="${x(i) - 6}" y="0" width="12" height="${H - 16}" class="hit" data-year="${y}" data-tip="<b>${y}</b>Uydu (birleşmiş): ${fmt(sat[i])} tespit<br>OGM: ${fmt(fires[i])} orman yangını · ${fmt(ha[i])} ha"/>`;
+  });
+  const key = name.toLocaleUpperCase('tr');
+  const obm = Object.entries(ogm.obm2025).find(([u]) => u.toLocaleUpperCase('tr') === key);
+  const p25 = series(name)?.[2025];
+  const local = obm
+    ? `<h4 class="gap">${name} Orman Bölge Müdürlüğü · 2025</h4><p class="say">OGM: <b>${fmt(obm[1].fires)}</b> orman yangını, ${fmt(obm[1].ha)} ha yanan alan. Uydu, ${name} ilinde 2025'te ${p25 ? fmt(sum(p25)) : '—'} tespit görüyor.</p>
+       <p class="fine">Bölge müdürlüğü genellikle birkaç ili kapsar; il sınırıyla birebir karşılaştırılamaz. İl bazında yıllık OGM verisi yalnızca 2025 için bulundu.</p>`
+    : `<p class="fine">${name} adına bir orman bölge müdürlüğü yok; 2025 bölge tablosunda bu il başka bir müdürlüğe bağlı.</p>`;
+  return `<h4>Türkiye: uydu tespitleri ve OGM'nin bildirdiği orman yangınları</h4>
+    <p>Çizgi: uydu (birleşmiş, 81 il toplamı, sol eksen). Sütun: OGM'nin müdahale ettiği orman yangını sayısı (sağ eksen).</p>
+    <div class="key"><span><i class="harm"></i>Uydu tespiti</span><span><i class="b"></i>OGM yangın sayısı</span></div>
+    <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Türkiye geneli yıllık uydu tespitleri ve OGM orman yangını sayıları">${s}</svg>
+    <p class="say">Yıl sıralaması benzerliği (Spearman): uydu–OGM yangın sayısı ${dec(rho(sat, fires), 2)}, uydu–OGM yanan alan ${dec(rho(sat, ha), 2)}.</p>
+    <p class="fine">Benzerlik düşük, çünkü iki kaynak aynı şeyi saymıyor. OGM yalnızca orman alanında müdahale edilen yangınları sayar. Uydu tarla ve anız yakmalarını da görür; Türkiye'de tespitlerin çoğu tarımsaldır. Tarla yakmaları azaldıkça (Çukurova'da 20 yılda yaklaşık %70) uydu toplamı düşerken OGM'nin orman yangını sayıları artıyor. Uydu takvimi "orman yangını sayısı" olarak okunmamalı; yanma etkinliğinin tamamını gösterir. ${ogm.note}</p>
+    ${local}
+    <p class="fine">Kaynak: ${Object.values(ogm.sources).join(' · ')}</p>`;
 }
 
 function renderPanel() {
   const panel = $('#panel'), body = $('#panelBody');
-  const sensor = SENSORS.find((s) => s.key === state.sensor);
-  if (!ranges[state.sensor]) {
-    panel.hidden = false;
-    body.innerHTML = head('Sensör', `${sensor.label} seri`) + `<div class="empty"><h4>Bu seri henüz eklenmedi</h4>
-      <p>MODIS ve VIIRS'in uyumlaştırılmış tek serisi burada gösterilecek. Veri <code>atlas.json</code> içine
-      <code>${sensor.key}</code> anahtarıyla eklendiğinde harita, takvim ve kıyas bu sekmede kendiliğinden dolar.</p>
-      <div class="chips"><button data-sensor="modis">MODIS'e dön</button><button data-sensor="viirs">VIIRS'e dön</button></div></div>`;
-    return;
-  }
   if (!state.sel) { panel.hidden = true; return; }
   panel.hidden = false;
-  const years = series(state.sel);
+  const name = state.sel, years = series(name);
   if (!years || !years[state.year]) {
-    body.innerHTML = head('İl', state.sel) + `<div class="empty"><h4>Bu il için henüz veri yok</h4>
-      <p>Atlas şu an ${Object.keys(data.provinces).length} ili kapsıyor. Verisi olan illerden birine geçebilirsiniz:</p>${chips()}</div>`;
+    body.innerHTML = head('İl', name) + '<div class="empty"><h4>Bu il için bu yılda veri yok</h4></div>';
     return;
   }
-  const { from, to } = state, ref = inRange(years, from, to);
-  const row = years[state.year], n = sum(row), peak = row.indexOf(Math.max(...row));
-  const totals = Object.values(ref).map(sum), med = quantile(totals, 0.5);
+  const { from, to } = state, val = data.validation?.[name];
+  const row = years[state.year], n = total(name);
+  const wm = row.map((v, m) => (inWin(m) && v != null ? v : -1)), peak = wm.indexOf(Math.max(...wm));
+  // Medyana göre: bitmemiş yılda her yılın aynı penceresiyle (likeTotal), diğer yıllarda pencere toplamıyla.
+  const like = PARTIAL && state.year === LY;
+  const refYears = Object.keys(inRange(years, from, to)).map(Number).filter((y) => !(PARTIAL && y === LY) || like);
+  const med = quantile(refYears.map((y) => (like ? likeTotal(name, y) : total(name, y))), 0.5);
   const ratio = med > 0 ? n / med : 0;
-  // Birleşmiş seride güven, bir yıl dışarıda bırakılarak ölçülen doğrulama hatasından gelir.
-  const vAll = data.validation?.[state.sel];
-  const val = state.sensor === 'merged' ? vAll : null;
-  const level = val ? { low: 1, medium: 2, high: 3 }[val.confidence] : n >= 200 ? 3 : n >= 50 ? 2 : 1;
-  const confTitle = val
-    ? 'Bir yıl dışarıda bırakılarak ölçüldü (2012–2025). Yüksek: yıllık hata %15 ve altı, yılda ortalama 300 ve üzeri tespit. Düşük: hata %30 üzeri ya da yılda 100 altı tespit.'
-    : "Yıllık tespit sayısına göre: 200 ve üzeri yüksek, 50–199 orta, 50'nin altı düşük.";
-  const confText = `${val ? 'Doğrulama' : 'Örneklem'} güveni: <b>${['düşük', 'orta', 'yüksek'][level - 1]}</b>`
+  const level = { low: 1, medium: 2, high: 3 }[val?.confidence] || 1;
+  const confTitle = 'Bir yıl dışarıda bırakılarak ölçüldü (2012–2025). Yüksek: yıllık hata %15 ve altı, yılda ortalama 300 ve üzeri tespit. Düşük: hata %30 üzeri ya da yılda 100 altı tespit.';
+  const confText = `Doğrulama güveni: <b>${['düşük', 'orta', 'yüksek'][level - 1]}</b>`
     + (val?.annual_wape != null ? ` · yıllık hata %${Math.round(val.annual_wape * 100)}` : '');
-  const unit = state.sensor === 'merged' ? 'VIIRS-eşdeğeri tespit' : 'tespit sayısı';
   const sel = { year: state.year, month: state.month };
+  const w = winLabel();
+  const heroLabel = like && inWin(LM) ? `${w || 'Yıl'} · ${LD} ${MON3[LM]} itibarıyla` : w ? `${w} toplamı` : 'Yıllık tespit';
 
   let view = '';
-  if (state.tab === 'months') {
-    view = `<h4>${state.year} yılında aylara göre ateş tespiti</h4><p>${sensor.label} · ${unit} · sütuna tıklayınca o ay okunur</p>${monthBars(row, state.year, state.month)}`;
-  } else if (state.tab === 'calendar') {
-    view = `<h4>${from}–${to} takvimi</h4><p>Satır yıl, sütun ay; açık sarıdan koyu kırmızıya tespit artar. İşaretler ayın, dönemdeki aynı aya göre yerini gösterir. Hücreye tıklayınca o ay okunur.</p>
-      ${calendarKey()}<p class="say small">${sentence(reading(years, state.year, state.month, from, to))}</p>${calendar(years, from, to, sel)}`;
+  if (state.tab === 'calendar') {
+    view = `<h4>${from}–${to} takvimi${w ? ' · ' + w : ''}</h4><p>Satır yıl, sütun ay; açık sarıdan koyu kırmızıya tespit artar. İşaretler ayın, dönemdeki aynı aya göre yerini gösterir. Hücreye tıklayınca o ay okunur.</p>
+      ${calendarKey()}${calendar(years, from, to, sel, { win: state.win, rd: rdFor(name), partial: isPartial, through: LD })}`;
   } else if (state.tab === 'compare') {
-    const c = compare(ref, row, state.year);
-    view = `<h4>${state.year}, ${from}–${to} medyanına göre</h4>
+    const ref = inRange(like ? cmpYears(name) : years, from, to);
+    if (!like && PARTIAL) delete ref[LY];   // bitmemiş yılın boş ayları başka bir yılın medyanını bozmasın
+    const c = compare(ref, row, state.year, state.month, like ? LM : -1);
+    view = `<h4>${state.year}, ${from}–${to} medyanına göre</h4><p>Sütun ${state.year}, çizgi aynı ayın medyanı, gri bant orta %50. Sütuna tıklayınca o ay okunur.</p>
       <div class="key"><span><i></i>${state.year}</span><span><i class="m"></i>Medyan</span><span><i class="b"></i>Orta %50 aralığı</span></div>
-      ${c.svg}<p class="say">${sentence(reading(years, state.year, peak, from, to))}</p>`;
+      ${c.svg}`;
   } else if (state.tab === 'peaks') {
-    view = peaksView(years);
+    view = peaksView(name, years);
+  } else if (state.tab === 'step') {
+    view = stepView(data.provinces[name], val);
   } else {
-    view = stepView(data.provinces[state.sel], vAll);
+    view = ogmView(name);
   }
 
-  body.innerHTML = head(`İl · ${sensor.label} · ${state.year}`, state.sel) + `
+  body.innerHTML = head(`İl · ${periodLabel()}`, name) + `
     <div class="kpis">
-      <div class="kpi hero"><span>Yıllık tespit</span><b>${fmt(n)}</b></div>
-      <div class="kpi"><span>Zirve ay</span><b>${MONTHS[peak]}</b><small>${fmt(row[peak])} tespit</small></div>
-      <div class="kpi"><span>Medyana göre</span><b>${ratio ? '×' + dec(ratio) : '—'}</b><small>medyan ${fmt(med)} · ${from}–${to}</small></div>
+      <div class="kpi hero"><span>${heroLabel}</span><b>${fmt(n)}</b></div>
+      <div class="kpi"><span>Zirve ay</span><b>${peak >= 0 ? MONTHS[peak] : '—'}</b><small>${peak >= 0 ? fmt(row[peak]) + ' tespit' : ''}</small></div>
+      <div class="kpi"><span>Medyana göre</span><b>${ratio ? '×' + dec(ratio) : '—'}</b><small>medyan ${fmt(med)} · ${from}–${to}${like ? ' · aynı günler' : ''}</small></div>
     </div>
     <div class="conf" title="${confTitle}">
       <span class="dots">${[1, 2, 3].map((i) => `<i class="${i <= level ? 'on' : ''}"></i>`).join('')}</span>
@@ -489,20 +524,94 @@ function renderPanel() {
     </div>
     ${caution(val)}
     ${rangeRow()}
-    ${readCard(years, val, sensor.label)}
+    ${readCard(name, val)}
     <div class="tabs" role="tablist">${TABS.map(([k, l]) => `<button role="tab" data-tab="${k}" aria-selected="${k === state.tab}">${l}</button>`).join('')}</div>
     <div class="view" role="tabpanel">${view}</div>
-    <div class="p-foot"><button class="btn" id="csv" title="Birleşmiş seri, ham MODIS ve VIIRS sayıları, ay medyanı, yüzdelik ve düzey · ${from}–${to}">CSV indir</button>${((note) => `<span title="${note}">${note}</span>`)(data.meta.sample ? 'Örnek veri: gerçek FIRMS sayıları değildir.' : (data.meta.notes?.[state.sensor] || data.meta.note || ''))}</div>`;
+    <div class="p-foot">
+      <div class="dl">
+        <button class="btn" id="csv" title="Aylık birleşmiş seri, ham MODIS ve VIIRS sayıları, ay medyanı, yüzdelik ve düzey · ${from}–${to}${w ? ' · ' + w : ''}">Aylık CSV</button>
+        <button class="btn" id="hcsv" title="Bu ildeki her uydu tespiti: tarih, konum, sensör, FRP · ${from}–${to}${w ? ' · ' + w : ''}">Tespit listesi</button>
+        <button class="btn ghost" id="png" title="Açık sekmedeki grafiği PNG olarak indir">PNG</button>
+        <button class="btn ghost" id="svg" title="Açık sekmedeki grafiği SVG olarak indir">SVG</button>
+      </div>
+      <span title="${data.meta.notes?.[KEY] || ''}">${data.meta.notes?.[KEY] || ''}</span>
+    </div>`;
 }
 
-// CSV her zaman birleşmiş seriyi (ham sayılarla birlikte) seçili dönem için verir.
-function downloadCsv() {
-  const mr = ranges.merged, f = Math.max(state.from, mr[0]), t = Math.min(state.to, mr[1]);
-  const lines = csvRows(state.sel, data.validation?.[state.sel]?.region || '', data.provinces[state.sel], f, t, data.meta.viirs_from);
+// ── İndirmeler ──────────────────────────────────────────
+function save(blob, filename) {
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' }));
-  a.download = `burncal_${low(state.sel)}_${f}-${t}.csv`;
-  a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+const csvBlob = (lines) => new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+const fileTag = () => `${low(state.sel)}_${state.from}-${state.to}${fullWin() ? '' : `_ay${state.win[0] + 1}-${state.win[1] + 1}`}`;
+
+function downloadCsv() {
+  const name = state.sel;
+  const lines = csvRows(name, data.validation?.[name]?.region || '', data.provinces[name], state.from, state.to,
+    data.meta.viirs_from, state.win, rdFor(name), isPartial);
+  save(csvBlob(lines), `burncal_aylik_${fileTag()}.csv`);
+}
+
+async function downloadHotspots(btn) {
+  const name = state.sel, label = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Hazırlanıyor…';
+  try {
+    const byYear = {};
+    for (let y = state.from; y <= state.to; y++) byYear[y] = await loadYear(y);
+    const lines = hotspotRows(byYear, provIdx[name], name, state.from, state.to, state.win);
+    save(csvBlob(lines), `burncal_tespitler_${fileTag()}.csv`);
+    btn.textContent = `${fmt(lines.length - 1)} tespit`;
+    setTimeout(() => { btn.textContent = label; }, 2500);
+  } catch (e) {
+    console.error(e); btn.textContent = 'İndirilemedi';
+  } finally { btn.disabled = false; }
+}
+
+// Açık sekmedeki grafiği bağımsız bir SVG'ye çevirir: CSS sınıfları satır içi stile yazılır,
+// başlık ve kaynak satırı eklenir. PNG, aynı SVG'den 3 kat çözünürlükte üretilir.
+const STYLE_PROPS = ['fill', 'stroke', 'stroke-width', 'stroke-dasharray', 'stroke-linecap', 'opacity', 'fill-opacity',
+  'font-family', 'font-size', 'font-weight'];
+function exportSvg() {
+  const src = $('#panel .view svg[role=img]');   // açıklamadaki küçük simgeler değil, grafiğin kendisi
+  if (!src) return null;
+  const clone = src.cloneNode(true);
+  const a = [src, ...src.querySelectorAll('*')], b = [clone, ...clone.querySelectorAll('*')];
+  a.forEach((el, i) => {
+    const cs = getComputedStyle(el);
+    b[i].setAttribute('style', STYLE_PROPS.map((p) => `${p}:${cs.getPropertyValue(p)}`).join(';'));
+    b[i].removeAttribute('data-tip');
+  });
+  clone.querySelectorAll('.hit').forEach((el) => el.remove());
+  const [, , w, h] = src.getAttribute('viewBox').split(' ').map(Number);
+  const pad = 16, top = 44, bottom = 30, W = w + 2 * pad, H = h + top + bottom;
+  const title = `${state.sel} · ${$('#panel .view h4')?.textContent || ''}`;
+  const font = getComputedStyle(document.body).fontFamily.replace(/"/g, "'");
+  clone.setAttribute('x', pad); clone.setAttribute('y', top); clone.setAttribute('width', w); clone.setAttribute('height', h);
+  const esc = (s) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">
+    <rect width="${W}" height="${H}" fill="#18181a"/>
+    <text x="${pad}" y="22" fill="#f2ede4" style="font: 700 13px ${font}">${esc(title)}</text>
+    <text x="${pad}" y="36" fill="#b9c0c9" style="font: 10px ${font}">VIIRS-eşdeğeri uydu tespiti (MODIS + VIIRS uyumlaştırılmış) · veri ${throughLabel()} tarihine kadar</text>
+    ${new XMLSerializer().serializeToString(clone)}
+    <text x="${pad}" y="${H - 10}" fill="#7d8792" style="font: 9.5px ${font}">BurnCal · NASA FIRMS (MODIS C6.1, VIIRS S-NPP 375 m) · NASA Space Apps 2026</text>
+  </svg>`;
+}
+function downloadChart(kind) {
+  const svg = exportSvg();
+  if (!svg) return;
+  const name = `burncal_${state.tab}_${fileTag()}`;
+  if (kind === 'svg') return save(new Blob([svg], { type: 'image/svg+xml' }), `${name}.svg`);
+  const img = new Image(), k = 3;
+  img.onload = () => {
+    const c = document.createElement('canvas');
+    c.width = img.width * k; c.height = img.height * k;
+    const g = c.getContext('2d'); g.scale(k, k); g.drawImage(img, 0, 0);
+    c.toBlob((b) => save(b, `${name}.png`), 'image/png');
+  };
+  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
 }
 
 // ── İpucu ───────────────────────────────────────────────
@@ -515,19 +624,29 @@ function showTip(html, x, y) {
 }
 function hideTip() { $('#tip').hidden = true; }
 
+// Ay penceresi ya da dönem değişince harita, sıralama ve panel birlikte yenilenir.
+function refreshAll(focusId) {
+  if (ready) paintMap();
+  renderPanel(); renderRank();
+  if (focusId) $('#panel').querySelector('#' + focusId)?.focus();
+}
+
 // ── Olaylar ─────────────────────────────────────────────
 function bind() {
   const panel = $('#panel');
   panel.addEventListener('click', (e) => {
     const t = e.target.closest('button, .cell, [data-year], [data-month]');
     if (!t) return;
-    if (t.classList.contains('close')) return ranges[state.sensor] ? select(null) : setSensor('modis');
+    if (t.classList.contains('close')) return select(null);
     if (t.dataset.tab) { state.tab = t.dataset.tab; renderPanel(); panel.querySelector(`[data-tab=${state.tab}]`).focus(); }
     else if (t.dataset.name) select(t.dataset.name);
-    else if (t.dataset.sensor) setSensor(t.dataset.sensor);
     else if (t.id === 'csv') downloadCsv();
-    else if (t.id === 'latest') { stopPlay(); state.month = 11; setYear(ranges[state.sensor][1]); }
-    else if (t.id === 'rAll') { state.custom = false; clampRange(); renderPanel(); panel.querySelector('#rFrom')?.focus(); }
+    else if (t.id === 'hcsv') downloadHotspots(t);
+    else if (t.id === 'png' || t.id === 'svg') downloadChart(t.id);
+    else if (t.id === 'latest') { stopPlay(); state.month = LM; setYear(LY); }
+    else if (t.id === 'rAll') { state.custom = false; clampRange(); refreshAll('rFrom'); }
+    else if (t.id === 'wSeason') { state.win = [5, 9]; refreshAll('wFrom'); }
+    else if (t.id === 'wAll') { state.win = [0, 11]; refreshAll('wFrom'); }
     else if (t.dataset.year || t.dataset.month) {
       stopPlay();
       if (t.dataset.month) state.month = +t.dataset.month;
@@ -535,11 +654,12 @@ function bind() {
     }
   });
   panel.addEventListener('change', (e) => {
-    const id = e.target.id;
-    if (id === 'mSel') state.month = +e.target.value;
-    else if (id === 'rFrom' || id === 'rTo') { state[id === 'rFrom' ? 'from' : 'to'] = +e.target.value; state.custom = true; clampRange(); }
+    const id = e.target.id, v = +e.target.value;
+    if (id === 'mSel') { state.month = v; renderPanel(); }
+    else if (id === 'rFrom' || id === 'rTo') { state[id === 'rFrom' ? 'from' : 'to'] = v; state.custom = true; clampRange(); refreshAll(id); }
+    else if (id === 'wFrom' || id === 'wTo') { state.win[id === 'wFrom' ? 0 : 1] = v; refreshAll(id); }
     else return;
-    renderPanel(); panel.querySelector('#' + id)?.focus();
+    panel.querySelector('#' + id)?.focus();
   });
   panel.addEventListener('pointermove', (e) => {
     const t = e.target.closest('[data-tip]');
@@ -580,49 +700,30 @@ function bind() {
     if (g === 'points' && on) updatePoints();
   });
 
-  // Oyun tarzı klavye: basılı tutulduğu sürece akıcı hareket.
-  const held = new Set();
-  let raf = 0, last = 0;
-  const loop = (now) => {
-    const dt = Math.min(50, now - last); last = now;
-    const has = (...k) => k.some((x) => held.has(x));
-    const dx = (has('d', 'arrowright') - has('a', 'arrowleft')) * dt * 0.7;
-    const dy = (has('s', 'arrowdown') - has('w', 'arrowup')) * dt * 0.7;
-    if (dx || dy) map.panBy([dx, dy], { animate: false });
-    const rot = has('e') - has('q'), tilt = has('r') - has('f');
-    if (rot) map.setBearing(map.getBearing() + rot * dt * 0.06);
-    if (tilt) map.setPitch(Math.max(0, Math.min(78, map.getPitch() + tilt * dt * 0.05)));
-    raf = held.size ? requestAnimationFrame(loop) : 0;
-  };
-  const MOVE = ['w', 'a', 's', 'd', 'q', 'e', 'r', 'f', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'];
+  // Klavye kısayolları: Esc kapat, boşluk oynat, H Türkiye görünümü, +/− yakınlaş.
   addEventListener('keydown', (e) => {
     const k = e.key.toLowerCase();
     if (k === 'escape') { e.target.blur?.(); if (state.sel) select(null); return; }
     if (e.target.closest('input, select, [role=tablist]') || e.ctrlKey || e.metaKey || e.altKey) return;
-    if (MOVE.includes(k)) {
-      e.preventDefault(); stopOrbit(); held.add(k);
-      if (!raf) { last = performance.now(); raf = requestAnimationFrame(loop); }
-    } else if (k === ' ' && !e.target.closest('button')) { e.preventDefault(); togglePlay(); }
+    if (k === ' ' && !e.target.closest('button')) { e.preventDefault(); togglePlay(); }
     else if (k === 'h') select(null);
     else if (k === '+' || k === '=') map.zoomIn();
     else if (k === '-') map.zoomOut();
   });
-  addEventListener('keyup', (e) => held.delete(e.key.toLowerCase()));
-  addEventListener('blur', () => held.clear());
 }
 
 // ── Başlat ──────────────────────────────────────────────
 async function main() {
   document.body.classList.add('booting');
   [data, geo] = await Promise.all(['data/atlas.json', 'data/tr-provinces.json'].map((u) => fetch(u).then((r) => r.json())));
+  ogm = await fetch('data/ogm.json').then((r) => (r.ok ? r.json() : null)).catch(() => null);
   indexData();
-  $('#sampleBadge').hidden = !data.meta.sample;
-  const all = Object.values(ranges);
-  $('#intro span').textContent = `MODIS · VIIRS · ${Math.min(...all.map((r) => r[0]))}–${Math.max(...all.map((r) => r[1]))}`;
-  renderSensors();
+  $('#dataBadge').textContent = `Veri: ${throughLabel()}`;
+  $('#dataBadge').title = PARTIAL ? `${LY} yılı sürüyor; son veri günü ${throughLabel()}. Süren ay ve yıl, geçmiş yılların aynı günleriyle kıyaslanır.` : `Son veri günü ${throughLabel()}.`;
+  $('#intro span').textContent = `MODIS · VIIRS · ${RANGE[0]}–${RANGE[1]}`;
   initMap();
   bind();
-  setSensor(ranges.merged ? 'merged' : 'modis');
+  initYears();
 }
 main().catch((err) => {
   console.error(err);

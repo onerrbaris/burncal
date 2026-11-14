@@ -1,0 +1,256 @@
+{
+ "national": {
+  "2001": {
+   "fires": 2631,
+   "ha": 7394,
+   "src": "S1"
+  },
+  "2002": {
+   "fires": 1471,
+   "ha": 8514,
+   "src": "S1"
+  },
+  "2003": {
+   "fires": 2177,
+   "ha": 6644,
+   "src": "S1"
+  },
+  "2004": {
+   "fires": 1762,
+   "ha": 4876,
+   "src": "S1"
+  },
+  "2005": {
+   "fires": 1530,
+   "ha": 2821,
+   "src": "S1"
+  },
+  "2006": {
+   "fires": 2227,
+   "ha": 7762,
+   "src": "S1"
+  },
+  "2007": {
+   "fires": 2829,
+   "ha": 11664,
+   "src": "S1"
+  },
+  "2008": {
+   "fires": 2135,
+   "ha": 29749,
+   "src": "S1"
+  },
+  "2009": {
+   "fires": 1793,
+   "ha": 4679,
+   "src": "S1"
+  },
+  "2010": {
+   "fires": 1861,
+   "ha": 3317,
+   "src": "S1"
+  },
+  "2011": {
+   "fires": 1954,
+   "ha": 3612,
+   "src": "S1"
+  },
+  "2012": {
+   "fires": 2450,
+   "ha": 10455,
+   "src": "S1"
+  },
+  "2013": {
+   "fires": 3755,
+   "ha": 11456,
+   "src": "S1"
+  },
+  "2014": {
+   "fires": 2149,
+   "ha": 3117,
+   "src": "S1"
+  },
+  "2015": {
+   "fires": 2150,
+   "ha": 3219,
+   "src": "S1"
+  },
+  "2016": {
+   "fires": 3188,
+   "ha": 9156,
+   "src": "S1"
+  },
+  "2017": {
+   "fires": 2411,
+   "ha": 11993,
+   "src": "S1"
+  },
+  "2018": {
+   "fires": 2167,
+   "ha": 5644,
+   "src": "S1"
+  },
+  "2019": {
+   "fires": 2688,
+   "ha": 11332,
+   "src": "S1"
+  },
+  "2020": {
+   "fires": 3399,
+   "ha": 20971,
+   "src": "S1"
+  },
+  "2021": {
+   "fires": 2793,
+   "ha": 139503,
+   "src": "S1"
+  },
+  "2022": {
+   "fires": 2160,
+   "ha": 12799,
+   "src": "S2"
+  },
+  "2023": {
+   "fires": 2579,
+   "ha": 15520,
+   "src": "S2"
+  },
+  "2024": {
+   "fires": 3797,
+   "ha": 27485,
+   "src": "S2"
+  },
+  "2025": {
+   "fires": 3224,
+   "ha": 81473,
+   "src": "S2"
+  }
+ },
+ "obm2025": {
+  "Adana": {
+   "fires": 158,
+   "ha": 638.05
+  },
+  "Amasya": {
+   "fires": 119,
+   "ha": 162.21
+  },
+  "Ankara": {
+   "fires": 63,
+   "ha": 86.15
+  },
+  "Antalya": {
+   "fires": 182,
+   "ha": 1527.0
+  },
+  "Artvin": {
+   "fires": 10,
+   "ha": 21.16
+  },
+  "Balıkesir": {
+   "fires": 119,
+   "ha": 510.14
+  },
+  "Bolu": {
+   "fires": 58,
+   "ha": 210.12
+  },
+  "Bursa": {
+   "fires": 129,
+   "ha": 16901.73
+  },
+  "Çanakkale": {
+   "fires": 152,
+   "ha": 7226.38
+  },
+  "Denizli": {
+   "fires": 81,
+   "ha": 3160.44
+  },
+  "Elazığ": {
+   "fires": 169,
+   "ha": 148.28
+  },
+  "Erzurum": {
+   "fires": 61,
+   "ha": 53.67
+  },
+  "Eskişehir": {
+   "fires": 27,
+   "ha": 777.85
+  },
+  "Giresun": {
+   "fires": 70,
+   "ha": 62.02
+  },
+  "Hatay": {
+   "fires": 55,
+   "ha": 3257.45
+  },
+  "Isparta": {
+   "fires": 30,
+   "ha": 27.43
+  },
+  "İstanbul": {
+   "fires": 185,
+   "ha": 4539.4
+  },
+  "İzmir": {
+   "fires": 321,
+   "ha": 15203.21
+  },
+  "Kahramanmaraş": {
+   "fires": 146,
+   "ha": 2360.22
+  },
+  "Kastamonu": {
+   "fires": 70,
+   "ha": 2021.77
+  },
+  "Kayseri": {
+   "fires": 47,
+   "ha": 122.87
+  },
+  "Konya": {
+   "fires": 44,
+   "ha": 458.89
+  },
+  "Kütahya": {
+   "fires": 57,
+   "ha": 141.62
+  },
+  "Mersin": {
+   "fires": 105,
+   "ha": 6046.94
+  },
+  "Muğla": {
+   "fires": 211,
+   "ha": 2511.81
+  },
+  "Sakarya": {
+   "fires": 104,
+   "ha": 4801.05
+  },
+  "Sinop": {
+   "fires": 18,
+   "ha": 23.7
+  },
+  "Şanlıurfa": {
+   "fires": 271,
+   "ha": 529.6
+  },
+  "Trabzon": {
+   "fires": 51,
+   "ha": 103.06
+  },
+  "Zonguldak": {
+   "fires": 67,
+   "ha": 6897.3
+  }
+ },
+ "sources": {
+  "S1": "OGM verisi, Anıoğlu, Utkucu & Erden (2025), Afet ve Risk Dergisi 8(2), Tablo 4 — https://dergipark.org.tr/tr/download/article-file/4114393",
+  "S2": "OGM 2025 Faaliyet Raporu, Tablo 16–17 ve Ek 6 — https://www.ogm.gov.tr/tr/e-kutuphane-sitesi/FaaliyetRaporu/2025%20-%20Orman%20Genel%20M%C3%BCd%C3%BCrl%C3%BC%C4%9F%C3%BC%20Faaliyet%20Raporu.pdf"
+ },
+ "note": "OGM yalnızca orman alanında müdahale edilen yangınları sayar; tarla/anız yakmaları dahil değildir. Yayınlar arasında %1–4 fark olabilir. Orman bölge müdürlükleri (OBM) il sınırından geniştir."
+}

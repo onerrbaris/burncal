@@ -46,6 +46,8 @@ def main():
     names = {f["properties"]["name"] for f in
              json.loads((FE / "data" / "tr-provinces.json").read_text(encoding="utf-8"))["features"]}
     harm = load_js(SRC / "harmonized-data.js")
+    through = harm["meta"].get("data_through", "2025-12-31")
+    last_y, last_m = int(through[:4]), int(through[5:7])   # son veri ayi (yil, 1-12)
     raw, unknown = {}, set()   # raw[key][il][yil] = 12 ay
     with open(SRC / "harmonized.csv", encoding="utf-8", newline="") as f:
         for r in csv.DictReader(f):
@@ -60,8 +62,13 @@ def main():
     for key, by_prov in raw.items():
         years = set()
         for name, series in by_prov.items():
-            # eksik ayi olan yil (2000: MODIS Kasim'da basliyor; VIIRS 2012 oncesi yok) takvime alinmaz
-            full = {y: row for y, row in sorted(series.items()) if all(v is not None for v in row)}
+            # eksik ayi olan yil (2000: MODIS Kasim'da basliyor; VIIRS 2012 oncesi yok) takvime alinmaz;
+            # icinde bulunulan yil son veri ayina kadar doluysa alinir (sonraki aylar null kalir)
+            def ok(y, row):
+                if int(y) == last_y and last_m < 12:
+                    return all(v is not None for v in row[:last_m])
+                return all(v is not None for v in row)
+            full = {y: row for y, row in sorted(series.items()) if ok(y, row)}
             if full:
                 provinces.setdefault(name, {})[key] = full
                 years.update(int(y) for y in full)
@@ -81,8 +88,13 @@ def main():
     regions = {c: {"name": r["name"], "factors": r["factors"]} for c, r in harm["regions"].items()}
     meta = {"sample": False, "generated": "scripts/build_atlas_json.py", "harmonized_at": harm["meta"]["generated_at"],
             "notes": NOTES, "sensors": sensors, "viirs_from": harm["meta"]["viirs_from"],
-            "last_month": f"{sensors['merged']['to']}-12", "unit": "VIIRS-eşdeğeri tespit"}
+            "last_month": f"{last_y}-{last_m:02d}", "data_through": through, "unit": "VIIRS-eşdeğeri tespit"}
     data = {"meta": meta, "provinces": provinces, "validation": validation, "regions": regions}
+    part = harm.get("partial")
+    if part:   # icinde bulunulan ay/yil: her yilin ayni takvim penceresi (1. gun .. son veri gunu)
+        data["partial"] = {**{k: part[k] for k in ("through", "month", "day", "years")},
+                           "mtd": {ALIAS.get(n, n): v for n, v in part["mtd"].items()},
+                           "ytd": {ALIAS.get(n, n): v for n, v in part["ytd"].items()}}
     OUT.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     print(f"yazildi: {OUT} ({OUT.stat().st_size} bayt, {len(provinces)} il, {len(regions)} bolge)\n{sensors}")
 

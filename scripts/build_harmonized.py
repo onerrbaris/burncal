@@ -22,6 +22,7 @@ Method (docs/REPORT.md sections 3, 4, 10):
 """
 from pathlib import Path
 import json
+import os
 import sys
 import time
 import unicodedata
@@ -39,8 +40,16 @@ PROC = ROOT / "data" / "processed"
 PROC.mkdir(parents=True, exist_ok=True)
 FORCE = "--force" in sys.argv
 EPOCH = pd.Timestamp("2000-01-01")
-YEARS = list(range(2000, 2026))
+# Years = 2000 .. last year with a raw file. The running year (scripts/fetch_firms_recent.py) is partial:
+# everything after the last full data day is null. Factors and validation stay on the complete
+# overlap years 2012-2025, so adding the running year never changes the method.
+LAST_YEAR = max(int(p.name.split("_")[1]) for p in RAW.glob("*_Turkey.csv"))
+YEARS = list(range(2000, LAST_YEAR + 1))
+NY = len(YEARS)
 FIT_YEARS = list(range(2012, 2026))
+# test aid: BURNCAL_CUTOFF=2025-09-13 pretends the data ends that day (exercises the partial-year path)
+CUTOFF = os.environ.get("BURNCAL_CUTOFF")
+MASK_TO = pd.Timestamp("2025-12-31")   # static-source mask from archive years only (NRT has no type column)
 MIN_MODIS = 50          # fallback rule: region-month MODIS detections over 2012-2025 overlap
 GJ_URL = "https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/TUR/ADM1/geoBoundaries-TUR-ADM1.geojson"
 
@@ -107,7 +116,8 @@ def read_raw():
     frames = []
     for pat in ["modis_*_Turkey.csv", "viirs-snpp_*_Turkey.csv"]:
         for f in sorted(RAW.glob(pat)):
-            d = pd.read_csv(f, usecols=["latitude", "longitude", "acq_date", "satellite", "type"])
+            d = pd.read_csv(f, usecols=["latitude", "longitude", "acq_date", "satellite", "type"],
+                            dtype={"satellite": str})
             frames.append(d)
     d = pd.concat(frames, ignore_index=True)
     d["sat"] = d.satellite.map({"Terra": 0, "Aqua": 1, "N": 2}).astype(np.int8)
@@ -141,7 +151,7 @@ def outages(day, sat, nd, min_expected=10.0):
 
 
 def static_mask(d):
-    v = d[(d.type == 2) & (d.sat == 2)]
+    v = d[(d.type == 2) & (d.sat == 2) & (d.day <= (MASK_TO - EPOCH).days)]
     ii = np.floor(v.latitude.values * 100).astype(np.int64)
     jj = np.floor(v.longitude.values * 100).astype(np.int64)
     base = np.unique(ii * 100000 + jj)
@@ -153,13 +163,20 @@ def static_mask(d):
 
 def daily_cube(names, geoms):
     """cnt[province, day, sat] after filtering, plus outage/span arrays and stats (cached)."""
-    cp = PROC / "harmonized_daily.npz"
+    cp = PROC / f"harmonized_daily_{LAST_YEAR}{'_' + CUTOFF if CUTOFF else ''}.npz"
     if cp.exists() and not FORCE:
         z = np.load(cp, allow_pickle=True)
         return z["cnt"], z["out"], z["insp"], z["stats"].item()
     d = read_raw()
     log("rows read", len(d))
-    nd = int((pd.Timestamp("2025-12-31") - EPOCH).days) + 1
+    # last full data day: the newest day (today's NRT is still filling up) is dropped unless it is Dec 31
+    last = int(d.day.max())
+    if (EPOCH + pd.Timedelta(days=last)).strftime("%m-%d") != "12-31":
+        last -= 1
+    if CUTOFF:
+        last = min(last, int((pd.Timestamp(CUTOFF) - EPOCH).days))
+    d = d[d.day <= last].reset_index(drop=True)
+    nd = int((pd.Timestamp(f"{LAST_YEAR}-12-31") - EPOCH).days) + 1
     out, insp = outages(d.day.values, d.sat.values, nd)
     keep = ~d.type.isin([1, 3]).values
     st, ncells = static_mask(d)
@@ -177,7 +194,7 @@ def daily_cube(names, geoms):
     if len(miss):
         mi, mg = tree.query_nearest(pts[miss], max_distance=0.05)
         prov[miss[mi]] = mg
-    stats.update(points=len(d), nearest=int(len(miss)), unassigned=int((prov < 0).sum()))
+    stats.update(points=len(d), nearest=int(len(miss)), unassigned=int((prov < 0).sum()), last_day=last)
     ok = prov >= 0
     cnt = np.zeros((81, nd, 3), np.int32)
     np.add.at(cnt, (prov[ok], d.day.values[ok], d.sat.values[ok]), 1)
@@ -205,7 +222,11 @@ log("cube", cnt.shape, stats)
 dates = EPOCH + pd.to_timedelta(np.arange(nd), unit="D")
 yr, mo = dates.year.values, dates.month.values
 ym = (yr - 2000) * 12 + (mo - 1)                      # month index 0..311
-NM = 26 * 12
+NM = NY * 12
+LAST_DAY = int(stats.get("last_day", nd - 1))
+DATA_THROUGH = EPOCH + pd.Timedelta(days=LAST_DAY)
+last_m = (DATA_THROUGH.year - 2000) * 12 + DATA_THROUGH.month - 1   # month index of the last data day
+PARTIAL = DATA_THROUGH.strftime("%m-%d") != "12-31"
 avail = insp & ~out                                    # [3, nd]
 T, A, N = cnt[:, :, 0].astype(float), cnt[:, :, 1].astype(float), cnt[:, :, 2].astype(float)
 
@@ -235,8 +256,8 @@ meq = np.where(avail[0] & avail[1], T + A,
 
 # overlap fitting tables: days where all three satellites report, from S-NPP start
 fitday = avail[0] & avail[1] & avail[2]
-Mfit = msum(T + A, fitday).reshape(81, 26, 12)
-Vfit = msum(N, fitday).reshape(81, 26, 12)
+Mfit = msum(T + A, fitday).reshape(81, NY, 12)
+Vfit = msum(N, fitday).reshape(81, NY, 12)
 fy = np.array(FIT_YEARS) - 2000
 
 
@@ -257,13 +278,13 @@ viirs_from = pd.Timestamp("2012-02-01")
 Fd = F[reg_idx][:, mo - 1]                                     # [P, nd]
 veq = np.where(avail[2][None, :], N, meq * Fd)
 h_day = np.where((dates >= viirs_from)[None, :], veq, meq * Fd)
-H = msum(h_day).reshape(81, 26, 12)
+H = msum(h_day).reshape(81, NY, 12)
 first_month = ym[np.where(avail[0])[0][0]]                     # first month with MODIS data (2000-11)
-Hn = H.copy().reshape(81, NM); Hn[:, :first_month] = np.nan; H = Hn.reshape(81, 26, 12)
-raw_m = msum(T + A).reshape(81, 26, 12)
-raw_v = msum(N).reshape(81, 26, 12)
+Hn = H.copy().reshape(81, NM); Hn[:, :first_month] = np.nan; Hn[:, last_m + 1:] = np.nan; H = Hn.reshape(81, NY, 12)
+raw_m = msum(T + A); raw_m[:, last_m + 1:] = np.nan; raw_m = raw_m.reshape(81, NY, 12)
+raw_v = msum(N); raw_v[:, last_m + 1:] = np.nan; raw_v = raw_v.reshape(81, NY, 12)
 raw_v[:, :12] = np.nan
-src_viirs = (np.arange(NM) >= (2012 - 2000) * 12 + 1).reshape(26, 12)
+src_viirs = (np.arange(NM) >= (2012 - 2000) * 12 + 1).reshape(NY, 12)
 
 # ---------------------------------------------------------------- validation (LOYO)
 pred = np.zeros_like(Mfit)
@@ -283,14 +304,15 @@ def scores(P, O):
 
 
 aw, mw, bias = scores(pred, Vfit)
-PR = np.zeros((26, 26, 12)); OR = np.zeros((26, 26, 12))
+PR = np.zeros((26, NY, 12)); OR = np.zeros((26, NY, 12))
 np.add.at(PR, reg_idx, pred); np.add.at(OR, reg_idx, Vfit)
 raw_, rmw, rbias = scores(PR, OR)
-HR = np.zeros((26, 26, 12)); np.add.at(HR, reg_idx, np.nan_to_num(H))
+HR = np.zeros((26, NY, 12)); np.add.at(HR, reg_idx, np.nan_to_num(H))
 HR.reshape(26, NM)[:, :first_month] = np.nan
+HR.reshape(26, NM)[:, last_m + 1:] = np.nan
 
 ann = np.nansum(H, 2); ann[:, 0] = np.nan                       # 2000 incomplete
-naive = np.where(np.arange(26)[None, :] < 12, raw_m.sum(2), np.nan_to_num(raw_v).sum(2))
+naive = np.where(np.arange(NY)[None, :] < 12, np.nansum(raw_m, 2), np.nansum(raw_v, 2))
 
 
 def step(a):
@@ -299,10 +321,11 @@ def step(a):
 
 
 step_raw, step_h = step(naive), step(ann)
-step_m = step(raw_m.sum(2))                                     # MODIS-only reference: real activity change
-mean_ann = ann[:, 12:].mean(1)
+step_m = step(np.nansum(raw_m, 2))                                     # MODIS-only reference: real activity change
+FULL = min(2025, DATA_THROUGH.year - (1 if PARTIAL else 0)) - 2000 + 1   # index after the last complete year (<= 2025)
+mean_ann = ann[:, 12:FULL].mean(1)
 annR = np.nansum(HR, 2)
-mean_annR = annR[:, 12:].mean(1)
+mean_annR = annR[:, 12:FULL].mean(1)
 
 
 def conf(w, m):
@@ -321,7 +344,7 @@ def ser(a):
     return {str(Y): [None if not np.isfinite(v) else int(round(v)) for v in a[i]] for i, Y in enumerate(YEARS)}
 
 
-Hfull = H[:, 1:]                                                # quantiles over 2001-2025
+Hfull = H[:, 1:FULL]                                            # quantiles over 2001-2025
 provinces, series = {}, {}
 for p, n in enumerate(names):
     series[n] = ser(H[p])
@@ -342,7 +365,8 @@ outs = {s: ranges(out[i]) for i, s in enumerate(["Terra", "Aqua", "S-NPP"])}
 meta = dict(
     generated_at=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     unit="VIIRS-equivalent hotspot count per calendar month (S-NPP 375 m detections)",
-    data_range="2000-11 .. 2025-12 (2000 Jan-Oct null: no MODIS data)",
+    data_range=f"2000-11 .. {DATA_THROUGH:%Y-%m-%d} (2000 Jan-Oct null: no MODIS data)",
+    data_through=f"{DATA_THROUGH:%Y-%m-%d}",
     viirs_from="2012-02",
     method=[
         "Drop FIRMS type 1 (volcano) and 3 (offshore); remove static sources with a fixed mask: 0.01 deg cells with any VIIRS type-2 detection 2012-2025, dilated +-1 cell, applied to both sensors and all years.",
@@ -359,7 +383,23 @@ meta = dict(
     outages={s: [f"{a} ({k} d)" for a, k in v] for s, v in outs.items()},
     provinces_source="geoBoundaries TUR ADM1 (OSM, CC BY-SA 2.0)",
 )
-doc = dict(meta=meta, series=series, provinces=provinces, regions=regions)
+# Running month/year: the same calendar window (day 1 .. last data day) in every year, so a partial
+# month or year is compared with like-for-like values, not with full months.
+partial = None
+if PARTIAL:
+    dm, dd_ = DATA_THROUGH.month, DATA_THROUGH.day
+    dom = dates.day.values
+    def window(sel):
+        r = np.zeros((81, NY))
+        np.add.at(r.T, yr[sel] - 2000, h_day[:, sel].T)
+        return r
+    mtd = window((mo == dm) & (dom <= dd_))
+    ytd = window((mo < dm) | ((mo == dm) & (dom <= dd_)))
+    yrs = YEARS[1:]                                    # 2000 has no MODIS before November
+    partial = dict(through=f"{DATA_THROUGH:%Y-%m-%d}", month=dm, day=dd_, years=yrs,
+                   mtd={n: [int(round(v)) for v in mtd[p, 1:]] for p, n in enumerate(names)},
+                   ytd={n: [int(round(v)) for v in ytd[p, 1:]] for p, n in enumerate(names)})
+doc = dict(meta=meta, series=series, provinces=provinces, regions=regions, partial=partial)
 js = "const harmonized=" + json.dumps(doc, ensure_ascii=False, separators=(",", ":")) + ";\n"
 (ROOT / "frontend/harmonized-data.js").write_text(js, encoding="utf8")
 
@@ -381,10 +421,11 @@ log(f"harmonized-data.js {len(js.encode()) / 1024:.0f} KB")
 print("\nOutage days used:", {s: [f'{a}({k})' for a, k in v if k >= 3] + [f'+{sum(1 for _, k in v if k < 3)} short'] for s, v in outs.items()})
 print("\nNational annual totals")
 print(pd.DataFrame({"raw_naive": naive.sum(0).round(), "harmonized": np.nansum(ann, 0).round()}, index=YEARS).iloc[1:].astype(int).to_string())
-print(f"national step raw {step(naive.sum(0)):.3f}  harmonized {step(np.nansum(ann, 0)):.3f}  MODIS-only {step(raw_m.sum((0, 2))):.3f}")
+print("data through", f"{DATA_THROUGH:%Y-%m-%d}", "partial" if PARTIAL else "")
+print(f"national step raw {step(naive.sum(0)):.3f}  harmonized {step(np.nansum(ann, 0)):.3f}  MODIS-only {step(np.nansum(raw_m, (0, 2))):.3f}")
 print("regional factors\n", pd.DataFrame(F, index=codes, columns=range(1, 13)).round(2).to_string())
 for n in ["Antalya", "Adana", "İzmir", "Şanlıurfa", "Eskişehir"]:
-    p = names.index(n); a = ann[p, 1:]
+    p = names.index(n); a = ann[p, 1:FULL]
     top = [YEARS[1 + i] for i in np.argsort(-a)[:3]]
     print(f"\n{n} ({region_of[n]}) conf={provinces[n]['confidence']} annWAPE={aw[p]:.3f} monWAPE={mw[p]:.3f} bias={bias[p]:+.3f} "
           f"mean={mean_ann[p]:.0f} step raw={step_raw[p]:.2f} harm={step_h[p]:.2f} modis={step_m[p]:.2f} top3={top}")

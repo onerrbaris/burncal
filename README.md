@@ -1,6 +1,6 @@
 # BurnCal
 
-Pick a province in Türkiye and get one harmonized 25-year monthly burning calendar (MODIS 2000-2025 and VIIRS S-NPP 2012-2025 on a single scale), with how each month and year compares to the historical median, and a CSV download.
+Pick a province in Türkiye and get one harmonized 25-year monthly burning calendar (MODIS 2000 onward and VIIRS S-NPP 2012 onward on a single scale), with how each month and year compares to the historical median, and a CSV download.
 
 Built for NASA Space Apps 2026, challenge "Harmonization of MODIS and VIIRS Hot Spots".
 
@@ -25,21 +25,31 @@ Example, Adana (from `docs/DEMO_ILLER.md`): the raw series shows a 2.6x rise at 
 
 ## What the app does
 
-- Province selection by clicking the map or by search.
-- Year timeline (slider and play) that recolours provinces by yearly detections.
-- MODIS, VIIRS and harmonized tabs for the selected province.
-- Month bars for the selected year.
-- Year x month calendar for the whole record.
-- Comparison of the selected year with the historical median and the inter-quartile band, month by month.
-- Validation confidence badge (high / medium / low) for the harmonized series, based on leave-one-year-out error.
-- Date range selection (start and end year): the calendar, the reference median, percentiles, rankings and the CSV follow the selected range.
-- "Where does this month sit" card for any month (default: the latest, December 2025): value, median of that calendar month, percentile and a level (low / normal / high / extreme).
-- High and extreme months flagged in the calendar with shape markers, not colour alone.
-- Top years and top months for the selected province.
-- Raw versus harmonized annual chart with the 2012 sensor change marked, plus the regional monthly factors.
-- Inline caution for provinces with low validation confidence.
-- CSV download for the selected province and range: harmonized value, source (scaled MODIS or observed VIIRS), raw MODIS and VIIRS counts, median, percentile, level.
-- Hotspot points layer: individual detections for the selected year, shown when zoomed in.
+- Province selection by clicking the map (short, smooth camera glide) or by search.
+- One harmonized series everywhere (VIIRS-equivalent detections); raw MODIS and VIIRS appear only in the "Uyum" view and in the downloads.
+- Year timeline (slider and play) that recolours provinces by detections.
+- Period selection: start and end year, plus a month window (for example the June-October fire season). Totals, calendar, medians, rankings, the map and all downloads follow it.
+- Year x month calendar for the selected period, with high and extreme months flagged by shape, not colour alone.
+- Comparison of the selected year with the period median and inter-quartile band, month by month.
+- "Where does this month sit" card for any month (default: the latest data month): value, median, percentile and level (low / normal / high / extreme).
+- Running month and year: when the data ends mid-month (current year from the FIRMS API), the partial month is compared with the same days of that month in every other year, and the partial year with the same January-to-date window. Nothing partial is compared with full months.
+- Top years and top months; raw versus harmonized annual chart with the 2012 sensor change and the regional monthly factors.
+- Validation confidence badge (leave-one-year-out error) and an inline caution for low-confidence provinces.
+- OGM view: national satellite totals next to the forest fires reported by the General Directorate of Forestry (2001-2025), with the rank correlation and why the two differ, plus the 2025 regional directorate figures where the province has one (`web/data/ogm.json`, sources inside).
+- Downloads: monthly CSV (harmonized value, source, complete flag, raw MODIS and VIIRS, median, percentile, level), hotspot list CSV (every detection in the province and period: date, coordinates, sensor, FRP), and the open chart as PNG or SVG.
+- Hotspot points layer: individual detections for the selected year, drawn at the sensor footprint when zoomed in.
+
+## Updating the data
+
+```
+python scripts/fetch_firms.py              # yearly archive files (complete years)
+python scripts/fetch_firms_recent.py       # current year via the FIRMS API; needs FIRMS_MAP_KEY in .env
+.venv\Scripts\python.exe scripts/build_harmonized.py --force
+.venv\Scripts\python.exe scripts/build_points.py
+python scripts/build_atlas_json.py
+```
+
+Factors and validation always use the complete 2012-2025 overlap; adding the current year does not change the method.
 
 ## Method
 
