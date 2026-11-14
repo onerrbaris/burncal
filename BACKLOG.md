@@ -18,7 +18,7 @@ Repo: https://github.com/onerrbaris/burncal (private). Yeni oturum: önce `docs/
 
 ## Team to-do (humans)
 - FIRMS MAP_KEY iste: https://firms.modaps.eosdis.nasa.gov/api/map_key/ → `.env` içine `FIRMS_MAP_KEY=...` (commit'leme)
-- Challenge "Resources" sekmesine ve teslim kılavuzuna (video süresi) tarayıcıdan bak
+- Teslim kılavuzuna (video süresi) tarayıcıdan bak. ("Resources" sekmesine bakıldı: yalnızca FIRMS listeleniyor. "Teams" sekmesi bu challenge için 841 takım gösteriyor.)
 - Deploy için Render + Vercel hesapları
 
 ## Done
@@ -27,6 +27,8 @@ Repo: https://github.com/onerrbaris/burncal (private). Yeni oturum: önce `docs/
 - Uyumlaştırma yöntemi çalışması: iki yön, seyreltme, gürültü tabanı, filtre duyarlılığı (`analysis/`)
 - Akdeniz bölgesi çalışması (`analysis/med/`)
 - Repo oluşturuldu, Blockchaindeveloper43 davet edildi
+
+- Karşılaştırma (14 Kas akşam): resmî uyumlaştırılmış hotspot sayım ürünü yok; NASA tarafı yanık alan/FRP üzerinden gidiyor (GFED5NRT en yakın yöntem, Coskuner 2022 Türkiye için 3,9 kat). Challenge metni açıkça hotspot sayısı ve aylık karşılaştırma istiyor. Eksiklerimiz: ürün, bağımsız doğrulama, NOAA-20/21 köprüsü, gerçek arazi örtüsü.
 
 ## Decisions
 - 14 Kas – Zaman birimi ay (8 günlük dönem her ölçekte daha kötü çıktı).
