@@ -60,3 +60,5 @@ Next step — Masaüstü 3B arazi kamerası ve animasyonlu takvim penceresi içi
 Next step — 81 ilin MODIS (2000–2025) ve VIIRS (2012–2025) takvimlerini haritada incele. Birleşmiş sekmesi boş.
 
 Next step — Türkiye maskesi, deniz dokusu ve il seçimi kamera geçişlerini masaüstünde incele.
+
+Next step — İl seçimiyle açılan 1536 px çevrimiçi uydu dokusunu ve alçalan kamerayı incele.

@@ -17,7 +17,7 @@ function paint(){
  if(!basemap.naturalWidth)return;
  ctx.clearRect(0,0,2200,1000);
  ctx.save();ctx.clip(outline);ctx.drawImage(basemap,0,0,2200,1000);
- for(const {name,path} of provinces){ctx.strokeStyle='#69b9be';ctx.lineWidth=1;ctx.stroke(path);if(name===city.value){ctx.fillStyle='rgba(255,183,78,.18)';ctx.fill(path);ctx.strokeStyle='#ffae46';ctx.lineWidth=3;ctx.stroke(path)}}
+ for(const {name,path} of provinces){ctx.strokeStyle='#69b9be';ctx.lineWidth=1;ctx.stroke(path);if(name===city.value){ctx.fillStyle='rgba(236,55,48,.07)';ctx.fill(path);ctx.strokeStyle='#ff3439';ctx.lineWidth=3;ctx.stroke(path)}}
  ctx.restore();ctx.strokeStyle='#ffe2a7';ctx.lineWidth=2;ctx.stroke(outline);
  if(texture)texture.needsUpdate=true;
 }
@@ -35,6 +35,36 @@ async function start(){
  for(let i=0;i<positions.count;i++){const u=grid.attributes.uv.getX(i),v=grid.attributes.uv.getY(i);positions.setZ(i,pixels[4*(Math.round((1-v)*(dem.height-1))*dem.width+Math.round(u*(dem.width-1))) ]*.32)}
  grid.computeVertexNormals();texture=new THREE.CanvasTexture(surface);texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=renderer.capabilities.getMaxAnisotropy();
  const mesh=new THREE.Mesh(grid,new THREE.MeshLambertMaterial({map:texture,transparent:true,alphaTest:.05}));scene.add(mesh,new THREE.AmbientLight(0xffffff,1.55));const sun=new THREE.DirectionalLight(0xffedd1,1.5);sun.position.set(-600,800,550);scene.add(sun);
+ // A city-sized satellite texture keeps the local pixel density independent of the national map.
+ const patchCanvas=document.createElement('canvas');patchCanvas.width=patchCanvas.height=1536;
+ const patchCtx=patchCanvas.getContext('2d'), patch=new THREE.CanvasTexture(patchCanvas);
+ patch.colorSpace=THREE.SRGBColorSpace;patch.anisotropy=texture.anisotropy;
+ const bounds=new THREE.Vector4(0,0,1,1), ready={value:0};
+ mesh.material.onBeforeCompile=shader=>{
+   shader.uniforms.cityPhoto={value:patch};shader.uniforms.cityBounds={value:bounds};shader.uniforms.cityReady=ready;
+   shader.fragmentShader='uniform sampler2D cityPhoto; uniform vec4 cityBounds; uniform float cityReady;\n'+shader.fragmentShader.replace('#include <map_fragment>',`#include <map_fragment>
+     vec2 localUV=(vMapUv-cityBounds.xy)/cityBounds.zw;
+     if(cityReady>0.5 && all(greaterThanEqual(localUV,vec2(0.))) && all(lessThanEqual(localUV,vec2(1.)))){
+       vec4 detail=texture2D(cityPhoto,localUV);diffuseColor.rgb=mix(diffuseColor.rgb,detail.rgb,detail.a);
+     }`);
+ };
+ let requestId=0;
+ async function loadDetail(left,right,top,bottom){
+   const id=++requestId;ready.value=0;
+   const selected=city.value;
+   const url=new URL('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export');
+   url.search=new URLSearchParams({bbox:[24+left/100,44-bottom/100,24+right/100,44-top/100].join(','),bboxSR:'4326',imageSR:'4326',size:'1536,1536',adjustAspectRatio:'false',format:'jpg',f:'image'});
+   const img=new Image();img.crossOrigin='anonymous';img.src=url.href;
+   try{await img.decode()}catch{return}
+   if(id!==requestId || selected!==city.value)return;
+   const w=right-left,h=bottom-top;
+   patchCtx.setTransform(1,0,0,1,0,0);patchCtx.clearRect(0,0,1536,1536);
+   patchCtx.setTransform(1536/w,0,0,1536/h,-left*1536/w,-top*1536/h);
+   patchCtx.save();patchCtx.clip(outline);patchCtx.drawImage(img,left,top,w,h);
+   for(const province of provinces){patchCtx.strokeStyle=province.name===selected?'#ff3439':'#69b9be';patchCtx.lineWidth=province.name===selected?.8:.3;patchCtx.stroke(province.path)}
+   patchCtx.strokeStyle='#ffe2a7';patchCtx.lineWidth=.6;patchCtx.stroke(outline);patchCtx.restore();
+   bounds.set(left/2200,1-bottom/1000,w/2200,h/1000);patch.needsUpdate=true;ready.value=1;schedule();
+ }
  // A seamless water surface extends beyond the satellite footprint.
  const waterMaterial=new THREE.ShaderMaterial({
    vertexShader:'varying vec2 point;void main(){point=position.xy;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
@@ -43,13 +73,14 @@ async function start(){
  });
  const water=new THREE.Mesh(new THREE.PlaneGeometry(24000,24000),waterMaterial);water.position.z=-2;scene.add(water);
  let x=0,y=0,z=1500,tx=0,ty=0,tz=1500,drag,frame=0,last=0;
- function draw(time){frame=0;const a=1-Math.exp(-Math.min(50,time-last)/175);last=time;x+=(tx-x)*a;y+=(ty-y)*a;z+=(tz-z)*a;camera.position.set(x,y-z*.38,z);camera.lookAt(x,y,0);renderer.render(scene,camera);if(Math.abs(tx-x)+Math.abs(ty-y)+Math.abs(tz-z)>.03)schedule()}
+ let damping=175;
+ function draw(time){frame=0;const a=1-Math.exp(-Math.min(50,time-last)/damping);last=time;x+=(tx-x)*a;y+=(ty-y)*a;z+=(tz-z)*a;const near=1-THREE.MathUtils.smoothstep(z,160,1200);camera.fov=40+14*near;camera.updateProjectionMatrix();camera.position.set(x,y-z*(.38+.42*near),z*(1-.26*near));camera.lookAt(x,y,0);renderer.render(scene,camera);if(Math.abs(tx-x)+Math.abs(ty-y)+Math.abs(tz-z)>.03)schedule()}
  function schedule(){if(!frame)frame=requestAnimationFrame(draw)}
  function resize(){renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();schedule()}window.onresize=resize;resize();
- function zoom(f){tz=Math.min(2100,Math.max(190,tz*f));schedule()}
+ function zoom(f){damping=175;tz=Math.min(2100,Math.max(190,tz*f));schedule()}
  world.onwheel=e=>{e.preventDefault();zoom(Math.exp(Math.max(-250,Math.min(250,e.deltaY))*.0016))};
  plus.onclick=()=>zoom(.74);minus.onclick=()=>zoom(1.35);home.onclick=()=>{tx=ty=0;tz=1500;schedule()};
- world.onpointerdown=e=>{world.setPointerCapture(e.pointerId);drag={x:e.clientX,y:e.clientY,tx,ty,moved:false}};
+ world.onpointerdown=e=>{damping=175;world.setPointerCapture(e.pointerId);drag={x:e.clientX,y:e.clientY,tx,ty,moved:false}};
  world.onpointermove=e=>{if(!drag)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag.moved ||= Math.hypot(dx,dy)>4;if(drag.moved){tx=Math.max(-1050,Math.min(1050,drag.tx-dx*z*.76/innerHeight));ty=Math.max(-605,Math.min(605,drag.ty+dy*z*.8/innerHeight));schedule()}};
  world.onpointercancel=()=>drag=null;world.onpointerup=e=>{if(!drag)return;const click=!drag.moved;drag=null;if(!click)return;const ray=new THREE.Raycaster();ray.setFromCamera({x:2*e.clientX/innerWidth-1,y:1-2*e.clientY/innerHeight},camera);const hit=ray.intersectObject(mesh)[0];if(!hit)return;const found=provinces.find(p=>ctx.isPointInPath(p.path,hit.uv.x*2200,(1-hit.uv.y)*1000));if(found){city.value=found.name;render();showSheet(true);focusProvince()}};
  function focusProvince(){
@@ -57,6 +88,7 @@ async function start(){
    const coordinates=entry[1].match(/-?[\d.]+,-?[\d.]+/g).map(pair=>pair.split(',').map(Number));
    const xs=coordinates.map(p=>p[0]),ys=coordinates.map(p=>p[1]);
    const left=Math.min(...xs),right=Math.max(...xs),top=Math.min(...ys),bottom=Math.max(...ys);
+   damping=460;loadDetail(left-8,right+8,top-8,bottom+8);
    tx=(left+right)/2-1100;ty=625-(top+bottom)*.625;
    tz=Math.max(160,Math.min(1100,Math.max((right-left)/camera.aspect,(bottom-top)*1.25)*2.15));schedule();
  }
