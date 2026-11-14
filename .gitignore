@@ -9,3 +9,8 @@ dist/
 .env.*
 !.env.example
 .DS_Store
+
+# analysis artefacts
+analysis/cache/
+analysis/out/jobs/
+*.pkl

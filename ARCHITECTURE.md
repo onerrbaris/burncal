@@ -1,5 +1,7 @@
 # ARCHITECTURE
 
+> **TASLAK.** Bu belge ürün yönü seçilmeden yazıldı. Yöntem bulguları `docs/REPORT.md` içinde; oradakiyle çelişen yerlerde (8 günlük dönem, `type == 0` filtresi, küçük alan vaadi) rapor geçerlidir.
+
 Working name: **BurnCal** (change freely). Event: NASA Space Apps 2026, Nov 14–15. Submission closes **Sun Nov 15 23:59 local**.
 
 ## Challenge & demo story

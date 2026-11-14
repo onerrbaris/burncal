@@ -1,0 +1,40 @@
+                model     period    scale   wape   bias  r_log  A_pct_mae  B_pct_mae  A_p90_recall  A_p90_precision  year_rank_rho  zeroY
+0   thin_frp+seasonal  2012-2020  country  0.110  0.004  0.962      0.101      0.065         0.867            0.765          0.836  0.000
+1   thin_frp+seasonal  2012-2020     b100  0.389  0.004  0.854      0.178      0.121         0.543            0.481          0.544  0.523
+2   thin_frp+seasonal  2012-2020      b25  0.664  0.004  0.762      0.112      0.081         0.472            0.375          0.563  0.885
+3   thin_clu+seasonal  2012-2020  country  0.100  0.004  0.964      0.090      0.063         0.933            0.778          0.862  0.000
+4   thin_clu+seasonal  2012-2020     b100  0.379  0.004  0.857      0.176      0.118         0.550            0.503          0.545  0.523
+5   thin_clu+seasonal  2012-2020      b25  0.653  0.004  0.767      0.110      0.079         0.467            0.396          0.569  0.885
+6                none  2012-2020  country  1.583  1.582  0.936      0.396      0.393         1.000            0.195          0.807  0.000
+7                none  2012-2020     b100  1.670  1.582  0.844      0.279      0.248         0.835            0.248          0.546  0.523
+8                none  2012-2020      b25  1.849  1.582  0.734      0.153      0.131         0.705            0.220          0.573  0.885
+9            seasonal  2012-2020  country  0.117 -0.001  0.968      0.117      0.068         0.933            0.875          0.779  0.000
+10           seasonal  2012-2020     b100  0.427 -0.001  0.874      0.202      0.157         0.632            0.382          0.532  0.523
+11           seasonal  2012-2020      b25  0.718 -0.001  0.777      0.132      0.109         0.574            0.251          0.542  0.885
+12  thin_frp+seasonal  2012-2025  country  0.133  0.004  0.952      0.112      0.056         0.760            0.760          0.807  0.000
+13  thin_frp+seasonal  2012-2025     b100  0.432  0.004  0.831      0.178      0.109         0.527            0.481          0.505  0.504
+14  thin_frp+seasonal  2012-2025      b25  0.721  0.004  0.732      0.099      0.066         0.428            0.366          0.520  0.884
+15  thin_clu+seasonal  2012-2025  country  0.123  0.004  0.953      0.107      0.052         0.720            0.667          0.822  0.000
+16  thin_clu+seasonal  2012-2025     b100  0.427  0.004  0.832      0.177      0.107         0.515            0.491          0.500  0.504
+17  thin_clu+seasonal  2012-2025      b25  0.714  0.004  0.736      0.097      0.064         0.414            0.391          0.520  0.884
+18               none  2012-2025  country  1.494  1.479  0.905      0.379      0.362         0.920            0.213          0.791  0.000
+19               none  2012-2025     b100  1.612  1.479  0.826      0.264      0.222         0.781            0.246          0.508  0.504
+20               none  2012-2025      b25  1.824  1.479  0.709      0.134      0.108         0.654            0.221          0.518  0.884
+21           seasonal  2012-2025  country  0.132  0.000  0.959      0.118      0.051         0.680            0.739          0.776  0.000
+22           seasonal  2012-2025     b100  0.451  0.000  0.855      0.197      0.138         0.578            0.386          0.491  0.504
+23           seasonal  2012-2025      b25  0.761  0.000  0.748      0.118      0.091         0.501            0.249          0.486  0.884
+family  period     chosen  
+clu     2012-2020  clu_2_10     9
+        2012-2025  clu_2_10    14
+frp     2012-2020  frp_5        9
+        2012-2025  frp_5       14
+        floor     period    scale  wape_perfect_mean  wape_two_draws  A_pct_mae  A_p90_recall  A_p90_precision  year_rank_rho                 model         n     sumY  zeroY   bias   wape    pdev  r_log    rho  within_x2_Yge5  groups  B_pct_mae  own_pct_mae  B_p90_recall  B_p90_precision  own_p90_recall  own_p90_precision  Pown_p90_recall  Pown_p90_precision  ref_p90_rate  year_rank_rho_p10  year_rank_groups  season_rank_rho  season_rank_groups
+0     poisson  2012-2020  country              0.030           0.045      0.040         1.000            0.944          0.953                   NaN       NaN      NaN    NaN    NaN    NaN     NaN    NaN    NaN             NaN     NaN        NaN          NaN           NaN              NaN             NaN                NaN              NaN                 NaN           NaN                NaN               NaN              NaN                 NaN
+1     poisson  2012-2020     b100              0.217           0.265      0.097         0.674            0.671          0.734                   NaN       NaN      NaN    NaN    NaN    NaN     NaN    NaN    NaN             NaN     NaN        NaN          NaN           NaN              NaN             NaN                NaN              NaN                 NaN           NaN                NaN               NaN              NaN                 NaN
+2     poisson  2012-2020      b25              0.496           0.495      0.060         0.670            0.661          0.754                   NaN       NaN      NaN    NaN    NaN    NaN     NaN    NaN    NaN             NaN     NaN        NaN          NaN           NaN              NaN             NaN                NaN              NaN                 NaN           NaN                NaN               NaN              NaN                 NaN
+3     poisson  2012-2025  country              0.031           0.042      0.033         1.000            0.923          0.967                   NaN       NaN      NaN    NaN    NaN    NaN     NaN    NaN    NaN             NaN     NaN        NaN          NaN           NaN              NaN             NaN                NaN              NaN                 NaN           NaN                NaN               NaN              NaN                 NaN
+4     poisson  2012-2025     b100              0.224           0.272      0.091         0.686            0.686          0.757                   NaN       NaN      NaN    NaN    NaN    NaN     NaN    NaN    NaN             NaN     NaN        NaN          NaN           NaN              NaN             NaN                NaN              NaN                 NaN           NaN                NaN               NaN              NaN                 NaN
+5     poisson  2012-2025      b25              0.502           0.507      0.049         0.679            0.676          0.754                   NaN       NaN      NaN    NaN    NaN    NaN     NaN    NaN    NaN             NaN     NaN        NaN          NaN           NaN              NaN             NaN                NaN              NaN                 NaN           NaN                NaN               NaN              NaN                 NaN
+6  terra_aqua  2012-2020  country                NaN             NaN      0.073         0.812            0.812          0.896  terra->aqua seasonal     105.0  31312.0  0.000  0.006  0.121  10.242  0.964  0.976           0.981    12.0      0.054        0.083         0.875            0.933           0.875              0.778            0.812               0.722         0.152              0.773              12.0            0.961                 9.0
+7  terra_aqua  2012-2020     b100                NaN             NaN      0.174         0.419            0.405          0.452  terra->aqua seasonal   11760.0  31312.0  0.602  0.006  0.530   3.656  0.836  0.691           0.751  1097.0      0.104        0.206         0.805            0.649           0.384              0.402            0.403               0.391         0.141             -0.108             636.0            0.609               704.0
+8  terra_aqua  2012-2020      b25                NaN             NaN      0.111         0.315            0.314          0.455  terra->aqua seasonal  136920.0  31312.0  0.913  0.006  0.872   0.916  0.690  0.489           0.709  6318.0      0.076        0.156         0.864            0.777           0.273              0.312            0.285               0.301         0.112             -0.051            1305.0            0.631              1614.0
