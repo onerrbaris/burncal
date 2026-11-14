@@ -389,16 +389,18 @@ partial = None
 if PARTIAL:
     dm, dd_ = DATA_THROUGH.month, DATA_THROUGH.day
     dom = dates.day.values
-    def window(sel):
+    def window(x, sel):
         r = np.zeros((81, NY))
-        np.add.at(r.T, yr[sel] - 2000, h_day[:, sel].T)
+        np.add.at(r.T, yr[sel] - 2000, x[:, sel].T)
         return r
-    mtd = window((mo == dm) & (dom <= dd_))
-    ytd = window((mo < dm) | ((mo == dm) & (dom <= dd_)))
+    msel = (mo == dm) & (dom <= dd_)
+    mtd = window(h_day, msel)
+    ytd = window(h_day, (mo < dm) | msel)
+    mtd_m, mtd_v = window(T + A, msel), window(N, msel)   # raw sensors, for the MODIS and VIIRS tabs
     yrs = YEARS[1:]                                    # 2000 has no MODIS before November
+    ints = lambda a: {n: [int(round(v)) for v in a[p, 1:]] for p, n in enumerate(names)}
     partial = dict(through=f"{DATA_THROUGH:%Y-%m-%d}", month=dm, day=dd_, years=yrs,
-                   mtd={n: [int(round(v)) for v in mtd[p, 1:]] for p, n in enumerate(names)},
-                   ytd={n: [int(round(v)) for v in ytd[p, 1:]] for p, n in enumerate(names)})
+                   mtd=ints(mtd), ytd=ints(ytd), mtd_modis=ints(mtd_m), mtd_viirs=ints(mtd_v))
 doc = dict(meta=meta, series=series, provinces=provinces, regions=regions, partial=partial)
 js = "const harmonized=" + json.dumps(doc, ensure_ascii=False, separators=(",", ":")) + ";\n"
 (ROOT / "frontend/harmonized-data.js").write_text(js, encoding="utf8")

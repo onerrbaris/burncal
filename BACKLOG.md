@@ -36,7 +36,7 @@ FIRMS MAP_KEY gelince: `.env` içine `FIRMS_MAP_KEY=...`, sonra `python scripts/
 - Deploy için Render + Vercel hesapları
 
 ## Done
-- 15 Kas: Arayüz sadeleşti (sensör sekmeleri, WASD, konum göstergesi, "Aylar" sekmesi kalktı; efektler kaldı). İle tıklayınca yumuşak yakınlaşma artık Windows "animasyon efektleri" kapalıyken de oynuyor (sebep buydu: tarayıcı prefers-reduced-motion bildiriyordu). Eklenenler: ay penceresi (yangın sezonu), tespit listesi CSV'si (sayılar paneldeki ham sayılarla birebir), grafik PNG/SVG, OGM sekmesi (ulusal 2001–2025 + 2025 OBM; uydu–OGM Spearman 0,04 / alan −0,33, sebebi tarım), süren ay/yıl için aynı-günler kıyası. 2026 için `scripts/fetch_firms_recent.py` hazır, MAP_KEY bekliyor. Yarım yıl yolu `BURNCAL_CUTOFF=2025-09-13` ile Chrome'da denendi.
+- 15 Kas: Arayüz sadeleşti (WASD, konum göstergesi, "Aylar" sekmesi kalktı; efektler ve MODIS/VIIRS ham sekmeleri duruyor, kullanıcı isteği). İle tıklayınca yumuşak yakınlaşma artık Windows "animasyon efektleri" kapalıyken de oynuyor (sebep buydu: tarayıcı prefers-reduced-motion bildiriyordu). Eklenenler: ay penceresi (yangın sezonu), tespit listesi CSV'si (sayılar paneldeki ham sayılarla birebir), grafik PNG/SVG, OGM sekmesi (ulusal 2001–2025 + 2025 OBM; uydu–OGM Spearman 0,04 / alan −0,33, sebebi tarım), süren ay/yıl için aynı-günler kıyası. 2026 için `scripts/fetch_firms_recent.py` hazır, MAP_KEY bekliyor. Yarım yıl yolu `BURNCAL_CUTOFF=2025-09-13` ile Chrome'da denendi.
 - Keşif: FIRMS arşivi + API, challenge kuralları, rakipler
 - Türkiye verisi indirildi (`python scripts/fetch_firms.py`)
 - Uyumlaştırma yöntemi çalışması: iki yön, seyreltme, gürültü tabanı, filtre duyarlılığı (`analysis/`)

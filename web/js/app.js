@@ -10,19 +10,26 @@ const FAST = REDUCED || !new URLSearchParams(location.search).has('sinematik');
 const TR_BOUNDS = [[25.6, 35.7], [44.9, 42.2]];
 const up = (s) => s.toLocaleUpperCase('tr');
 const low = (s) => s.toLocaleLowerCase('tr');
-const KEY = 'merged';   // harita ve panel her zaman uyumlaştırılmış seriyi gösterir; ham sensörler "Uyum" sekmesinde
+// Seriler: varsayılan uyumlaştırılmış seri; ham MODIS ve VIIRS, kaynağı doğrudan incelemek isteyenler için.
+const SENSORS = [
+  { key: 'merged', label: 'Birleşmiş', sub: 'uyumlaştırılmış' },
+  { key: 'modis', label: 'MODIS', sub: 'ham' },
+  { key: 'viirs', label: 'VIIRS', sub: 'ham' },
+];
 
 const TABS = [['calendar', 'Takvim'], ['compare', 'Kıyas'], ['peaks', 'Zirveler'], ['step', 'Uyum'], ['ogm', 'OGM']];
 
 // month: okunan ay (0–11); from/to: dönem yılları; win: sezon penceresi [ilk ay, son ay]; custom: dönemi kullanıcı mı seçti.
-const state = { year: null, month: 11, from: null, to: null, win: [0, 11], custom: false, sel: null, tab: 'calendar', playing: false };
+const state = { sensor: 'merged', year: null, month: 11, from: null, to: null, win: [0, 11], custom: false, sel: null, tab: 'calendar', playing: false };
 let data, geo, ogm, map, timer, ready = false, hovered = null, orbitOK = false, orbitRaf = 0;
-let RANGE, LY, LM, LD, PARTIAL;   // seri aralığı; son veri yılı, ayı (0–11), günü; son yıl bitmemiş mi
-const bboxes = {}, provIdx = {};
+let RANGE, LY, LM, LD, PARTIAL;   // etkin serinin yıl aralığı; son veri yılı, ayı (0–11), günü; son yıl bitmemiş mi
+const bboxes = {}, provIdx = {}, ranges = {};
 
 // ── Veri ────────────────────────────────────────────────
 const sum = (a) => a.reduce((x, y) => x + (y ?? 0), 0);
-const series = (name) => data.provinces[name]?.[KEY] || null;
+const series = (name, sensor = state.sensor) => data.provinces[name]?.[sensor] || null;
+const sensorOf = () => SENSORS.find((s) => s.key === state.sensor);
+const mtdKey = () => (state.sensor === 'merged' ? 'mtd' : `mtd_${state.sensor}`);
 const fullWin = () => state.win[0] === 0 && state.win[1] === 11;
 const inWin = (m) => m >= state.win[0] && m <= state.win[1];
 const winLabel = () => (fullWin() ? '' : `${MON3[state.win[0]]}–${MON3[state.win[1]]}`);
@@ -43,7 +50,7 @@ function likeTotal(name, y) {
   for (let m = state.win[0]; m <= Math.min(state.win[1], LM - 1); m++) t += row[m] ?? 0;
   if (inWin(LM)) {
     const i = data.partial.years.indexOf(y);
-    t += y === LY ? row[LM] ?? 0 : data.partial.mtd[name]?.[i] ?? 0;
+    t += y === LY ? row[LM] ?? 0 : data.partial[mtdKey()]?.[name]?.[i] ?? 0;
   }
   return t;
 }
@@ -52,23 +59,27 @@ function likeTotal(name, y) {
 const cmpCache = {};
 function cmpYears(name) {
   if (!PARTIAL) return series(name);
-  if (cmpCache[name]) return cmpCache[name];
-  const out = {}, mtd = data.partial.mtd[name] || [];
+  const ck = state.sensor + name;
+  if (cmpCache[ck]) return cmpCache[ck];
+  const out = {}, mtd = data.partial[mtdKey()]?.[name] || [];
   for (const [y, row] of Object.entries(series(name) || {})) {
     const i = data.partial.years.indexOf(+y), r = row.slice();
     if (+y !== LY && i >= 0) r[LM] = mtd[i];
     out[y] = r;
   }
-  return (cmpCache[name] = out);
+  return (cmpCache[ck] = out);
 }
 // Ay okuması: süren ay için cmpYears, diğer aylar için tam seri.
 const rdFor = (name) => (y, m) => reading(isPartial(y, m) ? cmpYears(name) : series(name), y, m, state.from, state.to);
 
 function indexData() {
-  let lo = Infinity, hi = -Infinity;
-  for (const p of Object.values(data.provinces)) for (const y of Object.keys(p[KEY] || {})) { lo = Math.min(lo, +y); hi = Math.max(hi, +y); }
-  RANGE = [lo, hi];
-  const t = (data.meta.data_through || `${hi}-12-31`).split('-').map(Number);
+  for (const { key } of SENSORS) {
+    let lo = Infinity, hi = -Infinity;
+    for (const p of Object.values(data.provinces)) for (const y of Object.keys(p[key] || {})) { lo = Math.min(lo, +y); hi = Math.max(hi, +y); }
+    if (hi >= lo) ranges[key] = [lo, hi];
+  }
+  RANGE = ranges.merged;
+  const t = (data.meta.data_through || `${RANGE[1]}-12-31`).split('-').map(Number);
   [LY, LM, LD] = [t[0], t[1] - 1, t[2]];
   PARTIAL = !!data.partial && !(LM === 11 && LD === 31);
   state.month = LM;
@@ -133,7 +144,7 @@ function move(cam, duration) {
 const ptCache = {};
 let ptKey = '', ptStyle = '', ptTimer = 0;
 const PT_MINZOOM = 5.8; // katman 6.2'de görünür olur; biraz önce hazırlanır
-const ptSensor = () => (state.year < 2012 ? 'modis' : 'viirs');
+const ptSensor = () => (state.sensor !== 'merged' ? state.sensor : state.year < 2012 ? 'modis' : 'viirs');
 const loadYear = (y) => ptCache[y] || (ptCache[y] = fetch(`data/points/${y}.json`).then((r) => (r.ok ? r.json() : {})).catch(() => { delete ptCache[y]; return {}; }));
 // Bir yılın noktaları on binlerce tespittir. Yalnızca noktalar görünürken ve yıl değişimi durulunca
 // yüklenir; böylece yıl kaydırıcısı ve oynatma, uzak görünümde haritayı yeniden kurmaz.
@@ -275,14 +286,49 @@ function select(name, fly = true) {
 }
 
 // ── Yıl ─────────────────────────────────────────────────
-function initYears() {
+function renderSensors() {
+  const nav = $('#sensorTabs');
+  for (const s of SENSORS) {
+    const r = ranges[s.key];
+    if (!r) continue;
+    const b = document.createElement('button');
+    b.role = 'tab'; b.dataset.key = s.key;
+    b.title = s.key === 'merged' ? 'MODIS ve VIIRS tek ölçekte (VIIRS-eşdeğeri tespit)' : `${s.label} ham tespit sayısı, uyumlaştırma uygulanmamış`;
+    b.innerHTML = `<b>${s.label}</b><small class="${s.key === 'merged' ? '' : 'raw'}">${s.sub} · ${r[0]}–${r[1]}</small>`;
+    b.onclick = () => setSensor(s.key);
+    nav.append(b);
+  }
+  nav.addEventListener('keydown', (e) => {
+    const d = { ArrowRight: 1, ArrowLeft: -1 }[e.key];
+    if (!d) return;
+    const keys = SENSORS.map((s) => s.key).filter((k) => ranges[k]);
+    const next = keys[(keys.indexOf(state.sensor) + d + keys.length) % keys.length];
+    setSensor(next); nav.querySelector(`[data-key=${next}]`).focus(); e.stopPropagation();
+  });
+  addEventListener('resize', moveIndicator);
+  document.fonts?.ready.then(moveIndicator);
+}
+function moveIndicator() {
+  const b = $(`#sensorTabs [data-key=${state.sensor}]`), ind = $('.seg-ind');
+  if (!b) return;
+  ind.style.width = b.offsetWidth + 'px';
+  ind.style.transform = `translateX(${b.offsetLeft}px)`;
+}
+function setSensor(key) {
+  state.sensor = key;
+  for (const b of document.querySelectorAll('#sensorTabs button')) {
+    const on = b.dataset.key === key;
+    b.setAttribute('aria-selected', on); b.tabIndex = on ? 0 : -1;
+  }
+  moveIndicator();
+  RANGE = ranges[key];
   const [lo, hi] = RANGE, slider = $('#year');
   slider.min = lo; slider.max = hi;
-  state.year = hi;
   clampRange();
   $('#yearTicks').innerHTML = Array.from({ length: hi - lo + 1 }, (_, i) => lo + i)
     .map((y) => `<span>${y === lo || y === hi || (y % 5 === 0 && y - lo > 1 && hi - y > 1) ? y : ''}</span>`).join('');
-  setYear(hi);
+  ptKey = '';
+  setYear(Math.min(hi, Math.max(lo, state.year ?? hi)));
 }
 function setYear(y) {
   state.year = +y;
@@ -370,7 +416,8 @@ function readCard(name, val) {
   if (!r) return '';
   const latest = y === LY && m === LM, part = isPartial(y, m), lv = r.level ? LEVELS[r.level] : null;
   const reg = val && data.regions?.[val.region];
-  const src = sourceOf(y, m, data.meta.viirs_from) === 'viirs' ? 'VIIRS gözlemi' : `MODIS × ${reg ? dec(reg.factors[m], 2) : 'çarpan'}`;
+  const src = state.sensor !== 'merged' ? `${sensorOf().label} ham sayı`
+    : sourceOf(y, m, data.meta.viirs_from) === 'viirs' ? 'VIIRS gözlemi' : `MODIS × ${reg ? dec(reg.factors[m], 2) : 'çarpan'}`;
   const lastM = y === LY ? LM : 11;
   const months = MONTHS.map((n, i) => (i > lastM ? '' : `<option value="${i}"${i === m ? ' selected' : ''}>${n}</option>`)).join('');
   const label = part ? `1–${LD} ${MONTHS[m]} ${y}` : null;
@@ -429,8 +476,8 @@ function stepView(p, val) {
 function ogmView(name) {
   if (!ogm) return '<p>OGM verisi yüklenemedi.</p>';
   const lastFull = PARTIAL ? LY - 1 : LY;
-  const ys = Object.keys(ogm.national).map(Number).filter((y) => y >= RANGE[0] && y <= lastFull).sort((a, b) => a - b);
-  const sat = ys.map((y) => sum(Object.keys(data.provinces).map((n) => sum(series(n)?.[y] || []))));
+  const ys = Object.keys(ogm.national).map(Number).filter((y) => y >= ranges.merged[0] && y <= lastFull).sort((a, b) => a - b);
+  const sat = ys.map((y) => sum(Object.keys(data.provinces).map((n) => sum(series(n, 'merged')?.[y] || []))));
   const fires = ys.map((y) => ogm.national[y].fires), ha = ys.map((y) => ogm.national[y].ha);
   // Spearman sıra korelasyonu: hangi yıllar yüksek, iki kaynak aynı sırayı veriyor mu?
   const rank = (a) => { const o = a.map((v, i) => [v, i]).sort((x, y) => x[0] - y[0]), r = []; o.forEach(([, i], k) => { r[i] = k; }); return r; };
@@ -453,7 +500,7 @@ function ogmView(name) {
   });
   const key = name.toLocaleUpperCase('tr');
   const obm = Object.entries(ogm.obm2025).find(([u]) => u.toLocaleUpperCase('tr') === key);
-  const p25 = series(name)?.[2025];
+  const p25 = series(name, 'merged')?.[2025];
   const local = obm
     ? `<h4 class="gap">${name} Orman Bölge Müdürlüğü · 2025</h4><p class="say">OGM: <b>${fmt(obm[1].fires)}</b> orman yangını, ${fmt(obm[1].ha)} ha yanan alan. Uydu, ${name} ilinde 2025'te ${p25 ? fmt(sum(p25)) : '—'} tespit görüyor.</p>
        <p class="fine">Bölge müdürlüğü genellikle birkaç ili kapsar; il sınırıyla birebir karşılaştırılamaz. İl bazında yıllık OGM verisi yalnızca 2025 için bulundu.</p>`
@@ -477,7 +524,8 @@ function renderPanel() {
     body.innerHTML = head('İl', name) + '<div class="empty"><h4>Bu il için bu yılda veri yok</h4></div>';
     return;
   }
-  const { from, to } = state, val = data.validation?.[name];
+  const { from, to } = state, vAll = data.validation?.[name];
+  const merged = state.sensor === 'merged', val = merged ? vAll : null, sen = sensorOf();
   const row = years[state.year], n = total(name);
   const wm = row.map((v, m) => (inWin(m) && v != null ? v : -1)), peak = wm.indexOf(Math.max(...wm));
   // Medyana göre: bitmemiş yılda her yılın aynı penceresiyle (likeTotal), diğer yıllarda pencere toplamıyla.
@@ -485,9 +533,11 @@ function renderPanel() {
   const refYears = Object.keys(inRange(years, from, to)).map(Number).filter((y) => !(PARTIAL && y === LY) || like);
   const med = quantile(refYears.map((y) => (like ? likeTotal(name, y) : total(name, y))), 0.5);
   const ratio = med > 0 ? n / med : 0;
-  const level = { low: 1, medium: 2, high: 3 }[val?.confidence] || 1;
-  const confTitle = 'Bir yıl dışarıda bırakılarak ölçüldü (2012–2025). Yüksek: yıllık hata %15 ve altı, yılda ortalama 300 ve üzeri tespit. Düşük: hata %30 üzeri ya da yılda 100 altı tespit.';
-  const confText = `Doğrulama güveni: <b>${['düşük', 'orta', 'yüksek'][level - 1]}</b>`
+  const level = val ? { low: 1, medium: 2, high: 3 }[val.confidence] || 1 : n >= 200 ? 3 : n >= 50 ? 2 : 1;
+  const confTitle = val
+    ? 'Bir yıl dışarıda bırakılarak ölçüldü (2012–2025). Yüksek: yıllık hata %15 ve altı, yılda ortalama 300 ve üzeri tespit. Düşük: hata %30 üzeri ya da yılda 100 altı tespit.'
+    : "Ham seri: tespit sayısına göre. 200 ve üzeri yüksek, 50–199 orta, 50'nin altı düşük. Ham MODIS ve VIIRS sayıları birbiriyle doğrudan karşılaştırılamaz.";
+  const confText = `${val ? 'Doğrulama' : 'Örneklem'} güveni: <b>${['düşük', 'orta', 'yüksek'][level - 1]}</b>`
     + (val?.annual_wape != null ? ` · yıllık hata %${Math.round(val.annual_wape * 100)}` : '');
   const sel = { year: state.year, month: state.month };
   const w = winLabel();
@@ -507,12 +557,12 @@ function renderPanel() {
   } else if (state.tab === 'peaks') {
     view = peaksView(name, years);
   } else if (state.tab === 'step') {
-    view = stepView(data.provinces[name], val);
+    view = stepView(data.provinces[name], vAll);
   } else {
     view = ogmView(name);
   }
 
-  body.innerHTML = head(`İl · ${periodLabel()}`, name) + `
+  body.innerHTML = head(`İl · ${sen.label}${merged ? '' : ' ham'} · ${periodLabel()}`, name) + `
     <div class="kpis">
       <div class="kpi hero"><span>${heroLabel}</span><b>${fmt(n)}</b></div>
       <div class="kpi"><span>Zirve ay</span><b>${peak >= 0 ? MONTHS[peak] : '—'}</b><small>${peak >= 0 ? fmt(row[peak]) + ' tespit' : ''}</small></div>
@@ -524,7 +574,7 @@ function renderPanel() {
     </div>
     ${caution(val)}
     ${rangeRow()}
-    ${readCard(name, val)}
+    ${readCard(name, vAll)}
     <div class="tabs" role="tablist">${TABS.map(([k, l]) => `<button role="tab" data-tab="${k}" aria-selected="${k === state.tab}">${l}</button>`).join('')}</div>
     <div class="view" role="tabpanel">${view}</div>
     <div class="p-foot">
@@ -534,7 +584,7 @@ function renderPanel() {
         <button class="btn ghost" id="png" title="Açık sekmedeki grafiği PNG olarak indir">PNG</button>
         <button class="btn ghost" id="svg" title="Açık sekmedeki grafiği SVG olarak indir">SVG</button>
       </div>
-      <span title="${data.meta.notes?.[KEY] || ''}">${data.meta.notes?.[KEY] || ''}</span>
+      <span title="${data.meta.notes?.[state.sensor] || ''}">${data.meta.notes?.[state.sensor] || ''}</span>
     </div>`;
 }
 
@@ -721,9 +771,10 @@ async function main() {
   $('#dataBadge').textContent = `Veri: ${throughLabel()}`;
   $('#dataBadge').title = PARTIAL ? `${LY} yılı sürüyor; son veri günü ${throughLabel()}. Süren ay ve yıl, geçmiş yılların aynı günleriyle kıyaslanır.` : `Son veri günü ${throughLabel()}.`;
   $('#intro span').textContent = `MODIS · VIIRS · ${RANGE[0]}–${RANGE[1]}`;
+  renderSensors();
   initMap();
   bind();
-  initYears();
+  setSensor('merged');
 }
 main().catch((err) => {
   console.error(err);

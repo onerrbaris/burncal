@@ -54,9 +54,19 @@ button { cursor: pointer; }
   padding: 6px 9px; border-radius: 99px; border: 1px solid var(--line); color: var(--ink-2); white-space: nowrap; }
 .pill.warn { color: var(--warn); border-color: rgba(255, 207, 90, 0.45); background: rgba(255, 207, 90, 0.08); }
 
-.unit { justify-self: center; padding: 9px 18px; text-align: center; }
-.unit b { display: block; font: 700 14px/1.1 var(--display); letter-spacing: 0.12em; text-transform: uppercase; }
-.unit small { display: block; margin-top: 3px; font-size: 10.5px; color: var(--ink-3); letter-spacing: 0.04em; }
+.seg { position: relative; display: flex; padding: 5px; border-radius: 16px; justify-self: center; }
+.seg button { position: relative; z-index: 1; background: none; border: 0; padding: 9px 20px; min-width: 104px;
+  border-radius: 11px; color: var(--ink-2); text-align: center; transition: color 0.25s; }
+.seg button b { display: block; font: 700 15px/1.1 var(--display); letter-spacing: 0.12em; }
+.seg button small { display: block; margin-top: 3px; font-size: 10.5px; color: var(--ink-3); letter-spacing: 0.04em; }
+.seg button:hover { color: var(--ink); }
+.seg button[aria-selected='true'] { color: #1a0d04; }
+.seg button[aria-selected='true'] small { color: rgba(26, 13, 4, 0.72); }
+.seg-ind { position: absolute; top: 5px; bottom: 5px; left: 0; width: 0; border-radius: 11px;
+  background: linear-gradient(180deg, #ffc27a, #ff8a2a); box-shadow: 0 6px 22px rgba(255, 122, 26, 0.45);
+  transition: transform 0.45s var(--ease), width 0.45s var(--ease); }
+
+.seg button small.raw { color: var(--ink-3); }
 
 .tools { display: flex; gap: 10px; justify-self: end; }
 .search { display: flex; align-items: center; gap: 8px; padding: 0 14px; height: 46px; width: 210px; }
@@ -322,12 +332,14 @@ body.booting .dock { transform: translateY(8px); }
 @media (max-width: 1100px) {
   .legend { display: none; }
   .search { width: 150px; }
-  .unit small { display: none; }
+  .seg button { min-width: 0; padding: 9px 14px; }
 }
 @media (max-width: 760px) {
   .topbar { grid-template-columns: 1fr auto; top: 10px; left: 10px; right: 10px; gap: 8px; }
   .brand { padding: 8px 12px 8px 8px; }
-  .brand div span, .rank, .search, .unit { display: none; }
+  .brand div span, .rank, .search { display: none; }
+  .seg { grid-column: 1 / -1; grid-row: 2; justify-self: stretch; }
+  .seg button { flex: 1; padding: 8px 6px; }
   .tools { grid-column: 2; grid-row: 1; }
   .dock { left: 10px; right: 10px; bottom: 26px; gap: 8px; }
   .hud { width: auto; padding: 6px; }

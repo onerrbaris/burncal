@@ -93,8 +93,8 @@ def main():
     part = harm.get("partial")
     if part:   # icinde bulunulan ay/yil: her yilin ayni takvim penceresi (1. gun .. son veri gunu)
         data["partial"] = {**{k: part[k] for k in ("through", "month", "day", "years")},
-                           "mtd": {ALIAS.get(n, n): v for n, v in part["mtd"].items()},
-                           "ytd": {ALIAS.get(n, n): v for n, v in part["ytd"].items()}}
+                           **{k: {ALIAS.get(n, n): v for n, v in part[k].items()}
+                              for k in ("mtd", "ytd", "mtd_modis", "mtd_viirs") if k in part}}
     OUT.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     print(f"yazildi: {OUT} ({OUT.stat().st_size} bayt, {len(provinces)} il, {len(regions)} bolge)\n{sensors}")
 

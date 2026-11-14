@@ -26,7 +26,7 @@ Example, Adana (from `docs/DEMO_ILLER.md`): the raw series shows a 2.6x rise at 
 ## What the app does
 
 - Province selection by clicking the map (short, smooth camera glide) or by search.
-- One harmonized series everywhere (VIIRS-equivalent detections); raw MODIS and VIIRS appear only in the "Uyum" view and in the downloads.
+- Series tabs: harmonized (default, VIIRS-equivalent) plus raw MODIS and raw VIIRS for anyone who wants to inspect the source counts directly; every view, the period and month window, and the running-month comparison work on all three. The "Uyum" and OGM views always use the harmonized series.
 - Year timeline (slider and play) that recolours provinces by detections.
 - Period selection: start and end year, plus a month window (for example the June-October fire season). Totals, calendar, medians, rankings, the map and all downloads follow it.
 - Year x month calendar for the selected period, with high and extreme months flagged by shape, not colour alone.
