@@ -82,14 +82,6 @@ export function buildStyle(provinces, labels) {
           'hillshade-accent-color': '#0a1420', 'hillshade-illumination-direction': 315,
         },
       },
-      // Deniz: uydu batimetrisinin üzerine derinlik hissi veren soğuk bir ton.
-      {
-        id: 'sea-tint', type: 'fill', source: 'omt', 'source-layer': 'water',
-        paint: {
-          'fill-color': '#03283f',
-          'fill-opacity': ['interpolate', ['linear'], ['zoom'], 3, 0.38, 9, 0.22, 13, 0.08],
-        },
-      },
       {
         id: 'prov-fill', type: 'fill', source: 'provinces',
         paint: {
@@ -107,6 +99,11 @@ export function buildStyle(provinces, labels) {
         filter: ['==', ['get', 'class'], 'wood'],
         paint: { 'fill-color': '#2f7d4f', 'fill-antialias': false,
           'fill-opacity': ['interpolate', ['linear'], ['zoom'], 6, 0, 7.5, 0.42, 12, 0.34] },
+      },
+      // Deniz, göl ve diğer su yüzeyleri: uydu dokusunu ve il rengini örten mat mavi.
+      {
+        id: 'sea-tint', type: 'fill', source: 'omt', 'source-layer': 'water',
+        paint: { 'fill-color': '#203f62', 'fill-opacity': 1 },
       },
       { // Tek tek uydu tespitleri (seçili yıl); yalnızca yakınlaşınca görünür.
         id: 'pts', type: 'circle', source: 'pts', minzoom: 6.2,

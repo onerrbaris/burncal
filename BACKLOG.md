@@ -3,6 +3,7 @@
 Repo: https://github.com/onerrbaris/burncal (private). Yeni oturum: önce `docs/HANDOFF.md`. Bulgular: `docs/REPORT.md`. `ARCHITECTURE.md` taslaktır.
 
 ## Next step
+Mat mavi su yüzeylerini deniz kıyıları ve göllerde tarayıcıda görsel olarak kontrol et.
 Şehir etiketlerinin yeni fontunu ve yakınlaşınca belirmesini tarayıcıda görsel olarak kontrol et (uzakta gizli, z6.4–7 arası açılır).
 Sunum (7 slayt) ve teslim formu. Veri güncellemek için: `python scripts/fetch_firms_recent.py` → `scripts/check_recent.py` → `build_harmonized.py --force` → `build_points.py` → `build_atlas_json.py` (MAP_KEY `.env` içinde). İngilizce arayüz en sona (kullanıcı kararı). Açık: NOAA-20/21'in S-NPP serisine geçişi ayrı değerlendirilecek (oranlar `docs/data_2026/recent_check_2026.json`).
 
@@ -37,6 +38,7 @@ Sunum (7 slayt) ve teslim formu. Veri güncellemek için: `python scripts/fetch_
 - Deploy için Render + Vercel hesapları
 
 ## Done
+- 15 Kas: Atlas deniz, göl ve diğer su poligonları referans görseldeki gibi düz mat mavi (#203f62) yapıldı; tüm yakınlaşmalarda opak, uydu ve il renklerinin üzerinde. JS ve stil katman sırası doğrulandı; görsel kontrol bekliyor.
 - 15 Kas: İl seçilince iki panel (kullanıcı isteği): solda özet, kutular, filtreler, ay ayrıntısı ve İndir (#side); sağda geniş grafik paneli (#panel, 540 px, grafikler 500 birim genişlikte, setChartWidth). İl listesi panel açıkken gizli. Chrome'da takvim tıklama, sezon filtresi, CSV/PNG denendi.
 - 15 Kas: Arayüz baştan tasarlandı (kullanıcı isteği): koyu grafit tema, Inter yazı tipi, tek turuncu vurgu; panelde önce özet (büyük sayı + "olağan/olağandan yüksek" etiketi + tek cümle), sonra 3 kutu, filtreler, ay ayrıntısı, sekmeler; indirmeler tek "İndir" menüsünde; "Nasıl kullanılır?" yardım menüsü; "medyan" yerine "orta değer". Dosyalarda `?v=` sürüm etiketi var (önbellek); CSS/JS değişince artırın. Chrome'da ekran görüntüsüyle kontrol edildi.
 - 15 Kas: Atlas şehir etiketleri Noto Sans Regular, doğal büyük/küçük harf ve sade kırık beyaz görünümle yenilendi; uzak görünümde gizli, yakınlaşınca kademeli görünür. Yerleşim etiketlerine geçiş yumuşatıldı. JS sözdizimi, stil üretimi, yakınlaşma eşikleri ve yerel HTTP sunumu doğrulandı; görsel kontrol bekliyor.
