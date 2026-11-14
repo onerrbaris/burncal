@@ -1,5 +1,5 @@
 /* global maplibregl */
-import { buildStyle, LAYER_GROUPS, RAMP } from './mapstyle.js?v=20261115-water-49659b';
+import { buildStyle, LAYER_GROUPS, RAMP } from './mapstyle.js?v=20261115-natural-water';
 import { MONTHS, MON3, LEVELS, fmt, quantile, inRange, reading, sentence, peaks, sourceOf, csvRows, hotspotRows,
   calendar, calendarKey, compare, stepChart, setChartWidth } from './charts.js?v=20261115f';
 

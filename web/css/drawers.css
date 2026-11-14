@@ -1,0 +1,27 @@
+/* Oklar, gizlenen panelin ekran kenarında kalan tutamaçlarıdır. */
+.edge-drawer { overflow: visible; transition: transform 0.4s var(--ease); }
+.rank.edge-drawer, .side.edge-drawer { left: 0; border-top-left-radius: 0; border-bottom-left-radius: 0; }
+.panel.edge-drawer { right: 0; border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.drawer-left.drawer-closed { transform: translateX(-100%); }
+.drawer-right.drawer-closed { transform: translateX(100%); }
+.edge-drawer.drawer-closed { animation: none; }
+.drawer-toggle { position: absolute; top: 14px; width: 30px; height: 48px; padding: 0;
+  display: grid; place-items: center; background: var(--surface, #18181a); color: var(--ink-2);
+  border: 1px solid var(--line); font: 28px/1 var(--font, system-ui); box-shadow: 0 4px 14px rgba(0,0,0,0.2); }
+.drawer-toggle:hover { color: var(--ink); background: var(--surface-3, #252529); }
+.drawer-left > .drawer-toggle { right: -30px; border-radius: 0 9px 9px 0; border-left: 0; }
+.drawer-right > .drawer-toggle { left: -30px; border-radius: 9px 0 0 9px; border-right: 0; }
+.drawer-closed > :not(.drawer-toggle) { visibility: hidden; transition: visibility 0s 0.4s; }
+body.has-panel.right-drawer-closed .timeline { margin-right: 0; }
+@media (max-width: 760px) {
+  .rank.edge-drawer { display: block; top: 112px; }
+  body.has-panel .rank.edge-drawer { display: none; }
+  .side.edge-drawer { right: 10px; }
+  .panel.edge-drawer { left: 10px; }
+  .side.drawer-closed { transform: translateX(-100%); }
+  .panel.drawer-closed { transform: translateX(100%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .edge-drawer { transition-duration: 0.01ms; }
+  .drawer-closed > :not(.drawer-toggle) { transition: none; }
+}
