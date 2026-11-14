@@ -12,7 +12,8 @@ Tüm doğruluk sayıları Türkiye verisinde, 2012–2025 arasında her seferind
 - Teslim: 15 Kasım Pazar 23:59 yerel saat. Demo: en fazla 7 slayt ya da çok kısa video (süre sınırı doğrulanmadı).
 - Puanlama (1–5): Etki, Yaratıcılık, Geçerlilik, İlgililik, Sunum.
 - Zorunlu: yapay zekâ kullanımının açıklanması, tüm kaynakların atfı, lisans.
-- Doğrulanamayanlar: challenge'ın "Resources" sekmesi ve teslim kılavuzu (site geliştirme makinesinden açılmıyor).
+- Challenge metni (14 Kasım akşamı tarayıcıdan okundu) ölçüyü açıkça "2000'lerin başından bugüne tespit edilen hotspot sayısı" olarak veriyor; örnekleri aylık ("hangi ay ve yıllar en yüksekti", "bu ay tarihsel medyana göre nerede"). "Resources" sekmesinde yalnızca FIRMS var. "Teams" sekmesi bu challenge için 841 takım gösteriyor.
+- Doğrulanamayan: teslim kılavuzu (video süresi).
 
 ## 2. Veri kaynakları
 
@@ -140,11 +141,61 @@ MODIS–VIIRS dönüşümü, iki özdeş MODIS cihazı arasındaki dönüşüm k
 
 ## 7. Mevcut araçlar ve fark
 
-- FIRMS Fire Map: sensör başına güncel hotspot; birleştirme, takvim, anomali yok.
-- Global Forest Watch: yalnızca VIIRS, 2012+; MODIS dönemi ve uyumlaştırma yok.
-- GWIS: ülke/bölge düzeyi haftalık istatistik; yöntem açıklanmıyor, çizilen alan yok.
-- Aynı challenge'da başka takımlar var. Ayırt edici olabilecekler: ölçülmüş doğrulama, belirsizliğin gösterilmesi, alan büyüklüğüne göre güven.
-- Literatür: Schroeder vd. 2014 (VIIRS 375 m), Giglio vd. 2016 (MODIS C6), Li vd. 2018 (FRP karşılaştırması), MODIS C6 kullanıcı kılavuzu (8 günden kısa aralıklarda örnekleme yanlılığı). Hazır küresel uyumlaştırılmış hotspot sayım ürünü bulunamadı.
+14 Kasım akşamı yapılan tarama. Ağ sorunları yüzünden bazı sayfalar açılamadı; yalnızca özet ya da arama sonucundan görülenler "(doğrulanmadı)" ile işaretli.
+
+### 7.1 NASA ve literatür ne yapıyor
+
+- **Resmî uyumlaştırılmış hotspot sayım ürünü yok.** FIRMS, GFED5, GFAS ve FEDS'te bulunamadı. FIRMS sensörleri ayrı katman ve ayrı indirme olarak veriyor; sensörleri karıştırma konusunda yönerge bulunamadı.
+- **NASA uyumlaştırma projesi (Boschetti, Roy, Giglio):** hedef 25 yıllık, 0,25°'lik, belirsizlikli MODIS/VIIRS kaydı; ama yanık alan üzerinden ve Landsat-8/Sentinel-2 ile kalibre ederek. 2023 sunumunda gecikme bildirilmiş; yayımlanmış ürün bulunamadı (doğrulanmadı, sunumlar açılamadı). https://modis.gsfc.nasa.gov/sci_team/meetings/202305/presentations/boschetti.pdf
+- **GFED5NRT (Chen vd. 2026, ESSD 18:7535):** yöntemce bize en yakın iş. Günlük VIIRS sayısını bölge × arazi örtüsü katsayılarıyla yanık alana, sonra emisyona çeviriyor; katsayılar 2012–2022 örtüşmesinde kalibre; bakış geometrisi düzeltmesi ve 0,01° sabit kaynak maskesi var; 0,25° ızgara. Doğruluk yerine GFED5 ile uyum skoru veriyor (bölgeye göre 0,62–0,98). https://essd.copernicus.org/articles/18/7535/2026/
+- **Zheng vd. 2026 (Remote Sensing 18:1650):** Aqua ve VIIRS FRP'sini düzeltip birleştiriyor, yalnızca 2012–2024 (yalnızca özet görüldü). https://www.mdpi.com/2072-4292/18/10/1650
+- **Sofiev ve Kouznetsov 2026 (GMD 19:10123):** tespit eşiğini piksel alanına bağlı modelliyor. MODIS gündüz ~5,7 MW (tarama kenarında ~40 MW), VIIRS gündüz ~3,7 MW, gece 0,5–0,7 MW. https://gmd.copernicus.org/articles/19/10123/2026/
+- **Li vd. 2018 (JGR-Atmos 123:4545):** MODIS FRP'si bakış açısına güçlü bağlı (kenarda nadire göre %300'e kadar yüksek); büyük boreal yangınlarda VIIRS FRP'si ~%47 düşük. https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2017jd027823
+- **Schroeder vd. 2014 (RSE 143:85):** VIIRS 375 m ürününün tanıtımı. Giglio vd. 2016: MODIS C6. MODIS C6 kullanıcı kılavuzu: 8 günden kısa aralıklarda örnekleme yanlılığı.
+- **Bölgesel sayım oranları (VIIRS/MODIS):** Türkiye 2015–2019 3,9 kat (Coskuner 2022, iForest 15:85; yer kayıtlarına göre 10 ha üstü yangınların MODIS %16,6'sını, VIIRS %25,6'sını yakalıyor; tespitlerde tarımsal yakma baskın) https://iforest.sisef.org/contents/?id=ifor3754-015 · Pencap 4,8–6,5 kat (Vadrevu 2018) https://pmc.ncbi.nlm.nih.gov/articles/PMC6108185/ · Çin 2013–2024 ortanca 3,55 kat (doğrulanmadı).
+- **Geçiş takvimi:** S-NPP verisi 2 Kasım 2026'da bitti; FIRMS kullanıcıları NOAA-20/21'e yönlendiriyor. https://www.earthdata.nasa.gov/news/blog/transitioning-from-s-npp-viirs-omps-what-nasa-firms-users-need-know · Terra MODIS Ocak 2027, Aqua MODIS Eylül 2027 civarı. https://atmosphere.copernicus.eu/drifting-away-modis-cams-global-fire-assimilation-system · Aqua yörünge kaymasının yangın ürünlerine etkisi "inceleniyor" (Giglio, Mayıs 2025).
+
+### 7.2 Mevcut araçlar
+
+| Araç | Sensör | Tek birleşik seri | Seçilebilir alan | Mevsim / anomali |
+|---|---|---|---|---|
+| FIRMS | MODIS 2000+, VIIRS 2012+ | Hayır, ayrı | Ülke ya da istekle özel alan | Yok |
+| Global Forest Watch | MODIS, VIIRS ayrı | Hayır | İdari birim (doğrulanmadı) | Haftalık grafik, "olağandışı" göstergesi |
+| GWIS / EFFIS | MODIS + VIIRS'ten yanık alan olayları | Sayım değil | Ülke (doğrulanmadı) | Haftalık zarf, 2012+ (doğrulanmadı) |
+| GFED analiz aracı | Yanık alan, emisyon | Sayım değil | Özel bölge | Aylık |
+
+En yakın eşdeğer Global Forest Watch'un mevsim ve "olağandışı etkinlik" grafikleri. İncelenebilen araçların hiçbiri MODIS ve VIIRS hotspot sayılarını tek bir kalibre edilmiş 2000–2026 serisinde birleştirmiyor.
+
+Aynı challenge'da çok sayıda takım var ve benzer fikirler kuruluyor: H3 altıgenlerinde LightGBM ile aylık köprü, sabit kaynak maskesi ve %90 aralık (https://github.com/Warren-530/fire-harmony); hücre başına Aqua/VIIRS aylık çarpanı (https://github.com/shahedrayhan23/Chronofire). İkisi de yalnızca arama sonucundan görüldü (doğrulanmadı).
+
+### 7.3 Fark
+
+| | NASA / literatür | Bu çalışma |
+|---|---|---|
+| Hedef birim | Fiziksel büyüklük (yanık alan, emisyon, FRP) | VIIRS-eşdeğeri hotspot sayısı (challenge'ın istediği ölçü) |
+| Kapsam | Küresel, sabit 0,25°–1° ızgara | Türkiye, kullanıcının seçtiği alan |
+| Değişkenler | Arazi örtüsü, bakış açısı, tespit olasılığı | Ay, bölge, Terra/Aqua ağırlığı |
+| Doğrulama | Bağımsız referans (yanık alan, yer kaydı) | VIIRS'e karşı, bir yıl dışarıda bırakarak |
+| Doğruluk beyanı | Çoğunlukla uyum skoru | Ölçeğe göre açık hata |
+
+### 7.4 Katkı sayılabilecekler
+
+- **Gürültü tabanı:** MODIS→VIIRS dönüşümü, iki özdeş MODIS cihazı (Terra→Aqua) arasındaki dönüşüm kadar iyi. Kalan hatanın çoğu yöntemden değil sayım gürültüsünden geliyor. Literatürde bu biçimde görülmedi.
+- **Ölçeğe göre güven:** hangi alan ve zaman biriminde sonucun güvenilir olduğu ölçüldü; küçük hücrede regresyon ve makine öğrenmesi modelleri yıl sıralamasını bozuyor.
+- **Veri tuzakları:** MODIS `type` etiketinin 2018 kırılması, Terra-tek dönem, kesinti günleri, 2021 sonrası yörünge kaymasının veride görülmesi.
+- **Olumsuz sonuçlar:** 8 günlük dönem aylıktan kötü; yalnızca Aqua daha kötü; büyük yangınlarda aşırı tahmin (Li vd.'nin FRP bulgusuyla uyumlu, sayım olarak ölçülmüş).
+
+### 7.5 Zaten bilinenler
+
+VIIRS/MODIS oranının 3–6 kat olup değişmesi, FRP'nin sensörler arasında birbirinin yerine geçmemesi, sabit kaynak maskesi ihtiyacı, örtüşme döneminde bölge ve mevsime özel katsayıyla kalibrasyon (GFED5NRT), küçük alanın gürültülü olması.
+
+### 7.6 Eksikler
+
+- Ürün (web uygulaması) henüz yok.
+- Doğrulama döngüsel: VIIRS gerçek kabul ediliyor; yanık alan (MCD64/VNP64) ya da yer kaydıyla bağımsız karşılaştırma yok.
+- NOAA-20/21 köprüsü sınanmadı; S-NPP bittiği için 2026 ve sonrası buna bağlı.
+- Gerçek arazi örtüsü değişkeni yok; tarama açısı modeli koşuldu ama incelenmedi.
+- Yalnızca Türkiye.
 
 ## 8. Yeniden üretim
 
