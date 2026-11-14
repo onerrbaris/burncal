@@ -73,3 +73,5 @@ Next step — 81 ilin MODIS (2000–2025) ve VIIRS (2012–2025) takvimlerini ha
 Next step — Türkiye maskesi, deniz dokusu ve il seçimi kamera geçişlerini masaüstünde incele.
 
 Next step — İl seçimiyle açılan 1536 px çevrimiçi uydu dokusunu ve alçalan kamerayı incele.
+
+Next step — Site yayını: `pages-yayini` dalını `master`e al, sonra Settings → Pages → Source: GitHub Actions seç. `master`e giden her `web/` değişikliği https://onerrbaris.github.io/burncal/ adresine yayınlanır. Yerelde: `cd web` → `python -m http.server 8000`.
