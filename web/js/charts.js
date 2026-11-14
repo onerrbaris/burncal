@@ -1,7 +1,7 @@
 // Panel grafikleri: elle yazılmış SVG. Tek ölçek, tek renk tonu (kor), nötr mürekkep.
 // Bu dosyadaki istatistik işlevleri (inRange, reading, sentence, peaks, csvRows, hotspotRows) saf işlevlerdir;
 // tarayıcı dışında Node ile de sınanabilir.
-import { RAMP } from './mapstyle.js?v=20261115c';
+import { RAMP } from './mapstyle.js?v=20261115f';
 
 export const MONTHS = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
 export const MON3 = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
@@ -164,7 +164,10 @@ function niceMax(v) {
   return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * p;
 }
 
-const W = 340, PAD_L = 34, PAD_R = 6;
+// Grafik genişliği (viewBox birimi). Geniş sağ panelde 500, dar ekranda 340.
+let W = 340;
+const PAD_L = 34, PAD_R = 6;
+export const setChartWidth = (w) => { W = w; };
 
 function frame(h, top, max) {
   const ih = h - top - 20;
@@ -193,7 +196,7 @@ export function calendar(years, from, to, sel, opt) {
   const ys = [];
   for (let yy = to; yy >= from; yy--) ys.push(yy);
   const max = Math.max(1, ...ys.flatMap((yy) => (years[yy] || []).filter((v) => v != null)));
-  const cw = (W - PAD_L - PAD_R) / 12, ch = 17, top = 16;
+  const cw = (W - PAD_L - PAD_R) / 12, ch = W > 400 ? 19 : 17, top = 16;
   const h = top + ys.length * ch + 4;
   let s = '', marks = '';
   M1.forEach((m, i) => { s += `<text x="${PAD_L + cw * (i + 0.5)}" y="10" class="tick${i >= win[0] && i <= win[1] ? '' : ' off'}" text-anchor="middle">${m}</text>`; });
@@ -240,7 +243,7 @@ export function compare(ref, row, selYear, selMonth, partialMonth) {
   const med = M1.map((_, i) => quantile(all.map((r) => r[i]), 0.5));
   const q1 = M1.map((_, i) => quantile(all.map((r) => r[i]), 0.25));
   const q3 = M1.map((_, i) => quantile(all.map((r) => r[i]), 0.75));
-  const h = 190, max = niceMax(Math.max(1, ...row.filter((v) => v != null), ...q3));
+  const h = W > 400 ? 280 : 190, max = niceMax(Math.max(1, ...row.filter((v) => v != null), ...q3));
   const { g, y, bw, base } = frame(h, 12, max);
   let s = g;
   row.forEach((v, i) => {
@@ -262,7 +265,7 @@ export function stepChart(p, viirsYear, selYear, lastFull) {
   const ys = Object.keys(p.merged).map(Number).filter((y) => y <= lastFull).sort((a, b) => a - b);
   const rawOf = (y) => (y < viirsYear ? p.modis?.[y] : p.viirs?.[y]);
   const raw = ys.map((y) => (rawOf(y) ? sum(rawOf(y)) : null)), harm = ys.map((y) => sum(p.merged[y]));
-  const h = 200, top = 14, ih = h - top - 22, max = niceMax(Math.max(1, ...harm, ...raw.filter((v) => v != null)));
+  const h = W > 400 ? 280 : 200, top = 14, ih = h - top - 22, max = niceMax(Math.max(1, ...harm, ...raw.filter((v) => v != null)));
   const x = (y) => PAD_L + 6 + ((y - ys[0]) / Math.max(1, ys.at(-1) - ys[0])) * (W - PAD_L - PAD_R - 12);
   const yv = (v) => top + ih - (v / max) * ih;
   let s = '';

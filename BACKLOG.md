@@ -37,6 +37,7 @@ Sunum (7 slayt) ve teslim formu. Veri güncellemek için: `python scripts/fetch_
 - Deploy için Render + Vercel hesapları
 
 ## Done
+- 15 Kas: İl seçilince iki panel (kullanıcı isteği): solda özet, kutular, filtreler, ay ayrıntısı ve İndir (#side); sağda geniş grafik paneli (#panel, 540 px, grafikler 500 birim genişlikte, setChartWidth). İl listesi panel açıkken gizli. Chrome'da takvim tıklama, sezon filtresi, CSV/PNG denendi.
 - 15 Kas: Arayüz baştan tasarlandı (kullanıcı isteği): koyu grafit tema, Inter yazı tipi, tek turuncu vurgu; panelde önce özet (büyük sayı + "olağan/olağandan yüksek" etiketi + tek cümle), sonra 3 kutu, filtreler, ay ayrıntısı, sekmeler; indirmeler tek "İndir" menüsünde; "Nasıl kullanılır?" yardım menüsü; "medyan" yerine "orta değer". Dosyalarda `?v=` sürüm etiketi var (önbellek); CSS/JS değişince artırın. Chrome'da ekran görüntüsüyle kontrol edildi.
 - 15 Kas: Atlas şehir etiketleri Noto Sans Regular, doğal büyük/küçük harf ve sade kırık beyaz görünümle yenilendi; uzak görünümde gizli, yakınlaşınca kademeli görünür. Yerleşim etiketlerine geçiş yumuşatıldı. JS sözdizimi, stil üretimi, yakınlaşma eşikleri ve yerel HTTP sunumu doğrulandı; görsel kontrol bekliyor.
 - 15 Kas: Haritadaki ateş noktaları tıklanabilir (Codex + gözden geçirme): balonda tarih, sensör, FRP, il, SP/NRT, aynı konumdaki tespit sayısı ve "Bu ayı takvimde aç". Ek veri/istek yok; tıklama önbellekteki yıl dizisinde ±8 px arar, enlem/boylam ön elemesiyle ~0,7 ms (Adana 2021, eğik kamerada da). Noktasız yere tıklama il seçimini korur. Chrome'da denendi.

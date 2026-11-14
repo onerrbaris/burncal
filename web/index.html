@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="vendor/maplibre-gl.css">
-<link rel="stylesheet" href="css/atlas.css?v=20261115c">
+<link rel="stylesheet" href="css/atlas.css?v=20261115f">
 </head>
 <body>
 <div id="map" aria-label="Türkiye yanma haritası"></div>
@@ -74,7 +74,11 @@
   <p class="rank-hint">Ayrıntı için haritada bir ile tıklayın.</p>
 </aside>
 
-<aside class="panel glass" id="panel" aria-live="polite" hidden>
+<aside class="side glass" id="side" aria-live="polite" hidden>
+  <div id="sideBody"></div>
+</aside>
+
+<aside class="panel glass" id="panel" hidden>
   <div id="panelBody"></div>
 </aside>
 
@@ -112,6 +116,6 @@
 </div>
 
 <script src="vendor/maplibre-gl.js"></script>
-<script type="module" src="js/app.js?v=20261115c"></script>
+<script type="module" src="js/app.js?v=20261115f"></script>
 </body>
 </html>

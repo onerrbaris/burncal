@@ -1,7 +1,7 @@
 /* global maplibregl */
-import { buildStyle, LAYER_GROUPS, RAMP } from './mapstyle.js?v=20261115c';
+import { buildStyle, LAYER_GROUPS, RAMP } from './mapstyle.js?v=20261115f';
 import { MONTHS, MON3, LEVELS, fmt, quantile, inRange, reading, sentence, peaks, sourceOf, csvRows, hotspotRows,
-  calendar, calendarKey, compare, stepChart } from './charts.js?v=20261115c';
+  calendar, calendarKey, compare, stepChart, setChartWidth } from './charts.js?v=20261115f';
 
 const $ = (s) => document.querySelector(s);
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -114,7 +114,7 @@ function geometry() {
 // ── Harita ──────────────────────────────────────────────
 function pads() {
   if (innerWidth <= 760) return { top: 120, bottom: state.sel ? innerHeight * 0.6 + 100 : 110, left: 20, right: 20 };
-  return { top: 100, bottom: 130, left: 260, right: state.sel ? 460 : 40 };
+  return { top: 100, bottom: 130, left: state.sel ? 390 : 260, right: state.sel ? 570 : 40 };
 }
 
 // Sınırları görünür alana sığdıran kamera (Mercator hesabı; eğim ve küre görünümünden bağımsız).
@@ -569,7 +569,7 @@ function ogmView(name) {
   // Spearman sıra korelasyonu: hangi yıllar yüksek, iki kaynak aynı sırayı veriyor mu?
   const rank = (a) => { const o = a.map((v, i) => [v, i]).sort((x, y) => x[0] - y[0]), r = []; o.forEach(([, i], k) => { r[i] = k; }); return r; };
   const rho = (a, b) => { const ra = rank(a), rb = rank(b), n = a.length; return 1 - (6 * ra.reduce((s, v, i) => s + (v - rb[i]) ** 2, 0)) / (n * (n * n - 1)); };
-  const W = 340, H = 190, L = 34, R = 34, T = 14, B = 22, ih = H - T - B;
+  const W = innerWidth > 760 ? 500 : 340, H = innerWidth > 760 ? 260 : 200, L = 34, R = 34, T = 14, B = 22, ih = H - T - B;
   const x = (i) => L + 4 + (i / (ys.length - 1)) * (W - L - R - 8);
   const mS = Math.max(...sat) * 1.05, mF = Math.max(...fires) * 1.05;
   const yS = (v) => T + ih - (v / mS) * ih, yF = (v) => T + ih - (v / mF) * ih;
@@ -603,12 +603,13 @@ function ogmView(name) {
 }
 
 function renderPanel() {
-  const panel = $('#panel'), body = $('#panelBody');
-  if (!state.sel) { panel.hidden = true; return; }
-  panel.hidden = false;
+  const panel = $('#panel'), body = $('#panelBody'), side = $('#side'), sideBody = $('#sideBody');
+  if (!state.sel) { panel.hidden = true; side.hidden = true; return; }
+  panel.hidden = false; side.hidden = false;
   const name = state.sel, years = series(name);
   if (!years || !years[state.year]) {
-    body.innerHTML = head('İl', name) + '<div class="empty"><h4>Bu il için bu yılda veri yok</h4></div>';
+    sideBody.innerHTML = head('İl', name) + '<div class="empty"><h4>Bu il için bu yılda veri yok</h4><p>Alttaki çubuktan başka bir yıl seçin.</p></div>';
+    body.innerHTML = '';
     return;
   }
   const { from, to } = state, vAll = data.validation?.[name];
@@ -654,22 +655,26 @@ function renderPanel() {
   }
 
   const sel_ = `${from}–${to}${w ? ' · ' + w : ''}`;
-  body.innerHTML = head(`${sen.label}${merged ? ' seri' : ' · ham veri'} · ${periodLabel()}`, name) + `
+  // Sağ panel: sekmeler ve geniş grafikler.
+  body.innerHTML = `<div class="p-head charts-head"><div><span class="eyebrow">${sen.label}${merged ? ' seri' : ' · ham veri'} · ${sel_}</span>
+      <h2>${name} grafikleri</h2></div></div>
+    <div class="tabs" role="tablist">${TABS.map(([k, l]) => `<button role="tab" data-tab="${k}" aria-selected="${k === state.tab}">${l}</button>`).join('')}</div>
+    <div class="view" role="tabpanel">${view}</div>`;
+  // Sol panel: özet, filtreler, ay ayrıntısı, indirme.
+  sideBody.innerHTML = head(`${sen.label}${merged ? ' seri' : ' · ham veri'} · ${periodLabel()}`, name) + `
     <section class="summary" aria-label="Özet">
       <div class="sum-top"><b>${fmt(n)}</b><span>uydu tespiti</span>${status ? `<span class="status ${status[0]}">${status[1]}</span>` : ''}</div>
       <p>${sumText}</p>
     </section>
     <div class="kpis">
       <div class="kpi"><span>En yoğun ay</span><b>${peak >= 0 ? MONTHS[peak] : '—'}</b><small>${peak >= 0 ? fmt(row[peak]) + ' tespit' : ''}</small></div>
-      <div class="kpi"><span>Geçmiş orta değer</span><b>${fmt(med)}</b><small>${from}–${to}</small></div>
-      <div class="kpi conf" title="${confTitle}"><span>Güvenilirlik</span><b><span class="dots">${[1, 2, 3].map((i) => `<i class="${i <= level ? 'on' : ''}"></i>`).join('')}</span>${['düşük', 'orta', 'yüksek'][level - 1]}</b><small>${val?.annual_wape != null ? `yıllık hata %${Math.round(val.annual_wape * 100)}` : merged ? '' : 'tespit sayısına göre'}</small></div>
+      <div class="kpi"><span>Orta değer</span><b>${fmt(med)}</b><small>${from}–${to}</small></div>
+      <div class="kpi conf" title="${confTitle}"><span>Güvenilirlik</span><b>${['Düşük', 'Orta', 'Yüksek'][level - 1]}</b><small><span class="dots">${[1, 2, 3].map((i) => `<i class="${i <= level ? 'on' : ''}"></i>`).join('')}</span>${val?.annual_wape != null ? `hata %${Math.round(val.annual_wape * 100)}` : merged ? '' : 'sayıya göre'}</small></div>
     </div>
     ${caution(val)}
     ${rangeRow()}
     <h3 class="section-title">Ay ayrıntısı</h3>
     ${readCard(name, vAll)}
-    <div class="tabs" role="tablist">${TABS.map(([k, l]) => `<button role="tab" data-tab="${k}" aria-selected="${k === state.tab}">${l}</button>`).join('')}</div>
-    <div class="view" role="tabpanel">${view}</div>
     <div class="p-foot">
       <details class="dl-menu">
         <summary class="btn"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v10M5.5 8.5 10 13l4.5-4.5M4 16.5h12"/></svg>İndir</summary>
@@ -774,19 +779,22 @@ function hideTip() { $('#tip').hidden = true; }
 function refreshAll(focusId) {
   if (ready) paintMap();
   renderPanel(); renderRank();
-  if (focusId) $('#panel').querySelector('#' + focusId)?.focus();
+  if (focusId) document.getElementById(focusId)?.focus();
 }
 
 // ── Olaylar ─────────────────────────────────────────────
 function bind() {
-  const panel = $('#panel');
+  for (const panel of [$('#panel'), $('#side')]) bindPanel(panel);
+  bindRest();
+}
+function bindPanel(panel) {
   panel.addEventListener('click', (e) => {
     const t = e.target.closest('button, .cell, [data-year], [data-month]');
     if (!t) return;
     if (t.classList.contains('close')) return select(null);
     // İndirme menüsü seçimden sonra kapanır (tespit listesi hazırlanırken açık kalır).
     if (['csv', 'hcsv', 'png', 'svg'].includes(t.id)) setTimeout(() => t.closest('.dl-menu')?.removeAttribute('open'), t.id === 'hcsv' ? 2600 : 150);
-    if (t.dataset.tab) { state.tab = t.dataset.tab; renderPanel(); panel.querySelector(`[data-tab=${state.tab}]`).focus(); }
+    if (t.dataset.tab) { state.tab = t.dataset.tab; renderPanel(); $(`#panel [data-tab=${state.tab}]`)?.focus(); }
     else if (t.dataset.name) select(t.dataset.name);
     else if (t.id === 'csv') downloadCsv();
     else if (t.id === 'hcsv') downloadHotspots(t);
@@ -807,13 +815,15 @@ function bind() {
     else if (id === 'rFrom' || id === 'rTo') { state[id === 'rFrom' ? 'from' : 'to'] = v; state.custom = true; clampRange(); refreshAll(id); }
     else if (id === 'wFrom' || id === 'wTo') { state.win[id === 'wFrom' ? 0 : 1] = v; refreshAll(id); }
     else return;
-    panel.querySelector('#' + id)?.focus();
+    document.getElementById(id)?.focus();
   });
   panel.addEventListener('pointermove', (e) => {
     const t = e.target.closest('[data-tip]');
     t ? showTip(t.dataset.tip, e.clientX, e.clientY) : hideTip();
   });
   panel.addEventListener('pointerleave', hideTip);
+}
+function bindRest() {
 
   $('#rankList').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) select(b.dataset.name); });
   $('#rankToggle').onclick = (e) => {
@@ -876,6 +886,7 @@ async function main() {
   [data, geo] = await Promise.all(['data/atlas.json', 'data/tr-provinces.json'].map((u) => fetch(u).then((r) => r.json())));
   ogm = await fetch('data/ogm.json').then((r) => (r.ok ? r.json() : null)).catch(() => null);
   indexData();
+  setChartWidth(innerWidth > 760 ? 500 : 340);
   $('#dataBadge').textContent = `Son veri: ${throughLabel()}`;
   $('#dataBadge').title = PARTIAL ? `${LY} yılı sürüyor; son veri günü ${throughLabel()}. Süren ay ve yıl, geçmiş yılların aynı günleriyle kıyaslanır.` : `Son veri günü ${throughLabel()}.`;
   $('#intro span').textContent = `MODIS · VIIRS · ${RANGE[0]}–${RANGE[1]}`;
