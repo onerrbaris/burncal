@@ -90,6 +90,16 @@ def main():
             "notes": NOTES, "sensors": sensors, "viirs_from": harm["meta"]["viirs_from"],
             "last_month": f"{last_y}-{last_m:02d}", "data_through": through, "unit": "VIIRS-eşdeğeri tespit"}
     data = {"meta": meta, "provinces": provinces, "validation": validation, "regions": regions}
+    # SP/NRT: guncel yil API'den gelir; hangi tarihten itibaren NRT oldugu indirme kaydindan okunur
+    man = ROOT / "data" / "raw" / f"recent_manifest_{last_y}.json"
+    if man.exists():
+        files = json.loads(man.read_text(encoding="utf-8"))["files"]
+        nrt = {}
+        for key, fn in (("modis", f"modis_{last_y}_Turkey.csv"), ("viirs", f"viirs-snpp_{last_y}_Turkey.csv")):
+            months = sorted(k.split()[0] for k in files.get(fn, {}).get("rows_by_month_source", {}) if k.endswith("NRT"))
+            if months:
+                nrt[key] = months[0]
+        meta["nrt_from"] = nrt
     part = harm.get("partial")
     if part:   # icinde bulunulan ay/yil: her yilin ayni takvim penceresi (1. gun .. son veri gunu)
         data["partial"] = {**{k: part[k] for k in ("through", "month", "day", "years")},

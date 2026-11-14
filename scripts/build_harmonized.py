@@ -140,6 +140,7 @@ def outages(day, sat, nd, min_expected=10.0):
         o = [x for x in range(3) if x != s]
         ref = sum(np.where(insp[x], cnt[x], 0) for x in o)
         both = insp[s] & (cnt[s] > 0) & (ref > 0)
+        both[(MASK_TO - EPOCH).days + 1:] = False   # ratios from archive years only: new data never shifts history
         ratio = pd.Series(cnt[s][both]).groupby(month[both]).sum() / pd.Series(ref[both]).groupby(month[both]).sum()
         expected = ref * pd.Series(month).map(ratio).fillna(ratio.mean()).values
         zero = cnt[s] == 0
@@ -173,6 +174,9 @@ def daily_cube(names, geoms):
     last = int(d.day.max())
     if (EPOCH + pd.Timedelta(days=last)).strftime("%m-%d") != "12-31":
         last -= 1
+    # After 2012 the series is the S-NPP count: it ends on S-NPP's last day instead of being extended
+    # with MODIS x factor (MODIS 2026 counts are erratic, e.g. Jan 2026 is 4% of S-NPP vs 26% in 2025).
+    last = min(last, int(d.day[d.sat == 2].max()))
     if CUTOFF:
         last = min(last, int((pd.Timestamp(CUTOFF) - EPOCH).days))
     d = d[d.day <= last].reset_index(drop=True)

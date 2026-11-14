@@ -18,6 +18,7 @@ later by the province assignment in scripts/build_harmonized.py.
 import argparse
 import csv
 import io
+import json
 import os
 import ssl
 import subprocess
@@ -40,7 +41,11 @@ VCOLS = ["latitude", "longitude", "bright_ti4", "scan", "track", "acq_date", "ac
 SENSORS = {  # output name -> (SP source, NRT source, columns)
     "viirs-snpp": ("VIIRS_SNPP_SP", "VIIRS_SNPP_NRT", VCOLS),
     "modis": ("MODIS_SP", "MODIS_NRT", COLS),
+    # NOAA-20 / NOAA-21 are stored for later evaluation only; the pipeline reads modis_* and viirs-snpp_*.
+    "viirs-noaa20": ("VIIRS_NOAA20_SP", "VIIRS_NOAA20_NRT", VCOLS),
+    "viirs-noaa21": ("VIIRS_NOAA21_SP", "VIIRS_NOAA21_NRT", VCOLS),
 }
+EXTRA = ["data_source"]   # SP (standard processing, archive quality) or NRT (near real time)
 SAT = {"T": "Terra", "A": "Aqua", "Terra": "Terra", "Aqua": "Aqua", "N": "N"}
 
 
@@ -106,6 +111,10 @@ def main():
                  ".env dosyasina FIRMS_MAP_KEY=... olarak ekleyin.")
     avail = availability(key)
     end = min(date.today(), date(a.year, 12, 31))
+    manifest = {"created": date.today().isoformat(), "year": a.year, "bbox": BBOX,
+                "endpoint": f"{API}/area/csv/<MAP_KEY>/<SOURCE>/{BBOX}/<days>/<start>",
+                "availability": {k: [str(v[0]), str(v[1])] for k, v in avail.items()
+                                 if k.startswith(("MODIS", "VIIRS"))}, "files": {}}
     for name, (sp, nrt, cols) in SENSORS.items():
         sp_max = avail.get(sp, (None, date(1900, 1, 1)))[1]
         nrt_max = avail.get(nrt, (None, date(1900, 1, 1)))[1]
@@ -123,7 +132,8 @@ def main():
                     continue
                 r["satellite"] = SAT.get(r.get("satellite", ""), r.get("satellite", ""))
                 r.setdefault("type", "")
-                rows.append({c: r.get(c, "") for c in cols})
+                r["data_source"] = "SP" if src == sp else "NRT"
+                rows.append({c: r.get(c, "") for c in cols + EXTRA})
             print(f"{name} {src} {d}..{last}: {len(got)}", flush=True)
             d = last + timedelta(days=1)
         rows.sort(key=lambda r: (r["acq_date"], r["acq_time"]))
@@ -136,11 +146,22 @@ def main():
                 uniq.append(r)
         out = RAW / f"{name}_{a.year}_Turkey.csv"
         with open(out, "w", encoding="utf-8", newline="") as f:
-            w = csv.DictWriter(f, fieldnames=cols)
+            w = csv.DictWriter(f, fieldnames=cols + EXTRA)
             w.writeheader()
             w.writerows(uniq)
         lastd = uniq[-1]["acq_date"] if uniq else "-"
         print(f"=> {out.name}: {len(uniq)} rows, last date {lastd}, days by source {used}")
+        by = {}
+        for r in uniq:
+            k = (r["acq_date"][:7], r["data_source"])
+            by[k] = by.get(k, 0) + 1
+        manifest["files"][out.name] = {
+            "rows": len(uniq), "first_date": uniq[0]["acq_date"] if uniq else None, "last_date": lastd,
+            "sources": {"SP": sp, "NRT": nrt}, "days_requested": used,
+            "rows_by_month_source": {f"{m} {s}": n for (m, s), n in sorted(by.items())},
+            "type_missing": sum(1 for r in uniq if r["type"] == ""),
+            "satellites": sorted({r["satellite"] for r in uniq})}
+    (RAW / f"recent_manifest_{a.year}.json").write_text(json.dumps(manifest, indent=1), encoding="utf-8")
 
 
 if __name__ == "__main__":

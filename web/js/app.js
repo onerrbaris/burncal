@@ -22,7 +22,7 @@ const TABS = [['calendar', 'Takvim'], ['compare', 'Kıyas'], ['peaks', 'Zirveler
 // month: okunan ay (0–11); from/to: dönem yılları; win: sezon penceresi [ilk ay, son ay]; custom: dönemi kullanıcı mı seçti.
 const state = { sensor: 'merged', year: null, month: 11, from: null, to: null, win: [0, 11], custom: false, sel: null, tab: 'calendar', playing: false };
 let data, geo, ogm, map, timer, ready = false, hovered = null, orbitOK = false, orbitRaf = 0;
-let RANGE, LY, LM, LD, PARTIAL;   // etkin serinin yıl aralığı; son veri yılı, ayı (0–11), günü; son yıl bitmemiş mi
+let RANGE, LY, LM, LD, PARTIAL, READ_M;   // etkin serinin yıl aralığı; son veri yılı, ayı (0–11), günü; son yıl bitmemiş mi
 const bboxes = {}, provIdx = {}, ranges = {};
 
 // ── Veri ────────────────────────────────────────────────
@@ -82,7 +82,9 @@ function indexData() {
   const t = (data.meta.data_through || `${RANGE[1]}-12-31`).split('-').map(Number);
   [LY, LM, LD] = [t[0], t[1] - 1, t[2]];
   PARTIAL = !!data.partial && !(LM === 11 && LD === 31);
-  state.month = LM;
+  // Süren ayın ilk birkaç günü okunacak kadar değil: açılışta son tam ay okunur.
+  READ_M = PARTIAL && LD < 7 && LM > 0 ? LM - 1 : LM;
+  state.month = READ_M;
 }
 
 function geometry() {
@@ -414,7 +416,7 @@ function readCard(name, val) {
   const y = state.year, m = state.month;
   const r = rdFor(name)(y, m);
   if (!r) return '';
-  const latest = y === LY && m === LM, part = isPartial(y, m), lv = r.level ? LEVELS[r.level] : null;
+  const latest = y === LY && m === READ_M, part = isPartial(y, m), lv = r.level ? LEVELS[r.level] : null;
   const reg = val && data.regions?.[val.region];
   const src = state.sensor !== 'merged' ? `${sensorOf().label} ham sayı`
     : sourceOf(y, m, data.meta.viirs_from) === 'viirs' ? 'VIIRS gözlemi' : `MODIS × ${reg ? dec(reg.factors[m], 2) : 'çarpan'}`;
@@ -424,7 +426,7 @@ function readCard(name, val) {
   return `<section class="read${r.level ? ' lv-' + r.level : ''}" aria-label="Seçili ayın dönem medyanına göre yeri">
       <div class="read-top">
         <select id="mSel" aria-label="Okunacak ay">${months}</select><b>${y}</b>
-        ${latest ? `<span class="pill">${part ? 'ay sürüyor' : 'son veri'}</span>` : '<button class="link" id="latest">Son aya dön</button>'}
+        ${latest ? `<span class="pill">${part ? 'ay sürüyor' : READ_M === LM ? 'son veri' : 'son tam ay'}</span>` : '<button class="link" id="latest">Son aya dön</button>'}
         ${lv ? `<span class="lvl" title="Aynı takvim ayının dönemdeki diğer yıllarına göre: 25. yüzdeliğin altı düşük, 25–75 normal, 75–95 yüksek, 95 üstü olağanüstü.">${lv.mark ? lv.mark + ' ' : ''}${lv.label}</span>` : ''}
       </div>
       <p class="say">${sentence(r, label)}</p>
@@ -611,7 +613,7 @@ async function downloadHotspots(btn) {
   try {
     const byYear = {};
     for (let y = state.from; y <= state.to; y++) byYear[y] = await loadYear(y);
-    const lines = hotspotRows(byYear, provIdx[name], name, state.from, state.to, state.win);
+    const lines = hotspotRows(byYear, provIdx[name], name, state.from, state.to, state.win, data.meta.nrt_from || {});
     save(csvBlob(lines), `burncal_tespitler_${fileTag()}.csv`);
     btn.textContent = `${fmt(lines.length - 1)} tespit`;
     setTimeout(() => { btn.textContent = label; }, 2500);
@@ -693,7 +695,7 @@ function bind() {
     else if (t.id === 'csv') downloadCsv();
     else if (t.id === 'hcsv') downloadHotspots(t);
     else if (t.id === 'png' || t.id === 'svg') downloadChart(t.id);
-    else if (t.id === 'latest') { stopPlay(); state.month = LM; setYear(LY); }
+    else if (t.id === 'latest') { stopPlay(); state.month = READ_M; setYear(Math.min(LY, RANGE[1])); }
     else if (t.id === 'rAll') { state.custom = false; clampRange(); refreshAll('rFrom'); }
     else if (t.id === 'wSeason') { state.win = [5, 9]; refreshAll('wFrom'); }
     else if (t.id === 'wAll') { state.win = [0, 11]; refreshAll('wFrom'); }

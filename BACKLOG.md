@@ -3,7 +3,7 @@
 Repo: https://github.com/onerrbaris/burncal (private). Yeni oturum: önce `docs/HANDOFF.md`. Bulgular: `docs/REPORT.md`. `ARCHITECTURE.md` taslaktır.
 
 ## Next step
-FIRMS MAP_KEY gelince: `.env` içine `FIRMS_MAP_KEY=...`, sonra `python scripts/fetch_firms_recent.py` → `build_harmonized.py --force` → `build_points.py` → `build_atlas_json.py`; sitede 2026'nın göründüğünü ve "ay sürüyor" kartını kontrol et. Ardından sunum (7 slayt) ve teslim formu. İngilizce arayüz en sona (kullanıcı kararı).
+Sunum (7 slayt) ve teslim formu. Veri güncellemek için: `python scripts/fetch_firms_recent.py` → `scripts/check_recent.py` → `build_harmonized.py --force` → `build_points.py` → `build_atlas_json.py` (MAP_KEY `.env` içinde). İngilizce arayüz en sona (kullanıcı kararı). Açık: NOAA-20/21'in S-NPP serisine geçişi ayrı değerlendirilecek (oranlar `docs/data_2026/recent_check_2026.json`).
 
 ## In progress
 - (yok)
@@ -36,6 +36,7 @@ FIRMS MAP_KEY gelince: `.env` içine `FIRMS_MAP_KEY=...`, sonra `python scripts/
 - Deploy için Render + Vercel hesapları
 
 ## Done
+- 15 Kas: 2026 verisi FIRMS API'den (MAP_KEY) indirildi: MODIS, S-NPP, NOAA-20, NOAA-21; SP/NRT işaretli, kayıt `docs/data_2026/`. Tekrar yok; NRT'de `type` boş (beklenen). S-NPP NRT 2 Kasım'da bitiyor → seri 2026-11-02'de kesildi (MODIS 2026'da düzensiz: Ocak'ta S-NPP'nin %4'ü, 2025'te %26; MODIS×çarpan dolgusu güvenilmez olurdu). Kesinti oranları ve maske yalnızca 2012–2025 arşivinden: 2000–2025 değerleri birebir aynı kaldı (0 satır fark). NOAA-20/S-NPP toplam oranı 1,05, NOAA-21 1,00 (285 gün); seriye eklenmedi. Açılış kartı süren ay <7 günse son tam ayı okur.
 - 15 Kas: Arayüz sadeleşti (WASD, konum göstergesi, "Aylar" sekmesi kalktı; efektler ve MODIS/VIIRS ham sekmeleri duruyor, kullanıcı isteği). İle tıklayınca yumuşak yakınlaşma artık Windows "animasyon efektleri" kapalıyken de oynuyor (sebep buydu: tarayıcı prefers-reduced-motion bildiriyordu). Eklenenler: ay penceresi (yangın sezonu), tespit listesi CSV'si (sayılar paneldeki ham sayılarla birebir), grafik PNG/SVG, OGM sekmesi (ulusal 2001–2025 + 2025 OBM; uydu–OGM Spearman 0,04 / alan −0,33, sebebi tarım), süren ay/yıl için aynı-günler kıyası. 2026 için `scripts/fetch_firms_recent.py` hazır, MAP_KEY bekliyor. Yarım yıl yolu `BURNCAL_CUTOFF=2025-09-13` ile Chrome'da denendi.
 - Keşif: FIRMS arşivi + API, challenge kuralları, rakipler
 - Türkiye verisi indirildi (`python scripts/fetch_firms.py`)

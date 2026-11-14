@@ -81,11 +81,20 @@ def pack(d):
     d = d[[k not in mask for k in zip(d.cx, d.cy)]]
     prov = province(d.longitude.values, d.latitude.values)
     d, prov = d[prov >= 0], prov[prov >= 0]
-    doy = pd.to_datetime(d.acq_date).dt.dayofyear
+    doy = pd.to_datetime(d.acq_date).dt.day_of_year
     a = np.column_stack([np.round(d.longitude * 1000), np.round(d.latitude * 1000), doy,
                          np.round(d.frp.fillna(0)), prov]).astype(int)
     return a.ravel().tolist()
 
+
+# noktalar da birlesmis serinin son veri gunune kadar (S-NPP'nin son gunu; build_harmonized ile ayni)
+_h = (ROOT / "frontend/harmonized-data.js").read_text(encoding="utf-8")
+THROUGH = pd.Timestamp(json.loads(_h[_h.index("{"):_h.rindex("}") + 1])["meta"].get("data_through", "2025-12-31"))
+_load = load
+def load(path):
+    d = _load(path)
+    return d[pd.to_datetime(d.acq_date) <= THROUGH]
+viirs = {y: d[pd.to_datetime(d.acq_date) <= THROUGH] for y, d in viirs.items()}
 
 total = 0
 for y in sorted(set(modis) | set(viirs)):

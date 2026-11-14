@@ -121,9 +121,10 @@ export function csvRows(name, region, p, from, to, viirsFrom, win, rd, partial) 
 }
 
 // Ham tespit listesi: points/{yıl}.json dosyalarındaki 5'li gruplar (x, y, gün, frp, il).
-const HS_HEAD = 'date,latitude,longitude,sensor,frp_mw,province';
+const HS_HEAD = 'date,latitude,longitude,sensor,frp_mw,province,processing';
 const SENSOR = { modis: 'MODIS (Terra/Aqua)', viirs: 'VIIRS S-NPP' };
-export function hotspotRows(byYear, provIdx, name, from, to, win) {
+// nrtFrom: {modis: '2026-09', viirs: '2026-08'} -> o aydan itibaren NRT (yakın gerçek zamanlı), öncesi SP (arşiv).
+export function hotspotRows(byYear, provIdx, name, from, to, win, nrtFrom = {}) {
   const lines = [HS_HEAD], q = csvq(name);
   for (let y = from; y <= to; y++) {
     const d = byYear[y];
@@ -135,7 +136,8 @@ export function hotspotRows(byYear, provIdx, name, from, to, win) {
         if (a[i + 4] !== provIdx) continue;
         const dt = new Date(Date.UTC(y, 0, a[i + 2])), m = dt.getUTCMonth();
         if (m < win[0] || m > win[1]) continue;
-        rows.push([dt.toISOString().slice(0, 10), (a[i + 1] / 1000).toFixed(3), (a[i] / 1000).toFixed(3), SENSOR[s], a[i + 3], q]);
+        const iso = dt.toISOString().slice(0, 10), nrt = nrtFrom[s] && iso.slice(0, 7) >= nrtFrom[s];
+        rows.push([iso, (a[i + 1] / 1000).toFixed(3), (a[i] / 1000).toFixed(3), SENSOR[s], a[i + 3], q, nrt ? 'NRT' : 'SP']);
       }
     }
     rows.sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));

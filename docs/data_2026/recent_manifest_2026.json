@@ -1,0 +1,164 @@
+{
+ "created": "2026-11-15",
+ "year": 2026,
+ "bbox": "25.5,35.7,45.0,42.2",
+ "endpoint": "https://firms.modaps.eosdis.nasa.gov/api/area/csv/<MAP_KEY>/<SOURCE>/25.5,35.7,45.0,42.2/<days>/<start>",
+ "availability": {
+  "MODIS_NRT": [
+   "2026-09-01",
+   "2026-11-14"
+  ],
+  "MODIS_SP": [
+   "2000-11-01",
+   "2026-08-31"
+  ],
+  "VIIRS_NOAA20_NRT": [
+   "2026-08-01",
+   "2026-11-14"
+  ],
+  "VIIRS_NOAA20_SP": [
+   "2018-04-01",
+   "2026-07-31"
+  ],
+  "VIIRS_NOAA21_NRT": [
+   "2024-01-17",
+   "2026-11-14"
+  ],
+  "VIIRS_NOAA21_SP": [
+   "2023-03-01",
+   "2026-07-31"
+  ],
+  "VIIRS_SNPP_NRT": [
+   "2026-08-01",
+   "2026-11-02"
+  ],
+  "VIIRS_SNPP_SP": [
+   "2012-01-20",
+   "2026-07-31"
+  ]
+ },
+ "files": {
+  "viirs-snpp_2026_Turkey.csv": {
+   "rows": 54436,
+   "first_date": "2026-01-01",
+   "last_date": "2026-11-02",
+   "sources": {
+    "SP": "VIIRS_SNPP_SP",
+    "NRT": "VIIRS_SNPP_NRT"
+   },
+   "days_requested": {
+    "VIIRS_SNPP_SP": 210,
+    "VIIRS_SNPP_NRT": 100
+   },
+   "rows_by_month_source": {
+    "2026-01 SP": 1164,
+    "2026-02 SP": 1827,
+    "2026-03 SP": 1523,
+    "2026-04 SP": 1776,
+    "2026-05 SP": 2673,
+    "2026-06 SP": 7278,
+    "2026-07 SP": 6029,
+    "2026-08 NRT": 8598,
+    "2026-09 NRT": 13857,
+    "2026-10 NRT": 9607,
+    "2026-11 NRT": 104
+   },
+   "type_missing": 32166,
+   "satellites": [
+    "N"
+   ]
+  },
+  "modis_2026_Turkey.csv": {
+   "rows": 12862,
+   "first_date": "2026-01-02",
+   "last_date": "2026-11-14",
+   "sources": {
+    "SP": "MODIS_SP",
+    "NRT": "MODIS_NRT"
+   },
+   "days_requested": {
+    "MODIS_SP": 240,
+    "MODIS_NRT": 79
+   },
+   "rows_by_month_source": {
+    "2026-01 SP": 40,
+    "2026-02 SP": 232,
+    "2026-03 SP": 274,
+    "2026-04 SP": 739,
+    "2026-05 SP": 976,
+    "2026-06 SP": 2363,
+    "2026-07 SP": 2368,
+    "2026-08 SP": 1471,
+    "2026-09 NRT": 2441,
+    "2026-10 NRT": 1758,
+    "2026-11 NRT": 200
+   },
+   "type_missing": 4399,
+   "satellites": [
+    "Aqua",
+    "Terra"
+   ]
+  },
+  "viirs-noaa20_2026_Turkey.csv": {
+   "rows": 59673,
+   "first_date": "2026-01-01",
+   "last_date": "2026-11-14",
+   "sources": {
+    "SP": "VIIRS_NOAA20_SP",
+    "NRT": "VIIRS_NOAA20_NRT"
+   },
+   "days_requested": {
+    "VIIRS_NOAA20_SP": 210,
+    "VIIRS_NOAA20_NRT": 109
+   },
+   "rows_by_month_source": {
+    "2026-01 SP": 1375,
+    "2026-02 SP": 1813,
+    "2026-03 SP": 2116,
+    "2026-04 SP": 2146,
+    "2026-05 SP": 2723,
+    "2026-06 SP": 7293,
+    "2026-07 SP": 7349,
+    "2026-08 NRT": 8785,
+    "2026-09 NRT": 14508,
+    "2026-10 NRT": 10115,
+    "2026-11 NRT": 1450
+   },
+   "type_missing": 34858,
+   "satellites": [
+    "N20"
+   ]
+  },
+  "viirs-noaa21_2026_Turkey.csv": {
+   "rows": 57617,
+   "first_date": "2026-01-01",
+   "last_date": "2026-11-14",
+   "sources": {
+    "SP": "VIIRS_NOAA21_SP",
+    "NRT": "VIIRS_NOAA21_NRT"
+   },
+   "days_requested": {
+    "VIIRS_NOAA21_SP": 210,
+    "VIIRS_NOAA21_NRT": 109
+   },
+   "rows_by_month_source": {
+    "2026-01 SP": 1198,
+    "2026-02 SP": 1707,
+    "2026-03 SP": 2015,
+    "2026-04 SP": 2089,
+    "2026-05 SP": 2814,
+    "2026-06 SP": 6932,
+    "2026-07 NRT": 1199,
+    "2026-07 SP": 7580,
+    "2026-08 NRT": 7878,
+    "2026-09 NRT": 13229,
+    "2026-10 NRT": 9562,
+    "2026-11 NRT": 1414
+   },
+   "type_missing": 33282,
+   "satellites": [
+    "N21"
+   ]
+  }
+ }
+}
