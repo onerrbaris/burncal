@@ -1,8 +1,8 @@
-import { t as msg, displayText, locale, ordinal } from './i18n.js?v=20261115-calendar-button';
+import { t as msg, displayText, locale, ordinal } from './i18n.js?v=20261115-pct';
 // Panel grafikleri: elle yazılmış SVG. Tek ölçek, tek renk tonu (kor), nötr mürekkep.
 // Bu dosyadaki istatistik işlevleri (inRange, reading, sentence, peaks, csvRows, hotspotRows) saf işlevlerdir;
 // tarayıcı dışında Node ile de sınanabilir.
-import { RAMP } from './mapstyle.js?v=20261115-calendar-button';
+import { RAMP } from './mapstyle.js?v=20261115-pct';
 
 // Ay dizileri canlı dışa aktarımdır; dil değişiminde mevcut seçim aynı ay indeksinde kalır.
 export let MONTHS, MON3;
@@ -65,7 +65,15 @@ export function reading(years, y, m, from, to) {
   return { ...base, pct: sparse ? null : pct, level, rank: 1 + ref.filter((x) => x > v).length, below, eq };
 }
 
-// Tek cümlelik Türkçe okuma, ör. "Ağustos 2021: 25 yılın en yükseği, medyanın 14 katı."
+// Tipik değere (medyan) göre kısa ifade: 2 kat ve üstü "X katı", altı "%X yüksek/düşük",
+// ±%5 içinde "normal düzeyde". Çağıran, medyan çok küçükken (<3) bunu kullanmaz.
+export function vsTypical(q) {
+  if (Math.abs(q - 1) < 0.05) return msg("within.the.normal.range");
+  if (q >= 2) return msg("times.the.typical.value", [q < 10 ? dec(q) : fmt(q)]);
+  return msg(q > 1 ? "pct.above.typical" : "pct.below.typical", [Math.round(Math.abs(q - 1) * 100)]);
+}
+
+// Tek cümlelik Türkçe okuma, ör. "Ağustos 2021: 25 yılın en yükseği, tipik değerin 14 katı."
 // `label` verilirse ay adı yerine o kullanılır (ör. "1–13 Kasım 2026").
 export function sentence(r, label) {
   if (!r) return '';
@@ -89,8 +97,7 @@ export function sentence(r, label) {
   if (r.med < 3) k = msg("typical.value2", [fmt(r.med)]);   // küçük medyana oran ("∞ katı") verilmez
   else {
     const q = r.v / r.med;
-    k = Math.abs(q - 1) < 0.05 ? msg("within.the.normal.range")
-      : q > 1 ? msg("times.the.typical.value", [q < 10 ? dec(q) : fmt(q)]) : msg("below.the.typical.value", [fmt(r.med)]);
+    k = vsTypical(q) + (q < 0.95 ? ` (${msg("typical.value2", [fmt(r.med)])})` : '');
   }
   return `${head}${place}, ${k}.`;
 }
@@ -266,7 +273,7 @@ export function compare(ref, row, selYear, selMonth, partialMonth) {
     if (v != null) s += bar(x0 + bw * 0.3, bw * 0.4, y(v), base, 'bar' + (i === partialMonth ? ' part' : ''));
     s += `<line x1="${x0 + 1}" x2="${x0 + bw - 1}" y1="${y(med[i])}" y2="${y(med[i])}" class="median"/>`;
     if (i === selMonth) s += `<rect x="${x0 + 0.5}" y="${base + 2}" width="${bw - 1}" height="3" rx="1.5" class="msel"/>`;
-    const ratio = v != null && med[i] >= 3 ? ` ${msg("times.the.typical.value2", [(v / med[i]).toLocaleString(locale(), { maximumFractionDigits: 1 })])}` : '';
+    const ratio = v != null && med[i] >= 3 ? ` · ${vsTypical(v / med[i])}` : '';
     const val = v == null ? msg("no.data.yet2") : fmt(v) + (i === partialMonth ? ` ${msg("partial.month.median.for.the")}` : '');
     s += `<rect x="${x0}" y="0" width="${bw}" height="${h - 18}" class="hit"${v == null ? '' : ` data-year="${selYear}" data-month="${i}"`} data-tip="${esc(`<b>${MONTHS[i]}</b>${selYear}: ${val}${ratio}<br>${msg("typical.value.normal.range", [fmt(med[i]), fmt(q1[i]), fmt(q3[i])])}`)}"/>`;
   });

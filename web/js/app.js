@@ -1,10 +1,10 @@
-import { t as msg, lang, locale, displayText, percent } from './i18n.js?v=20261115-calendar-button';
+import { t as msg, lang, locale, displayText, percent } from './i18n.js?v=20261115-pct';
 /* global maplibregl */
 import { regionGeometry } from './regions.js?v=20261115a';
-import { buildStyle, LAYER_GROUPS, RAMP, waterName } from './mapstyle.js?v=20261115-calendar-button';
+import { buildStyle, LAYER_GROUPS, RAMP, waterName } from './mapstyle.js?v=20261115-pct';
 import { MONTHS, MON3, LEVELS, fmt, quantile, inRange, reading, sentence, peaks, sourceOf, csvRows, hotspotRows,
-  calendar, calendarKey, compare, stepChart, setChartWidth } from './charts.js?v=20261115-calendar-button';
-import { DrawTool, drawnArea } from './draw.js?v=20261115-calendar-button';
+  calendar, calendarKey, compare, stepChart, setChartWidth, vsTypical } from './charts.js?v=20261115-pct';
+import { DrawTool, drawnArea } from './draw.js?v=20261115-pct';
 
 const $ = (s) => document.querySelector(s);
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -900,7 +900,7 @@ function renderPanel() {
   const span = like ? msg("summary.partialPeriod", [w ? MON3[state.win[0]] : msg("jan"), LD, MON3[LM]]) : w ? msg("summary.season", [w]) : msg("summary.annual");
   const sumText = med
     ? msg('summary.comparison', { from, to, period: span, median: fmt(med), year: state.year,
-      partial: like ? ' ' + msg('so.far') : '', ratio: dec(ratio) })
+      partial: like ? ' ' + msg('so.far') : '', cmp: vsTypical(ratio) })
     : msg("too.few.detections.for.a", [multi() ? msg("area2") : msg("province2")]);
 
   let view = '';

@@ -1,6 +1,6 @@
 // Türkçe ve İngilizce arayüz metinleri. Süslü parantezlerdeki alanlar gösterim sırasında doldurulur.
 const messages = {
-  "summary.comparison": ["{from}–{to} arasında {period} tipik değeri <b>{median}</b>. {year} yılında{partial} bunun <b>{ratio} katı</b> tespit var.", "The typical value for {period} in {from}–{to} was <b>{median}</b>. Detections in {year}{partial} reached <b>{ratio} times</b> that value."],
+  "summary.comparison": ["{from}–{to} arasında {period} tipik değeri <b>{median}</b>. {year} yılında{partial} tespit sayısı <b>{cmp}</b>.", "The typical value for {period} in {from}–{to} was <b>{median}</b>. Detections in {year}{partial} were <b>{cmp}</b>."],
   "search.short": ["Ara", "Search"],
   "ogm.fires": ["orman yangını", "forest fires"],
   "search.countries": ["Ülke ara", "Search countries"],
@@ -195,7 +195,8 @@ const messages = {
   "typical.value2": ["tipik değer {0}", "typical value {0}"],
   "within.the.normal.range": ["normal düzeyde", "within the normal range"],
   "times.the.typical.value": ["tipik değerin {0} katı", "{0} times the typical value"],
-  "below.the.typical.value": ["tipik değerin altında (tipik değer {0})", "below the typical value ({0})"],
+  "pct.above.typical": ["tipik değerden %{0} yüksek", "{0}% above the typical value"],
+  "pct.below.typical": ["tipik değerden %{0} düşük", "{0}% below the typical value"],
   "no.data.yet": ["Henüz veri yok", "No data yet"],
   "years.exceeded.typical.value": ["Yılların %{0}'ini geçti · tipik değer {1}", "Years exceeded: {0}% · typical value {1}"],
   "partial.month.days.of.compared": ["Ay sürüyor: 1–{0} {1}; diğer yılların aynı günleriyle kıyaslandı", "Partial month: days 1–{0} of {1}, compared with the same days in other years"],
@@ -204,7 +205,6 @@ const messages = {
   "low.high": ["az → çok", "low → high"],
   "high.exceeds.of.years": ["yüksek (yılların %75'inden fazlasını geçen)", "high (exceeds 75% of years)"],
   "exceptional.exceeds.of.years": ["olağanüstü (%95'ten fazlasını geçen)", "exceptional (exceeds 95% of years)"],
-  "times.the.typical.value2": ["· tipik değerin {0} katı", "· {0} times the typical value"],
   "no.data.yet2": ["henüz veri yok", "no data yet"],
   "partial.month.median.for.the": ["(ay sürüyor; tipik değer aynı günlerden)", "(partial month; median for the same days)"],
   "typical.value.normal.range": ["Tipik değer: {0} · Normal aralık: {1}–{2}", "Typical value: {0} · Normal range: {1}–{2}"],
