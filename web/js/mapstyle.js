@@ -132,11 +132,19 @@ export function buildStyle(provinces, labels) {
         },
       },
       {
-        id: 'prov-line', type: 'line', source: 'provinces',
+        // Sınır çizgisinin altındaki koyu gölge: açık renkli alanların üzerinde de seçilsin.
+        id: 'prov-casing', type: 'line', source: 'provinces', layout: { 'line-join': 'round' },
         paint: {
-          'line-color': ['case', ['boolean', ['feature-state', 'hover'], false], '#ffffff', 'rgba(255,255,255,0.38)'],
-          'line-width': ['interpolate', ['linear'], ['zoom'], 3, 0.2, 6, 0.7, 10, 1.4],
-          'line-opacity': ['interpolate', ['linear'], ['zoom'], 3, 0.25, 5, 0.6],
+          'line-color': 'rgba(10,12,16,0.55)', 'line-blur': 1,
+          'line-width': ['interpolate', ['linear'], ['zoom'], 3, 1.4, 6, 3.4, 10, 5.5],
+        },
+      },
+      {
+        id: 'prov-line', type: 'line', source: 'provinces', layout: { 'line-join': 'round' },
+        paint: {
+          'line-color': ['case', ['boolean', ['feature-state', 'hover'], false], '#ffffff', 'rgba(255,255,255,0.8)'],
+          'line-width': ['interpolate', ['linear'], ['zoom'], 3, 0.7, 6, 1.6, 10, 2.8],
+          'line-opacity': ['interpolate', ['linear'], ['zoom'], 3, 0.6, 5, 0.95],
         },
       },
       {

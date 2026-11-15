@@ -42,6 +42,7 @@ Sunum (7 slayt) ve teslim formu. Veri güncellemek için: `python scripts/fetch_
 - Deploy için Render + Vercel hesapları
 
 ## Done
+- 15 Kas: İl sınır çizgileri kalınlaştırıldı (z6'da 0,7→1,6 px, daha parlak) ve altına koyu gölge çizgisi (`prov-casing`) eklendi. Tarayıcıda kontrol edildi.
 - 15 Kas: Ülke görünümünde (açılış) harita illeri değil yedi coğrafi bölgeyi boyar; sıralama, arama ve renk açıklaması bölgelere göre. Bölgeye tıklamak/aramak Bölgeler görünümüne geçirir. Tarayıcıda denendi, konsol temiz.
 - 15 Kas: Sağ panel iki ayrı kart oldu: "1 Ay ayrıntısı" (tek ayın okuması) ve turuncu üst çizgili "2 Grafikler" (yıl/ay aralığı + sekmeler + grafik). Aralık notu, aralığın harita, sol özet, ay kıyası ve indirmeleri de etkilediğini söyler. Tarayıcıda kontrol edildi.
 - 15 Kas: "Detaylı inceleme" bütün alan birimlerine yayıldı: il, bölge, ülke ve çizilen alanda her yeni seçimde grafik paneli kapalı başlar; yıl/ay/sekme değişimi panel durumunu bozmaz. Kamera sağ panele yer bırakmaz. Tarayıcıda dört birim denendi, konsol temiz.

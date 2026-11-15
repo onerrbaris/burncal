@@ -1,6 +1,6 @@
 /* global maplibregl */
 import { regionGeometry } from './regions.js?v=20261115a';
-import { buildStyle, LAYER_GROUPS, RAMP } from './mapstyle.js?v=20261115-clean-controls';
+import { buildStyle, LAYER_GROUPS, RAMP } from './mapstyle.js?v=20261115-thick-lines';
 import { MONTHS, MON3, LEVELS, fmt, quantile, inRange, reading, sentence, peaks, sourceOf, csvRows, hotspotRows,
   calendar, calendarKey, compare, stepChart, setChartWidth } from './charts.js?v=20261115h';
 import { DrawTool, drawnArea } from './draw.js?v=20261115-ellipse';
