@@ -1,8 +1,8 @@
-import { t as msg, displayText, locale, ordinal } from './i18n.js?v=20261115-low-marks';
+import { t as msg, displayText, locale, ordinal } from './i18n.js?v=20261115-cal-classes';
 // Panel grafikleri: elle yazılmış SVG. Tek ölçek, tek renk tonu (kor), nötr mürekkep.
 // Bu dosyadaki istatistik işlevleri (inRange, reading, sentence, peaks, csvRows, hotspotRows) saf işlevlerdir;
 // tarayıcı dışında Node ile de sınanabilir.
-import { RAMP } from './mapstyle.js?v=20261115-low-marks';
+import { RAMP } from './mapstyle.js?v=20261115-cal-classes';
 
 // Ay dizileri canlı dışa aktarımdır; dil değişiminde mevcut seçim aynı ay indeksinde kalır.
 export let MONTHS, MON3;
@@ -40,16 +40,30 @@ export const LEVELS = {
 };
 const SPARSE = 5;   // bu sayının altındaki değerler, dönemin çoğu da böyleyse, yüzdelikle okunmaz
 const MIN_REF = 3;  // karşılaştırma için en az bu kadar başka yıl
-// Takvimde "düşük" ay mavi boyanır; ama yalnızca tipik değer (medyan) bu sayı ve üstündeyse.
-// Medyanı küçük aylarda düşüklük gürültüdür (il ölçeğinde aylık hata ~%38).
+// Küçük sayılar gürültü (il ölçeğinde aylık hata ~%38): ay da tipik değeri de bu sayının altındaysa
+// ay "az tespit" sayılır, yüksek/düşük denmez. Takvimde nötr gri, işaretsiz.
 export const LOW_MIN = 20;
-export const LOW_FILL = '#1f6bff';
-// Belirgin düşük aylar için mavi kademe: tipik değere yakın açık mavi, tipik değerin çok altı koyu mavi.
-export const LOW_RAMP = ['#d6e4ff', '#9dbfff', '#5b95ff', '#1f6bff', '#1446d6'];
-export function lowColor(t) {
-  t = Math.max(0, Math.min(1, t));
-  const x = t * (LOW_RAMP.length - 1), i = Math.min(LOW_RAMP.length - 2, Math.floor(x));
-  return mix(LOW_RAMP[i], LOW_RAMP[i + 1], x - i);
+// Takvim renk sınıfları: aynı takvim ayının diğer yıllarına göre yüzdelik (düzeylerle aynı sınırlar).
+// Mavi = tipikten az, kırmızı = tipikten fazla; sınıf ne kadar uçtaysa renk o kadar koyu.
+export const CAL_CLASSES = [
+  { max: 5, fill: '#1d4ed8', key: 'cal.c0' },          // çok düşük  ▼
+  { max: 25, fill: '#4f8df5', key: 'cal.c1' },         // düşük      ▽
+  { max: 45, fill: '#a9c6f7', key: 'cal.c2' },         // biraz düşük
+  { max: 55, fill: '#e8e2d4', key: 'cal.c3' },         // tipik
+  { max: 75, fill: '#fcc48a', key: 'cal.c4' },         // biraz yüksek
+  { max: 95, fill: '#f26b38', key: 'cal.c5' },         // yüksek     ●
+  { max: Infinity, fill: '#c0151f', key: 'cal.c6' },   // olağanüstü ◆
+];
+export const CAL_SPARSE = '#55595f';
+export function calClass(pct) {
+  // Sınırlar düzeylerle aynı: <5, <25, <45, <=55, <=75, <=95, >95.
+  if (pct < 5) return 0;
+  if (pct < 25) return 1;
+  if (pct < 45) return 2;
+  if (pct <= 55) return 3;
+  if (pct <= 75) return 4;
+  if (pct <= 95) return 5;
+  return 6;
 }
 
 export function inRange(years, from, to) {
@@ -72,7 +86,7 @@ export function reading(years, y, m, from, to) {
   if (n < MIN_REF) return { ...base, level: null, pct: null, short: true };
   const below = ref.filter((x) => x < v).length, eq = ref.filter((x) => x === v).length;
   const pct = (100 * (below + eq / 2)) / n;
-  const sparse = v < SPARSE && quantile(ref, 0.75) < SPARSE;
+  const sparse = (v < SPARSE && quantile(ref, 0.75) < SPARSE) || (v < LOW_MIN && med < LOW_MIN);
   const level = sparse ? 'sparse' : pct < 5 ? 'verylow' : pct < 25 ? 'low' : pct <= 75 ? 'normal' : pct <= 95 ? 'high' : 'extreme';
   return { ...base, pct: sparse ? null : pct, level, rank: 1 + ref.filter((x) => x > v).length, below, eq };
 }
@@ -228,7 +242,6 @@ export function calendar(years, from, to, sel, opt) {
   const { win, rd, partial, through } = opt;
   const ys = [];
   for (let yy = to; yy >= from; yy--) ys.push(yy);
-  const max = Math.max(1, ...ys.flatMap((yy) => (years[yy] || []).filter((v) => v != null)));
   const cw = (W - PAD_L - PAD_R) / 12, ch = W > 400 ? 19 : 17, top = 16;
   const h = top + ys.length * ch + 4;
   let s = '', marks = '';
@@ -244,20 +257,19 @@ export function calendar(years, from, to, sel, opt) {
         continue;
       }
       const rdg = rd(yy, i), lv = rdg?.level, part = partial(yy, i);
-      // Belirgin düşük: sezon içinde, bitmiş ay, yılların %25'inden azını geçmiş, tipik değer >= LOW_MIN.
-      const lowFlag = !out && !part && (lv === 'low' || lv === 'verylow') && rdg.med >= LOW_MIN;
-      // Mavinin koyuluğu: ay, yılların ne kadar azını geçmiş (%25'e yakın açık, hiçbirini geçmemiş en koyu).
-      const fill = lowFlag ? lowColor(1 - rdg.pct / 25) : v === 0 ? 'rgba(255,255,255,0.06)' : rampColor(Math.sqrt(v / max));
+      // Renk: ayın kendi geçmişine göre yeri (yüzdelik). Kıyas yoksa ya da az tespitse nötr.
+      const cls = rdg?.pct != null ? calClass(rdg.pct) : null;
+      const fill = cls != null ? CAL_CLASSES[cls].fill : v === 0 ? 'rgba(255,255,255,0.06)' : CAL_SPARSE;
       const tipLv = lv && lv !== 'normal' ? ` · ${displayText(LEVELS[lv].label)}` : '';
       const tipPct = rdg?.pct != null ? `<br>${msg("years.exceeded.typical.value", [Math.round(rdg.pct), fmt(rdg.med)])}` : '';
       const tipPart = part ? `<br>${msg("partial.month.days.of.compared", [through, MONTHS[i]])}` : '';
       s += `<rect x="${x}" y="${y0 + 1}" width="${cw - 2}" height="${ch - 2}" rx="2.5" fill="${fill}" class="cell${out ? ' out' : ''}${part ? ' part' : ''}" data-year="${yy}" data-month="${i}" data-tip="${esc(`<b>${MONTHS[i]} ${yy}</b>${msg("detections2", [fmt(v), tipLv, tipPct, tipPart])}`)}"/>`;
       const cx = x + (cw - 2) / 2, cy = y0 + ch / 2;
-      if (!out && lv === 'high') marks += `<circle cx="${cx}" cy="${cy}" r="2.4" class="flag"/>`;
-      else if (!out && lv === 'extreme') marks += `<path d="M${cx},${cy - 4.2}l4.2,4.2l-4.2,4.2l-4.2,-4.2z" class="flag"/>`;
-      // Düşük taraf yalnızca mavi (belirgin düşük) karelerde: küçük üçgen düşük, büyük üçgen çok düşük.
-      else if (lowFlag && lv === 'low') marks += `<path d="M${cx - 2.8},${cy - 1.8}h5.6l-2.8,4.4z" class="flag"/>`;
-      else if (lowFlag && lv === 'verylow') marks += `<path d="M${cx - 4.4},${cy - 3}h8.8l-4.4,7z" class="flag"/>`;
+      // İşaret, renk sınıfıyla aynı yüzdelikten: ● yüksek, ◆ olağanüstü, küçük ▼ düşük, büyük ▼ çok düşük.
+      if (!out && cls === 5) marks += `<circle cx="${cx}" cy="${cy}" r="2.4" class="flag"/>`;
+      else if (!out && cls === 6) marks += `<path d="M${cx},${cy - 4.2}l4.2,4.2l-4.2,4.2l-4.2,-4.2z" class="flag"/>`;
+      else if (!out && cls === 1) marks += `<path d="M${cx - 2.8},${cy - 1.8}h5.6l-2.8,4.4z" class="flag"/>`;
+      else if (!out && cls === 0) marks += `<path d="M${cx - 4.4},${cy - 3}h8.8l-4.4,7z" class="flag"/>`;
       if (yy === sel.year && i === sel.month) marks += `<rect x="${x - 1}" y="${y0 - 0.5}" width="${cw}" height="${ch + 1}" rx="3.5" class="cellsel"/>`;
     }
     if (yy === sel.year) s += `<rect x="${PAD_L - 1}" y="${y0 - 0.5}" width="${W - PAD_L - PAD_R + 2}" height="${ch + 1}" rx="4" class="rowsel"/>`;
@@ -267,14 +279,13 @@ export function calendar(years, from, to, sel, opt) {
 
 // Takvim açıklaması: renk + şekil, sıfır ve veri yok ayrımı.
 export function calendarKey() {
+  const marks = { 0: '<path d="M1.6,3h8.8l-4.4,7z" class="flag"/>', 1: '<path d="M3.2,4.2h5.6l-2.8,4.4z" class="flag"/>',
+    5: '<circle cx="6" cy="6" r="2.6" class="flag"/>', 6: '<path d="M6,1.6l4.4,4.4l-4.4,4.4l-4.4,-4.4z" class="flag"/>' };
+  const cells = CAL_CLASSES.map((c, i) => `<span class="cc"><svg viewBox="0 0 22 14" aria-hidden="true"><rect x="0.5" y="0.5" width="21" height="13" rx="2.5" fill="${c.fill}"/>${marks[i] ? `<g transform="translate(5,1)">${marks[i]}</g>` : ''}</svg><small>${msg(c.key)}</small></span>`).join('');
   return `<div class="key cal-key">
-    <span><i class="z"></i>0</span>
-    <span><i class="ramp" style="background:linear-gradient(90deg,${RAMP.join(',')})"></i>${msg("low.high")}</span>
-    <span><svg viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="2.6" class="flag"/></svg>${msg("high.exceeds.of.years")}</span>
-    <span><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M6,1.6l4.4,4.4l-4.4,4.4l-4.4,-4.4z" class="flag"/></svg>${msg("exceptional.exceeds.of.years")}</span>
-    <span><i class="ramp" style="background:linear-gradient(90deg,${LOW_RAMP.join(',')})"></i>${msg("low.below.of.years", [LOW_MIN])}</span>
-    <span><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3.2,4.2h5.6l-2.8,4.4z" class="flag"/></svg>${msg("low.below.25")}</span>
-    <span><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M1.6,3h8.8l-4.4,7z" class="flag"/></svg>${msg("very.low.below.5")}</span>
+    <p class="cal-lead">${msg("cal.lead")}</p>
+    <div class="cal-scale">${cells}</div>
+    <div class="cal-extra"><span><i style="background:${CAL_SPARSE}"></i>${msg("cal.sparse", [LOW_MIN])}</span><span><i class="z"></i>0</span></div>
   </div>`;
 }
 

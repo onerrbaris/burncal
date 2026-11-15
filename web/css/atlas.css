@@ -256,7 +256,14 @@ body.has-panel .rank { display: none; }
 .key i.harm { height: 3px; border-radius: 1px; background: var(--accent); }
 .key i.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); }
 .key i.dot.o { background: var(--surface); border: 2px solid var(--accent); }
-.cal-key { margin-bottom: 8px; }
+.cal-key { margin-bottom: 8px; display: block; }
+.cal-key .cal-lead { margin: 0 0 6px; line-height: 1.35; }
+.cal-key .cal-scale { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.cal-key .cc { display: flex; flex-direction: column; align-items: center; gap: 3px; text-align: center; }
+.cal-key .cc svg { width: 100%; max-width: 34px; height: 18px; }
+.cal-key .cc small { font-size: 10.5px; line-height: 1.2; color: var(--ink-2); }
+.cal-key .cal-extra { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 6px; }
+.cal-key .cal-extra span { display: inline-flex; align-items: center; gap: 6px; }
 .cal-key i.z { background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.16); }
 .cal-key i.ramp { width: 44px; }
 .cal-key svg { width: 12px; height: 12px; display: inline; overflow: visible; }
