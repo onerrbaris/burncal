@@ -6,7 +6,11 @@
 .kpi.conf { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center; }
 .kpi.conf b { margin: 0; }
 .kpi.conf small { grid-column: 1 / -1; white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.7; }
-.region-note { margin: 0 20px 12px; font-size: 11px; color: var(--ink-3); line-height: 1.5; }
+.region-method { margin: 16px 20px 12px; padding-top: 10px; border-top: 1px solid var(--line);
+  font-size: 11px; color: var(--ink-3); line-height: 1.6; }
+.region-method summary { cursor: pointer; color: var(--ink-2); padding: 4px 0; }
+.region-method summary:hover { color: var(--ink); }
+.region-method p { margin: 8px 0 0; }
 /* Grafik seçimleri aynı panelde, sekmelerden önce okunur. */
 .chart-controls .filters { margin-top: 8px; padding: 9px 11px; gap: 6px; }
 .chart-controls .section-title { margin-top: 12px; }

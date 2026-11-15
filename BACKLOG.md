@@ -41,6 +41,7 @@ Sunum (7 slayt) ve teslim formu. Veri güncellemek için: `python scripts/fetch_
 - Deploy için Render + Vercel hesapları
 
 ## Done
+- 15 Kas: Bölge kartının uzun teknik açıklaması arazi türü bölümünün altındaki kapalı "Veri ve yöntem" notuna taşındı; "Ateşler nerede yanıyor?" doğrudan doğrulama kartından sonra görünür.
 - 15 Kas: Doğrulama kartı tam genişliğe alındı, yıllık/aylık yüzdeler kesilmeden okunuyor. OSM orman katmanı kaldırıldı; renk katmanı "Tespit yoğunluğu" oldu ve il/bölge geçişinde tercihi korunuyor. İller/Bölgeler seçimi üst aramanın soluna taşındı, ayrı bölge listesi kaldırıldı. Tarayıcıda arama, iki yönde açık/kapalı tercih ve konsol kontrolü geçti.
 - 15 Kas: Günlük önbellekten 2012–2025 LOYO tahminleri yeniden üretildi; 81 ilde mevcut yıllık/aylık WAPE ile eşleşti. Tahmin ve gözlemler yedi bölge içinde toplanıp gerçek bölge hataları hesaplandı; kartta yıllık/aylık hata ve yıllık güven gösteriliyor (Akdeniz %7,0 / %14,5). Üyelik/yöntem imzaları eski çıktıyı reddeder. Sekiz test ve yedi kartın tarayıcı kontrolü geçti; konsol temiz. Yöntem ve sınırlar `docs/GEOGRAPHIC_VALIDATION.md` içinde.
 - 15 Kas: Bölge özetine arazi türü yüzdeleri eklendi. Bölgedeki illerin seçili yıl/ay aralığındaki tespitleri sınıf bazında toplanır; il yüzdelerinin ortalaması alınmaz. Şehir kartının görünümü ve 20 tespit eşiği korunur.

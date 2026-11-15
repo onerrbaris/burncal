@@ -763,8 +763,9 @@ function renderPanel() {
       <div class="kpi"><span>Orta değer</span><b>${fmt(med)}</b><small>${from}–${to}</small></div>
       <div class="kpi conf" title="${confTitle}"><span>${regional() && merged ? 'Bölge doğrulaması' : 'Güvenilirlik'}</span><b>${regional() && merged && !val ? 'Ölçülmedi' : ['Düşük', 'Orta', 'Yüksek'][level - 1]}</b><small>${regional() && merged ? (val ? `Yıllık hata %${dec(val.annual_wape * 100)}<br>Aylık hata %${dec(val.monthly_wape * 100)}` : 'Hata yüzdesi verilmez') : `<span class="dots">${[1, 2, 3].map((i) => `<i class="${i <= level ? 'on' : ''}"></i>`).join('')}</span>${val?.annual_wape != null ? `hata %${Math.round(val.annual_wape * 100)}` : merged ? '' : 'sayıya göre'}`}</small></div>
     </div>
-    ${regional() ? `<p class="region-note">${membersOf(name).length} il toplamı: ${membersOf(name).join(', ')}. ${geographic.meta.note} ${geographic.meta.validation_note}</p>` : caution(val)}
+    ${regional() ? '' : caution(val)}
     ${landCard(name)}
+    ${regional() ? `<details class="region-method"><summary>Veri ve yöntem</summary><p>${membersOf(name).length} il toplamı: ${membersOf(name).join(', ')}.</p><p>${geographic.meta.note}</p><p>${geographic.meta.validation_note}</p></details>` : ''}
     <div class="p-foot">
       <details class="dl-menu">
         <summary class="btn"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v10M5.5 8.5 10 13l4.5-4.5M4 16.5h12"/></svg>İndir</summary>
