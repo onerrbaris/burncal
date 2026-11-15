@@ -42,6 +42,7 @@ Sunum (7 slayt) ve teslim formu. Veri güncellemek için: `python scripts/fetch_
 - Deploy için Render + Vercel hesapları
 
 ## Done
+- 15 Kas: Ülke aramasındaki "Diğer ülkeler yakında" etiketi listeden kaldırıldı (Türkiye dışı ad yazılınca çıkan not duruyor). Aynı işte kısa süre yayında kalan yer tutucu hatası (her görünümde "Ülke ara") düzeltildi; tarayıcıda üç görünüm denendi.
 - 15 Kas: Ülke görünümünde arama "Ülke ara"; seçenek yalnızca Türkiye ("Diğer ülkeler yakında eklenecek" etiketiyle). Başka bir ülke yazılırsa 6 sn'lik not çıkar. Bölge/il görünümünde arama eskisi gibi. Tarayıcıda denendi.
 
 - İl renk ölçeğinde sağdaki sıra ve il sayısı etiketleri kaldırıldı.

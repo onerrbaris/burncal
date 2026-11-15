@@ -143,7 +143,7 @@ const searchNames = () => (state.scope === 'country' ? [COUNTRY] : mapNames());
 function renderAreaSearch() {
   const names = searchNames().sort((a, b) => a.localeCompare(b, 'tr'));
   $('#provList').innerHTML = names.map((n) => `<option value="${n}">`).join('');
-  const ph = country ? 'Ülke ara' : regionMap() ? 'Bölge ara' : 'İl ara';
+  const ph = state.scope === 'country' ? 'Ülke ara' : regionMap() ? 'Bölge ara' : 'İl ara';
   $('#search').placeholder = ph;
   $('#search').setAttribute('aria-label', ph);
   $('#search').value = '';
