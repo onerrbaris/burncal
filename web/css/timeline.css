@@ -4,8 +4,8 @@
   width: min(480px, calc(100vw - 220px)); min-height: 48px; flex: none;
   gap: 10px; padding: 7px 10px; border-radius: 12px; }
 body.has-panel .dock .timeline { margin-right: 0; }
-.timeline .yearbox { min-width: 48px; }
-.timeline .yearbox > span { font-size: 9px; }
+.timeline .yearbox { flex-shrink: 0; gap: 2px; }
+.timeline .yearbox label { font-size: 13px; font-weight: 600; color: var(--ink); white-space: nowrap; cursor: pointer; }
 .timeline #yearOut { font-size: 21px; }
 .timeline .track { min-width: 60px; padding-top: 0; }
 .timeline .ticks { display: none; }

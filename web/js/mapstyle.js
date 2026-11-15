@@ -1,4 +1,4 @@
-import { lang } from './i18n.js?v=20261115-home';
+import { lang } from './i18n.js?v=20261115-map-year';
 // Harita stili: uydu tabanı + 3B arazi + yakınlaştıkça açılan vektör detay + il katmanları.
 // Karo kaynakları anahtarsızdır; değiştirmek için yalnızca SOURCES bloğunu düzenleyin.
 

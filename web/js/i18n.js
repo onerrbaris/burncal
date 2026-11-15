@@ -257,6 +257,7 @@ const messages = {
   "layers.terrain": ["3B arazi", "3D terrain"],
   "rank.title": ["En çok tespit", "Most detections"],
   "rank.hint": ["Ayrıntı için listeden ya da haritadan bir alan seçin.", "Choose an area from the list or map to see details."],
+  "slider.mapYear": ["Harita yılı", "Map year"],
   "slider.year": ["Yıl", "Year"],
   "help.1": ["<b>Bir alan seçin.</b> Haritada bir bölgeye ya da ile tıklayın veya adını arama kutusuna yazın. <b><span data-i18n=\"scope.country\">Ülke</span></b> Türkiye toplamını gösterir; <b><span data-i18n=\"scope.draw\">Çiz</span></b> ile haritada kendi alanınızı (serbest, elips ya da çokgen) belirleyebilirsiniz.", "<b>Select an area.</b> Click a region or province on the map, or search by name. <b>Country</b> shows national totals. Use <b>Draw</b> for a freehand area, ellipse or polygon."],
   "help.2": ["<b>Takvimi inceleyin.</b> Sağdaki <b>Yangın takvimini aç</b> düğmesine basın; takvimde her kare bir aydır. Renk koyulaştıkça uydunun gördüğü yangın noktası sayısı artar. <span class=\"sym\">●</span> normalin üstündeki, <span class=\"sym\">◆</span> olağanüstü yüksek ayları gösterir.", "<b>Explore the calendar.</b> Select <b>Open fire calendar</b> on the right. Each cell is a month. Darker colours indicate more fire detections. <span class=\"sym\">●</span> marks above-normal activity and <span class=\"sym\">◆</span> exceptional activity."],

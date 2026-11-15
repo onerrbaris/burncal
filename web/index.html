@@ -11,7 +11,7 @@
 <link rel="stylesheet" href="vendor/maplibre-gl.css">
 <link rel="stylesheet" href="css/atlas.css?v=20261115-panels">
 <link rel="stylesheet" href="css/drawers.css?v=20261115-open">
-<link rel="stylesheet" href="css/timeline.css?v=20261115-home">
+<link rel="stylesheet" href="css/timeline.css?v=20261115-map-year">
 <link rel="stylesheet" href="css/regions.css?v=20261115-pct">
 </head>
 <body>
@@ -117,9 +117,9 @@
   <button id="home" class="home-control glass" data-i18n-title="control.reset.map.shortcut" title="Harita görünümünü sıfırla (H)" data-i18n-aria-label="control.reset.map" aria-label="Harita görünümünü sıfırla"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 9.5 10 3l7 6.5M5 8.5V17h10V8.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button>
 
   <div class="timeline glass">
-    <div class="yearbox"><span data-i18n="slider.year">Yıl</span><output id="yearOut" for="year">—</output></div>
+    <div class="yearbox"><label for="year" data-i18n="slider.mapYear">Harita yılı</label><output id="yearOut" for="year">—</output></div>
     <div class="track">
-      <input type="range" id="year" step="1" data-i18n-aria-label="control.year" aria-label="Yıl">
+      <input type="range" id="year" step="1">
       <div class="ticks" id="yearTicks" aria-hidden="true"></div>
     </div>
   </div>
@@ -136,7 +136,7 @@
 </div>
 
 <script src="vendor/maplibre-gl.js"></script>
-<script type="module" src="js/app.js?v=20261115-home"></script>
-<script type="module" src="js/drawers.js?v=20261115-home"></script>
+<script type="module" src="js/app.js?v=20261115-map-year"></script>
+<script type="module" src="js/drawers.js?v=20261115-map-year"></script>
 </body>
 </html>

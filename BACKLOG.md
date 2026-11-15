@@ -43,6 +43,8 @@ Sunum (7 slayt) ve teslim formu. Veri güncellemek için: `python scripts/fetch_
 
 ## Done
 
+- Yıl kaydırıcısı iki dilde, daha büyük ve yüksek kontrastlı bir harita yılı etiketiyle belirtildi.
+
 - Yan yana açılan özet ve grafik panellerinin alt kenarları hizalandı.
 
 - Harita kontrolü tek ev düğmesine indirildi ve sol özet paneli aşağı doğru uzatıldı.
