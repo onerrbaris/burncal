@@ -44,6 +44,7 @@ Sunum (7 slayt) ve teslim formu. Veri güncellemek için: `python scripts/fetch_
 - Deploy için Render + Vercel hesapları
 
 ## Done
+- Yedi slaytlık İngilizce final sunumuna beyaz ve gri tema uygulandı. PDF çıktısı kontrol edildi.
 - İngilizce final sunumu, yangın izleme araçlarıyla karşılaştırma ve yerel yangın takviminin katkısıyla kapanıyor.
 - İngilizce final sunumunun tekrarları sadeleştirildi. Kapanış Antalya örneğiyle atlası kullanmaya davet ediyor (PDF ve PowerPoint).
 
