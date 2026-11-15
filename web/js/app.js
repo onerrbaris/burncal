@@ -1,10 +1,10 @@
-import { t as msg, lang, locale, displayText, percent } from './i18n.js?v=20261115-brand';
+import { t as msg, lang, locale, displayText, percent } from './i18n.js?v=20261115-home';
 /* global maplibregl */
 import { regionGeometry } from './regions.js?v=20261115a';
-import { buildStyle, LAYER_GROUPS, RAMP, waterName } from './mapstyle.js?v=20261115-brand';
+import { buildStyle, LAYER_GROUPS, RAMP, waterName } from './mapstyle.js?v=20261115-home';
 import { MONTHS, MON3, LEVELS, fmt, quantile, inRange, reading, sentence, peaks, sourceOf, csvRows, hotspotRows,
-  calendar, calendarKey, compare, stepChart, setChartWidth, vsTypical } from './charts.js?v=20261115-brand';
-import { DrawTool, drawnArea } from './draw.js?v=20261115-brand';
+  calendar, calendarKey, compare, stepChart, setChartWidth, vsTypical } from './charts.js?v=20261115-home';
+import { DrawTool, drawnArea } from './draw.js?v=20261115-home';
 
 const $ = (s) => document.querySelector(s);
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -496,7 +496,6 @@ function initMap() {
   });
 
   for (const ev of ['mousedown', 'touchstart', 'wheel']) map.on(ev, stopOrbit);
-  map.on('rotate', () => { $('#needle').style.transform = `rotate(${-map.getBearing()}deg)`; });
   map.on('zoom', () => {
     if (!pointsVisible()) closePointPopup();
     if (map.getZoom() >= PT_MINZOOM) updatePoints();
@@ -1130,8 +1129,6 @@ function bindRest() {
     e.target.textContent = closed ? '+' : '–'; e.target.setAttribute('aria-expanded', !closed);
   };
   $('#year').addEventListener('input', (e) => { setYear(e.target.value); });
-  $('#zoomIn').onclick = () => map.zoomIn(); $('#zoomOut').onclick = () => map.zoomOut();
-  $('#north').onclick = () => { stopOrbit(); map.easeTo({ bearing: 0, pitch: 0 }); };
   $('#home').onclick = () => select(null);
 
   renderAreaSearch();

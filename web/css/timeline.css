@@ -10,7 +10,7 @@ body.has-panel .dock .timeline { margin-right: 0; }
 .timeline .track { min-width: 60px; padding-top: 0; }
 .timeline .ticks { display: none; }
 @media (max-width: 760px) {
-  .dock .timeline { left: 94px; right: 10px; width: auto; bottom: 22px; transform: none; gap: 7px; padding: 7px; }
+  .dock .timeline { left: 62px; right: 10px; width: auto; bottom: 22px; transform: none; gap: 7px; padding: 7px; }
   .timeline .yearbox { min-width: 43px; }
   .timeline #yearOut { font-size: 19px; }
   .timeline .track { min-width: 30px; }

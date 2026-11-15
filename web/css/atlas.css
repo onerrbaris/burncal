@@ -125,7 +125,7 @@ button { cursor: pointer; }
 
 /* ── İl seçilince: solda özet paneli, sağda grafik paneli ── */
 body.has-panel .rank { display: none; }
-.side { position: fixed; z-index: 6; top: 76px; left: 14px; bottom: 104px; width: var(--side-w);
+.side { position: fixed; z-index: 6; top: 76px; left: 14px; bottom: 80px; width: var(--side-w);
   display: flex; flex-direction: column; animation: slide-in-l 0.45s var(--ease); }
 @keyframes slide-in-l { from { transform: translateX(-28px); opacity: 0; } }
 #sideBody { display: flex; flex-direction: column; min-height: 0; flex: 1; overflow-y: auto; scrollbar-width: thin;
@@ -316,12 +316,9 @@ svg .pt-harm.on { stroke: #fff; stroke-width: 2; }
 .dock { position: fixed; z-index: 5; left: 14px; right: 14px; bottom: 22px; display: flex; gap: 10px;
   align-items: stretch; pointer-events: none; }
 .dock > * { pointer-events: auto; }
-.hud { padding: 6px; flex: none; display: flex; align-items: center; }
-.hud-btns { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; }
-.hud-btns button { width: 32px; height: 28px; border-radius: 7px; border: 0; background: rgba(255, 255, 255, 0.04);
-  font-size: 16px; line-height: 1; display: grid; place-items: center; color: var(--ink-2); }
-.hud-btns button:hover { background: rgba(255, 255, 255, 0.1); color: var(--ink); }
-.hud-btns svg { width: 16px; height: 16px; }
+.home-control { width: 44px; height: 44px; display: grid; place-items: center; padding: 0; color: var(--ink-2); }
+.home-control:hover { color: var(--ink); border-color: var(--accent-2); }
+.home-control svg { width: 18px; height: 18px; }
 
 .timeline { flex: 1; min-width: 0; display: flex; align-items: center; gap: 14px; padding: 10px 16px 10px 10px;
   transition: margin 0.45s var(--ease); }
@@ -390,7 +387,7 @@ body.booting .dock { transform: translateY(6px); }
   .timeline { gap: 10px; padding: 8px 12px 8px 8px; }
   #yearOut { font-size: 22px; }
   .ticks { display: none; }
-  .side { top: auto; left: 10px; right: 10px; bottom: 100px; width: auto; height: 36vh; animation-name: slide-up; }
+  .side { top: auto; left: 10px; right: 10px; bottom: 80px; width: auto; height: calc(36vh + 20px); animation-name: slide-up; }
   .panel { top: 112px; left: 10px; right: 10px; bottom: calc(36vh + 108px); width: auto; animation-name: slide-up; }
   @keyframes slide-up { from { transform: translateY(28px); opacity: 0; } }
   body.has-panel .timeline { margin-right: 0; }

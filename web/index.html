@@ -9,9 +9,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="vendor/maplibre-gl.css">
-<link rel="stylesheet" href="css/atlas.css?v=20261115-logo">
+<link rel="stylesheet" href="css/atlas.css?v=20261115-home">
 <link rel="stylesheet" href="css/drawers.css?v=20261115-open">
-<link rel="stylesheet" href="css/timeline.css?v=20261115-legend">
+<link rel="stylesheet" href="css/timeline.css?v=20261115-home">
 <link rel="stylesheet" href="css/regions.css?v=20261115-pct">
 </head>
 <body>
@@ -114,14 +114,7 @@
 </aside>
 
 <footer class="dock">
-  <div class="hud glass">
-    <div class="hud-btns">
-      <button id="zoomIn" data-i18n-title="control.zoom.in.shortcut" title="Yakınlaş (+)" data-i18n-aria-label="control.zoom.in" aria-label="Yakınlaş">+</button>
-      <button id="zoomOut" data-i18n-title="control.zoom.out.shortcut" title="Uzaklaş (−)" data-i18n-aria-label="control.zoom.out" aria-label="Uzaklaş">−</button>
-      <button id="north" data-i18n-title="control.reset.north" title="Kuzeye çevir" data-i18n-aria-label="control.reset.north" aria-label="Kuzeye çevir"><svg id="needle" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2 13.5 10h-7z" fill="#ff8a3d"/><path d="M10 18 6.5 10h7z" fill="#9aa3ad"/></svg></button>
-      <button id="home" data-i18n-title="control.t.rkiye.view.h.shortcut" title="Türkiye görünümü (H)" data-i18n-aria-label="control.t.rkiye.view" aria-label="Türkiye görünümü"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 9.5 10 3l7 6.5M5 8.5V17h10V8.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button>
-    </div>
-  </div>
+  <button id="home" class="home-control glass" data-i18n-title="control.reset.map.shortcut" title="Harita görünümünü sıfırla (H)" data-i18n-aria-label="control.reset.map" aria-label="Harita görünümünü sıfırla"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 9.5 10 3l7 6.5M5 8.5V17h10V8.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button>
 
   <div class="timeline glass">
     <div class="yearbox"><span data-i18n="slider.year">Yıl</span><output id="yearOut" for="year">—</output></div>
@@ -143,7 +136,7 @@
 </div>
 
 <script src="vendor/maplibre-gl.js"></script>
-<script type="module" src="js/app.js?v=20261115-brand"></script>
-<script type="module" src="js/drawers.js?v=20261115-brand"></script>
+<script type="module" src="js/app.js?v=20261115-home"></script>
+<script type="module" src="js/drawers.js?v=20261115-home"></script>
 </body>
 </html>

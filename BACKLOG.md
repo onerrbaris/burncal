@@ -43,6 +43,8 @@ Sunum (7 slayt) ve teslim formu. Veri güncellemek için: `python scripts/fetch_
 
 ## Done
 
+- Harita kontrolü tek ev düğmesine indirildi ve sol özet paneli aşağı doğru uzatıldı.
+
 - Sol üst marka alt başlığı TR ve EN için Yangın Takvimi / Fire Calendar olarak güncellendi.
 
 - Ay ayrıntısında ayın yanına, yıl çubuğuyla eşzamanlı çalışan bir yıl giriş alanı eklendi.
