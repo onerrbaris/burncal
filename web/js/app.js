@@ -1,10 +1,10 @@
-import { t as msg, lang, locale, displayText, percent } from './i18n.js?v=20261115-perf-merge';
+import { t as msg, lang, locale, displayText, percent } from './i18n.js?v=20261115-land-year';
 /* global maplibregl */
 import { regionGeometry } from './regions.js?v=20261115a';
-import { buildStyle, LAYER_GROUPS, RAMP, waterName } from './mapstyle.js?v=20261115-perf-merge';
+import { buildStyle, LAYER_GROUPS, RAMP, waterName } from './mapstyle.js?v=20261115-land-year';
 import { MONTHS, MON3, LEVELS, fmt, quantile, inRange, reading, sentence, peaks, sourceOf, csvRows, hotspotRows,
-  calendar, calendarKey, compare, stepChart, setChartWidth, vsTypical, rampColor } from './charts.js?v=20261115-perf-merge';
-import { DrawTool, drawnArea } from './draw.js?v=20261115-perf-merge';
+  calendar, calendarKey, compare, stepChart, setChartWidth, vsTypical, rampColor } from './charts.js?v=20261115-land-year';
+import { DrawTool, drawnArea } from './draw.js?v=20261115-land-year';
 
 const $ = (s) => document.querySelector(s);
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -741,7 +741,7 @@ function readCard(name, val) {
     </section>`;
 }
 
-// "Ateşler nerede yanıyor?": seçili yıllar ve aylardaki tespitlerin arazi türüne göre payı (ESA WorldCover 2021).
+// "Ateşler nerede yanıyor?": harita yılında (üstteki özetle aynı yıl) seçili aylardaki tespitlerin arazi türüne göre payı (ESA WorldCover 2021).
 const LC_COLORS = ['#ecba52', '#2e7d4f', '#a8a85a', '#7d8792'];
 function landCard(name) {
   if (!lc?.provinces) return '';
@@ -751,11 +751,9 @@ function landCard(name) {
   const sources = state.scope === 'draw' ? [drawn?.lc] : membersOf(name).map((m) => lc.provinces[m]);
   for (const p of sources) {
     if (!p) continue;
-    for (let y = state.from; y <= state.to; y++) {
-      const r = p[y];
-      if (!r) continue;
-      for (let m = state.win[0]; m <= state.win[1]; m++) for (let k = 0; k < 4; k++) g[k] += r[m * 4 + k];
-    }
+    const r = p[state.year];
+    if (!r) continue;
+    for (let m = state.win[0]; m <= state.win[1]; m++) for (let k = 0; k < 4; k++) g[k] += r[m * 4 + k];
   }
   const tot = g[0] + g[1] + g[2] + g[3];
   if (tot < 20) return '';
@@ -765,7 +763,7 @@ function landCard(name) {
       <h3>${msg("where.do.fires.occur")}</h3>
       <div class="land-bar">${pct.map((v, k) => `<span style="width:${v}%;background:${LC_COLORS[k]}"></span>`).join('')}</div>
       <ul>${rows}</ul>
-      <p class="fine" title="${msg("pixel.locations.have.an.uncertainty")}">${msg("land.cover.beneath.fire.detections", [fmt(tot)])}</p>
+      <p class="fine" title="${msg("pixel.locations.have.an.uncertainty")}">${msg("land.cover.beneath.fire.detections", [fmt(tot), state.year])}</p>
     </section>`;
 }
 
