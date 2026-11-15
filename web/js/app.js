@@ -1,6 +1,6 @@
 /* global maplibregl */
 import { regionGeometry } from './regions.js?v=20261115a';
-import { buildStyle, LAYER_GROUPS, RAMP } from './mapstyle.js?v=20261115-thick-lines';
+import { buildStyle, LAYER_GROUPS, RAMP } from './mapstyle.js?v=20261115-bright-points2';
 import { MONTHS, MON3, LEVELS, fmt, quantile, inRange, reading, sentence, peaks, sourceOf, csvRows, hotspotRows,
   calendar, calendarKey, compare, stepChart, setChartWidth } from './charts.js?v=20261115h';
 import { DrawTool, drawnArea } from './draw.js?v=20261115-ellipse';
@@ -284,7 +284,7 @@ const ptCache = {};
 let ptKey = '', ptStyle = '', ptTimer = 0;
 let ptDrawn = null, ptPopup = null, ptHoverRaf = 0, ptMouse = null;
 const ptCurrentKey = () => `${state.year}${ptSensor()}${state.win}`;
-const pointsVisible = () => ready && map.getZoom() >= 6.2 && map.getLayoutProperty('pts', 'visibility') !== 'none';
+const pointsVisible = () => ready && map.getZoom() >= 5.8 && map.getLayoutProperty('pts', 'visibility') !== 'none';
 function closePointPopup() { ptPopup?.remove(); ptPopup = null; }
 // Çizime verilen diziyi paylaşır; yeni istek ya da ayrı nokta feature'ları oluşturmaz.
 function pointHits(point) {
@@ -341,7 +341,7 @@ function openPointPopup(hit) {
     .setLngLat([a[i] / 1000, a[i + 1] / 1000]).setDOMContent(body).addTo(map);
   ptPopup.getElement().querySelector('.maplibregl-popup-close-button')?.setAttribute('aria-label', 'Bilgi balonunu kapat');
 }
-const PT_MINZOOM = 5.8; // katman 6.2'de görünür olur; biraz önce hazırlanır
+const PT_MINZOOM = 5.4; // katman 5.8'de görünür olur; biraz önce hazırlanır
 const ptSensor = () => (state.sensor !== 'merged' ? state.sensor : state.year < 2012 ? 'modis' : 'viirs');
 const loadYear = (y) => ptCache[y] || (ptCache[y] = fetch(`data/points/${y}.json`).then((r) => (r.ok ? r.json() : {})).catch(() => { delete ptCache[y]; return {}; }));
 // Bir yılın noktaları on binlerce tespittir. Yalnızca noktalar görünürken ve yıl değişimi durulunca
@@ -374,9 +374,9 @@ async function loadPoints() {
     // ateş bu dairenin içinde bir yerdedir. 38° enlemde z12'de 1 piksel ~30 m.
     const m = s === 'modis';
     map.setPaintProperty('pts', 'circle-radius',
-      ['interpolate', ['exponential', 2], ['zoom'], 6.2, 1.6, 8, 3, 10, m ? 4.6 : 3.6, 12, m ? 17 : 6.5]);
+      ['interpolate', ['exponential', 2], ['zoom'], 5.8, 2.2, 8, 3.8, 10, m ? 5.2 : 4.4, 12, m ? 17 : 7.5]);
     map.setPaintProperty('pts', 'circle-opacity',
-      ['interpolate', ['linear'], ['zoom'], 6.2, 0, 7, 0.85, 10, m ? 0.7 : 0.85, 12, m ? 0.45 : 0.7]);
+      ['interpolate', ['linear'], ['zoom'], 5.8, 0, 6.2, 1, 10, m ? 0.8 : 0.95, 12, m ? 0.55 : 0.85]);
   } catch (e) { ptKey = ''; }
 }
 
@@ -520,7 +520,7 @@ async function addLandcover() {
       const id = `lc-${t.tile}`;
       map.addSource(id, { type: 'image', url: t.file, coordinates: t.coordinates });
       map.addLayer({ id, type: 'raster', source: id, layout: { visibility: on ? 'visible' : 'none' },
-        paint: { 'raster-opacity': 0.72, 'raster-resampling': 'nearest', 'raster-fade-duration': 0 } }, 'pts');
+        paint: { 'raster-opacity': 0.72, 'raster-resampling': 'nearest', 'raster-fade-duration': 0 } }, 'pts-glow');
       lcLayers.push(id);
     }
     $('#lcLegend').innerHTML = idx.legend.map((l) => `<li><i style="background:${l.color}"></i>${l.label}</li>`).join('');

@@ -104,12 +104,22 @@ export function buildStyle(provinces, labels) {
         },
       },
       { // Tek tek uydu tespitleri (seçili yıl); yalnızca yakınlaşınca görünür.
-        id: 'pts', type: 'circle', source: 'pts', minzoom: 6.2,
+        // Ateş noktalarının altındaki parıltı: kırmızı yoğunluk zemininde de noktalar öne çıksın.
+        id: 'pts-glow', type: 'circle', source: 'pts', minzoom: 5.8,
         paint: {
-          'circle-radius': ['interpolate', ['exponential', 2], ['zoom'], 6.2, 1.6, 8, 3, 10, 3.6, 12, 6.5],
-          'circle-color': '#ff2d1a', 'circle-stroke-color': '#3a0700',
-          'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 7, 0, 9, 0.6],
-          'circle-opacity': ['interpolate', ['linear'], ['zoom'], 6.2, 0, 7, 0.85],
+          'circle-radius': ['interpolate', ['exponential', 2], ['zoom'], 5.8, 4.5, 8, 8, 10, 11, 12, 18],
+          'circle-color': '#ff7a1a', 'circle-blur': 1,
+          'circle-opacity': ['interpolate', ['linear'], ['zoom'], 5.8, 0, 6.2, 0.45, 12, 0.3],
+        },
+      },
+      {
+        id: 'pts', type: 'circle', source: 'pts', minzoom: 5.8,
+        paint: {
+          'circle-radius': ['interpolate', ['exponential', 2], ['zoom'], 5.8, 2.2, 8, 3.8, 10, 4.4, 12, 7.5],
+          'circle-color': '#ff3b1a', 'circle-stroke-color': '#ffe7c4',
+          'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 5.8, 0.4, 9, 1],
+          'circle-opacity': ['interpolate', ['linear'], ['zoom'], 5.8, 0, 6.2, 1],
+          'circle-stroke-opacity': ['interpolate', ['linear'], ['zoom'], 5.8, 0, 6.2, 0.85],
         },
       },
       {
@@ -202,7 +212,7 @@ export function buildStyle(provinces, labels) {
 
 export const LAYER_GROUPS = {
   fill: ['prov-fill'],
-  points: ['pts'],
+  points: ['pts-glow', 'pts'],
   labels: ['prov-label', 'place-city', 'place-village', 'place-small', 'water-name', 'road-name'],
   roads: ['road-minor', 'road-mid', 'road-major', 'buildings'],
 };

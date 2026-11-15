@@ -42,6 +42,7 @@ Sunum (7 slayt) ve teslim formu. Veri güncellemek için: `python scripts/fetch_
 - Deploy için Render + Vercel hesapları
 
 ## Done
+- 15 Kas: Ateş noktaları belirginleşti: daha büyük ve tam opak, açık renk halka, altında turuncu parıltı katmanı (`pts-glow`, "Ateş noktaları" anahtarına bağlı). Noktalar z5,8'den görünür, böylece bölge görünümünde de seçilir. Tarayıcıda Akdeniz ve Çukurova yakın görünümü kontrol edildi, konsol temiz.
 - 15 Kas: İl sınır çizgileri kalınlaştırıldı (z6'da 0,7→1,6 px, daha parlak) ve altına koyu gölge çizgisi (`prov-casing`) eklendi. Tarayıcıda kontrol edildi.
 - 15 Kas: Ülke görünümünde (açılış) harita illeri değil yedi coğrafi bölgeyi boyar; sıralama, arama ve renk açıklaması bölgelere göre. Bölgeye tıklamak/aramak Bölgeler görünümüne geçirir. Tarayıcıda denendi, konsol temiz.
 - 15 Kas: Sağ panel iki ayrı kart oldu: "1 Ay ayrıntısı" (tek ayın okuması) ve turuncu üst çizgili "2 Grafikler" (yıl/ay aralığı + sekmeler + grafik). Aralık notu, aralığın harita, sol özet, ay kıyası ve indirmeleri de etkilediğini söyler. Tarayıcıda kontrol edildi.
