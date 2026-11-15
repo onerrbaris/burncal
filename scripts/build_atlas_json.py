@@ -27,11 +27,11 @@ MASK = "sabit kaynaklar (sanayi vb.) üç sekmede de aynı konum maskesiyle ayı
 NOTES = {
     "modis": f"Kaynak: NASA FIRMS MODIS (Terra + Aqua) ham sayı; {MASK}.",
     "viirs": f"Kaynak: NASA FIRMS VIIRS S-NPP 375 m ham sayı; {MASK}.",
-    "merged": "VIIRS-eşdeğeri tespit: 2012-02'den itibaren VIIRS gözlemi (uydu kesintisi günleri MODIS × çarpanla dolduruldu), "
-              f"öncesi MODIS × bölgesel aylık çarpan; {MASK}.",
+    "merged": "VIIRS-eşdeğeri tespit: 2012-02'den itibaren VIIRS gözlemi (uydu kesintisi günleri MODIS × katsayıyla dolduruldu), "
+              f"öncesi MODIS × bölgesel aylık katsayı; {MASK}.",
 }
 COLS = {"modis": "raw_modis", "viirs": "raw_viirs", "merged": "value"}
-LABELS = {"modis": "MODIS", "viirs": "VIIRS", "merged": "Birleşmiş"}
+LABELS = {"modis": "MODIS", "viirs": "VIIRS", "merged": "Birleşik"}
 
 
 def load_js(path):

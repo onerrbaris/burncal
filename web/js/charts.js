@@ -292,9 +292,9 @@ export function stepChart(p, viirsYear, selYear, lastFull) {
   });
   const bw = (W - PAD_L - PAD_R - 12) / Math.max(1, ys.length - 1);
   ys.forEach((y, i) => {
-    const src = y < viirsYear ? `ham: MODIS ${raw[i] == null ? '—' : fmt(raw[i])}<br>uyumlaştırılmış: ${fmt(harm[i])} (MODIS × bölge katsayısı)`
-      : `ham: VIIRS ${raw[i] == null ? '—' : fmt(raw[i])}<br>uyumlaştırılmış: ${fmt(harm[i])} (VIIRS gözlemi${y === viirsYear ? ', Ocak MODIS × katsayı' : ''})`;
+    const src = y < viirsYear ? `ham: MODIS ${raw[i] == null ? '—' : fmt(raw[i])}<br>birleşik: ${fmt(harm[i])} (MODIS × bölge katsayısı)`
+      : `ham: VIIRS ${raw[i] == null ? '—' : fmt(raw[i])}<br>birleşik: ${fmt(harm[i])} (VIIRS gözlemi${y === viirsYear ? ', Ocak MODIS × katsayı' : ''})`;
     s += `<rect x="${x(y) - bw / 2}" y="0" width="${bw}" height="${h - 16}" class="hit" data-year="${y}" data-tip="${esc(`<b>${y}</b>${src}`)}"/>`;
   });
-  return `<svg viewBox="0 0 ${W} ${h}" role="img" aria-label="Yıllık toplam: ham seri ile uyumlaştırılmış seri, ${viirsYear} VIIRS başlangıcı işaretli">${s}</svg>`;
+  return `<svg viewBox="0 0 ${W} ${h}" role="img" aria-label="Yıllık toplam: ham seri ile birleşik seri, ${viirsYear} VIIRS başlangıcı işaretli">${s}</svg>`;
 }

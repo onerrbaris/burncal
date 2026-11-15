@@ -14,7 +14,7 @@ const up = (s) => s.toLocaleUpperCase('tr');
 const low = (s) => s.toLocaleLowerCase('tr');
 // Seriler: varsayılan uyumlaştırılmış seri; ham MODIS ve VIIRS, kaynağı doğrudan incelemek isteyenler için.
 const SENSORS = [
-  { key: 'merged', label: 'Uyumlaştırılmış', sub: 'önerilen' },
+  { key: 'merged', label: 'Birleşik', sub: 'MODIS + VIIRS' },
   { key: 'modis', label: 'MODIS', sub: 'ham' },
   { key: 'viirs', label: 'VIIRS', sub: 'ham' },
 ];
@@ -558,7 +558,7 @@ function renderSensors() {
     if (!r) continue;
     const b = document.createElement('button');
     b.role = 'tab'; b.dataset.key = s.key;
-    b.title = s.key === 'merged' ? 'MODIS ve VIIRS tek ölçekte (VIIRS-eşdeğeri tespit)' : `${s.label} ham tespit sayısı, uyumlaştırma uygulanmamış`;
+    b.title = s.key === 'merged' ? 'MODIS ve VIIRS tek ölçekte (VIIRS-eşdeğeri tespit)' : `${s.label} ham tespit sayısı, düzeltme uygulanmamış`;
     b.innerHTML = `<b>${s.label}</b><small class="${s.key === 'merged' ? '' : 'raw'}">${s.sub} · ${r[0]}–${r[1]}</small>`;
     b.onclick = () => setSensor(s.key);
     nav.append(b);
@@ -743,12 +743,12 @@ function drawCaution() {
 }
 function methodNote(name) {
   if (state.scope === 'region') return `<p>${membersOf(name).length} il toplamı: ${membersOf(name).join(', ')}.</p><p>${geographic.meta.note}</p><p>${geographic.meta.validation_note}</p>`;
-  if (state.scope === 'country') return `<p>81 ilin toplamı. Her ilin uyumlaştırılmış serisi olduğu gibi toplanır; ülke için ayrı bir katsayı hesaplanmadı.</p><p>Türkiye toplamı için ayrı bir hata ölçümü bu sürümde yapılmadı.</p>`;
+  if (state.scope === 'country') return `<p>81 ilin toplamı. Her ilin birleşik serisi olduğu gibi toplanır; ülke için ayrı bir katsayı hesaplanmadı.</p><p>Türkiye toplamı için ayrı bir hata ölçümü bu sürümde yapılmadı.</p>`;
   if (!drawn) return '';
   const tot = sum(drawn.byProv.map(([, v]) => v));
   const provs = drawn.byProv.slice(0, 6).map(([n, v]) => `${n} %${Math.max(1, Math.round((100 * v) / (tot || 1)))}`).join(', ');
   return `<p>${drawn.label}${drawn.w ? `, ${dec(drawn.w)} × ${dec(drawn.h)} km` : ''} · ${fmt(drawn.km2)} km².${tot ? ` Tespitlerin illere dağılımı: ${provs}${drawn.byProv.length > 6 ? ` ve ${drawn.byProv.length - 6} il daha` : ''}.` : ''}</p>
-    <p>Ham MODIS ve VIIRS sayıları alanın içine düşen uydu tespitlerinin sayımıdır. Uyumlaştırılmış seri için yeni katsayı hesaplanmadı: her ilin uyumlaştırılmış aylık değeri, o ilin o ayki tespitlerinden alana düşen pay kadar alınıp toplandı. Böylece il serilerindeki 2002 öncesi tek uydu ve uydu kesintisi düzeltmeleri korunur.</p>
+    <p>Ham MODIS ve VIIRS sayıları alanın içine düşen uydu tespitlerinin sayımıdır. Birleşik seri için yeni katsayı hesaplanmadı: her ilin birleşik aylık değeri, o ilin o ayki tespitlerinden alana düşen pay kadar alınıp toplandı. Böylece il serilerindeki 2002 öncesi tek uydu ve uydu kesintisi düzeltmeleri korunur.</p>
     <p>Hata bu alan için ölçülmedi. Ölçülen değerler (Akdeniz, bir yıl dışarıda bırakılarak): ~100 km ölçekte yıllık %23, aylık %38; ~25 km ölçekte aylık %58.</p>`;
 }
 
@@ -768,14 +768,14 @@ function stepView(p, val) {
   const fac = reg ? `<p class="fine">${vy} öncesi düzeltme katsayısı, ${val.region} bölgesi (${reg.name}), ay ay:</p>
     <div class="fac">${reg.factors.map((f, i) => `<span><i>${MON3[i]}</i>${dec(f)}</span>`).join('')}</div>` : '';
   const step = val?.step_raw != null ? `<p class="say">2009–2011'den 2012–2014'e ortalama yıllık değişim: ham seride ×${dec(val.step_raw, 2)},
-    uyumlaştırılmış seride ×${dec(val.step_harmonized, 2)}. MODIS tek başına ×${dec(val.step_modis, 2)} gösteriyor; uyumlaştırılmış serinin buna yakın olması beklenir.</p>` : '';
+    birleşik seride ×${dec(val.step_harmonized, 2)}. MODIS tek başına ×${dec(val.step_modis, 2)} gösteriyor; birleşik serinin buna yakın olması beklenir.</p>` : '';
   const lastFull = PARTIAL ? LY - 1 : LY;
-  return `<h4>Ham seri ve uyumlaştırılmış seri</h4>
+  return `<h4>Ham seri ve birleşik seri</h4>
     <p>${{ region: 'İl serilerinin bölge toplamı; yeni bir bölge katsayısı hesaplanmadı. ',
     country: 'İl serilerinin Türkiye toplamı; yeni bir ülke katsayısı hesaplanmadı. ',
     draw: 'Alanın kapsadığı illerin serilerinden tespit payıyla alındı; yeni bir katsayı hesaplanmadı. ' }[state.scope] || ''}Yıllık toplam. Ham seri ${vy}'ye kadar MODIS, sonra VIIRS sayar; VIIRS daha küçük yangınları da gördüğü için ${vy}'de yapay bir sıçrama oluşur.
-    Uyumlaştırılmış seri, ${vy} öncesini MODIS × bölgesel aylık katsayıyla VIIRS ölçeğine taşır.${PARTIAL ? ` ${LY} bitmediği için çizilmedi.` : ''}</p>
-    <div class="key"><span><i class="raw"></i>Ham (MODIS → VIIRS)</span><span><i class="harm"></i>Uyumlaştırılmış</span>
+    Birleşik seri, ${vy} öncesini MODIS × bölgesel aylık katsayıyla VIIRS ölçeğine taşır.${PARTIAL ? ` ${LY} bitmediği için çizilmedi.` : ''}</p>
+    <div class="key"><span><i class="raw"></i>Ham (MODIS → VIIRS)</span><span><i class="harm"></i>Birleşik</span>
       <span><i class="dot o"></i>MODIS × katsayı</span><span><i class="dot"></i>VIIRS gözlemi</span></div>
     ${stepChart(p, vy, state.year, lastFull)}${step}${fac}`;
 }
@@ -804,7 +804,7 @@ function ogmView(name) {
   s += `<path d="${sat.map((v, i) => `${i ? 'L' : 'M'}${x(i)},${yS(v)}`).join('')}" class="ln-harm"/>`;
   ys.forEach((y, i) => {
     s += `<circle cx="${x(i)}" cy="${yS(sat[i])}" r="${y === state.year ? 4 : 2.6}" class="pt-harm${y === state.year ? ' on' : ''}"/>`;
-    s += `<rect x="${x(i) - 6}" y="0" width="12" height="${H - 16}" class="hit" data-year="${y}" data-tip="<b>${y}</b>Uydu (uyumlaştırılmış): ${fmt(sat[i])} tespit<br>OGM: ${fmt(fires[i])} orman yangını · ${fmt(ha[i])} ha"/>`;
+    s += `<rect x="${x(i) - 6}" y="0" width="12" height="${H - 16}" class="hit" data-year="${y}" data-tip="<b>${y}</b>Uydu (birleşik): ${fmt(sat[i])} tespit<br>OGM: ${fmt(fires[i])} orman yangını · ${fmt(ha[i])} ha"/>`;
   });
   const key = name.toLocaleUpperCase('tr');
   const obm = Object.entries(ogm.obm2025).find(([u]) => u.toLocaleUpperCase('tr') === key);
@@ -815,7 +815,7 @@ function ogmView(name) {
     : state.scope === 'country' ? ''
     : `<p class="fine">${multi() ? `${regional() ? 'Coğrafi bölge' : 'Çizilen alan'} ile Orman Bölge Müdürlüğü sınırları aynı değildir; bu görünümde Türkiye toplamı gösterilir.` : `${name} adına bir orman bölge müdürlüğü yok; 2025 bölge tablosunda bu il başka bir müdürlüğe bağlı.`}</p>`;
   return `<h4>Türkiye: uydu tespitleri ve OGM'nin bildirdiği orman yangınları</h4>
-    <p>Çizgi: uydu tespitleri (uyumlaştırılmış, 81 il toplamı, sol eksen). Sütun: OGM'nin müdahale ettiği orman yangını sayısı (sağ eksen).</p>
+    <p>Çizgi: uydu tespitleri (birleşik seri, 81 il toplamı, sol eksen). Sütun: OGM'nin müdahale ettiği orman yangını sayısı (sağ eksen).</p>
     <div class="key"><span><i class="harm"></i>Uydu tespiti</span><span><i class="b"></i>OGM yangın sayısı</span></div>
     <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Türkiye geneli yıllık uydu tespitleri ve OGM orman yangını sayıları">${s}</svg>
     <p class="say">Yıl sıralaması benzerliği (Spearman): uydu–OGM yangın sayısı ${dec(rho(sat, fires), 2)}, uydu–OGM yanan alan ${dec(rho(sat, ha), 2)}.</p>
@@ -846,7 +846,7 @@ function renderPanel() {
   const ratio = med > 0 ? n / med : 0;
   const level = val ? { low: 1, medium: 2, high: 3 }[val.confidence] || 1 : n >= 200 ? 3 : n >= 50 ? 2 : 1;
   const confTitle = regional() && merged ? geographic.meta.validation_note
-    : state.scope === 'country' && merged ? 'Türkiye serisi 81 ilin uyumlaştırılmış serilerinin toplamıdır; ülke ölçeğinde ayrı bir hata ölçümü bu sürümde yapılmadı.'
+    : state.scope === 'country' && merged ? 'Türkiye serisi 81 ilin birleşik serilerinin toplamıdır; ülke ölçeğinde ayrı bir hata ölçümü bu sürümde yapılmadı.'
     : state.scope === 'draw' && merged ? 'Çizilen alan önceden bilinmediği için hatası ölçülemez. Ölçülen değerler (Akdeniz, bir yıl dışarıda): ~100 km ölçekte yıllık %23, aylık %38; ~25 km ölçekte aylık %58.'
     : val
     ? 'Bir yıl dışarıda bırakılarak ölçüldü (2012–2025). Yüksek: yıllık hata %15 ve altı, yılda ortalama 300 ve üzeri tespit. Düşük: hata %30 üzeri ya da yılda 100 altı tespit.'
@@ -989,7 +989,7 @@ function exportSvg() {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">
     <rect width="${W}" height="${H}" fill="#18181a"/>
     <text x="${pad}" y="22" fill="#f2ede4" style="font: 700 13px ${font}">${esc(title)}</text>
-    <text x="${pad}" y="36" fill="#b9c0c9" style="font: 10px ${font}">VIIRS-eşdeğeri uydu tespiti (MODIS + VIIRS uyumlaştırılmış) · veri ${throughLabel()} tarihine kadar</text>
+    <text x="${pad}" y="36" fill="#b9c0c9" style="font: 10px ${font}">VIIRS-eşdeğeri uydu tespiti (MODIS + VIIRS birleşik seri) · veri ${throughLabel()} tarihine kadar</text>
     ${new XMLSerializer().serializeToString(clone)}
     <text x="${pad}" y="${H - 10}" fill="#7d8792" style="font: 9.5px ${font}">BurnCal · NASA FIRMS (MODIS C6.1, VIIRS S-NPP 375 m) · NASA Space Apps 2026</text>
   </svg>`;
