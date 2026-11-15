@@ -41,13 +41,12 @@ drawer('rank', 'En çok tespit listesini', 'left', true);
 drawer('side', 'İl özetini', 'left');
 drawer('panel', 'Grafikleri', 'right', true);
 
-// Yeni il seçilince iki panel de açılır; yıl/sekme değişimi gizleme tercihini bozmaz.
-let selected = '', first = true;
+// Her yeni seçimde (il, bölge, ülke, çizilen alan) özet açılır, grafik paneli kapalı başlar ve
+// "Detaylı inceleme" ile açılır. Yıl, ay ya da sekme değişimi panelin durumuna dokunmaz.
+let selected = '';
 const panel = document.getElementById('panel');
 new MutationObserver(() => {
   const name = panel.hidden ? '' : panel.querySelector('h2')?.textContent || '';
-  // Açılıştaki ilk seçimde (Türkiye) yalnızca özet açılır; sonraki seçimlerde iki panel de.
-  if (name && name !== selected) drawers.filter((d) => d.id !== 'rank' && (!first || d.id === 'side')).forEach((d) => d.set(false));
-  if (name) first = false;
+  if (name && name !== selected) for (const d of drawers) if (d.id !== 'rank') d.set(d.id === 'panel');
   selected = name;
 }).observe(panel, { attributes: true, attributeFilter: ['hidden'], childList: true, subtree: true });

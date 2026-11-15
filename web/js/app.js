@@ -247,8 +247,8 @@ function geometry(collection = geo, index = true) {
 // ── Harita ──────────────────────────────────────────────
 function pads() {
   if (innerWidth <= 760) return { top: 120, bottom: state.sel ? innerHeight * 0.6 + 100 : 110, left: 20, right: 20 };
-  const right = state.sel && !document.body.classList.contains('right-drawer-closed') ? 570 : 60;
-  return { top: 100, bottom: 130, left: state.sel ? 390 : 260, right };
+  // Grafik paneli her seçimde kapalı başlar; kamera yalnızca sol özete yer bırakır.
+  return { top: 100, bottom: 130, left: state.sel ? 390 : 260, right: 60 };
 }
 
 // Sınırları görünür alana sığdıran kamera (Mercator hesabı; eğim ve küre görünümünden bağımsız).
