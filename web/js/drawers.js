@@ -1,3 +1,4 @@
+import { t, displayText } from './i18n.js?v=20261115-i18n';
 // Kenar panelleri: seçim ve içerik korunur, yalnızca panel haritanın dışına kayar.
 const drawers = [];
 function drawer(id, label, direction, collapsed = false) {
@@ -22,10 +23,10 @@ function drawer(id, label, direction, collapsed = false) {
     content.inert = closed;
     if (direction === 'left') button.textContent = closed ? '›' : '‹';
     // Kapalı grafik paneli kenarda etiketli tutamaç olarak durur.
-    else button.innerHTML = closed ? '<span aria-hidden="true">‹</span><b>Detaylı inceleme</b>' : '›';
+    else button.innerHTML = closed ? `<span aria-hidden="true">‹</span><b>${displayText("Detaylı inceleme")}</b>` : '›';
     button.classList.toggle('labeled', direction === 'right' && closed);
     button.setAttribute('aria-expanded', String(!closed));
-    const title = `${label} ${closed ? 'aç' : 'gizle'}`;
+    const title = t(closed ? 'drawer.open' : 'drawer.close', [displayText(label)]);
     button.setAttribute('aria-label', title); button.title = title;
     if (id === 'panel') document.body.classList.toggle('right-drawer-closed', closed);
   };
@@ -46,7 +47,11 @@ drawer('panel', 'Grafikleri', 'right', true);
 let selected = '';
 const panel = document.getElementById('panel');
 new MutationObserver(() => {
-  const name = panel.hidden ? '' : panel.querySelector('h2')?.textContent || '';
+  const name = panel.hidden ? '' : panel.dataset.sel || '';
   if (name && name !== selected) for (const d of drawers) if (d.id !== 'rank') d.set(d.id === 'panel');
   selected = name;
-}).observe(panel, { attributes: true, attributeFilter: ['hidden'], childList: true, subtree: true });
+}).observe(panel, { attributes: true, attributeFilter: ['hidden', 'data-sel'], childList: true, subtree: true });
+
+window.addEventListener('burncal:language', () => {
+  for (const { id, set } of drawers) set(document.getElementById(id).classList.contains('drawer-closed'));
+});

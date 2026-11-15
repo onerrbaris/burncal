@@ -1,3 +1,4 @@
+import { t as msg, displayText, locale } from './i18n.js?v=20261115-i18n';
 // Haritada alan çizme (serbest el, daire, çokgen) ve çizilen alanın serisini nokta dosyalarından kurma.
 const R = 6371.0088;
 const rad = (d) => (d * Math.PI) / 180;
@@ -33,6 +34,7 @@ const MODES = {
 
 // Çizim aracı. Etkinken harita kaydırma/döndürme kapalıdır; bitince eski haline döner.
 export class DrawTool {
+  refreshHint() { if (this.active) this.onStatus(displayText(MODES[this.mode])); }
   constructor(map, { onDone, onStatus }) {
     this.map = map; this.onDone = onDone; this.onStatus = onStatus;
     this.active = false; this.mode = 'free'; this.reset();
@@ -55,7 +57,7 @@ export class DrawTool {
       for (const h of this.saved) m[h].disable();
       m.getCanvasContainer().classList.add('drawing');
     }
-    this.render(); this.onStatus(MODES[mode]);
+    this.render(); this.onStatus(displayText(MODES[mode]));
   }
   stop() {
     if (!this.active) return;
@@ -86,8 +88,8 @@ export class DrawTool {
     } else if (this.mode === 'circle' && this.drag) {
       this.edge = q; this.shift = e.shiftKey; this.render();
       const { w, h } = this.ellipseSize();
-      const km = (v) => v.toLocaleString('tr-TR', { maximumFractionDigits: 1 });
-      this.onStatus(`Genişlik ${km(w)} km · yükseklik ${km(h)} km`);
+      const km = (v) => v.toLocaleString(locale(), { maximumFractionDigits: 1 });
+      this.onStatus(msg("width.km.height.km", [km(w), km(h)]));
     } else if (this.mode === 'poly' && this.pts.length) { this.hover = q; this.render(); }
   }
   up(e) {
@@ -95,7 +97,7 @@ export class DrawTool {
     const q = this.pos(e);
     if (this.mode === 'free' && this.drag) {
       this.drag = false;
-      if (this.pts.length < 6) { this.reset(); this.render(); return this.onStatus('Çizim çok kısa. ' + MODES.free); }
+      if (this.pts.length < 6) { this.reset(); this.render(); return this.onStatus(`${msg("drawing.too.short")} ` + displayText(MODES.free)); }
       // Uzun serbest çizimler seyreltilir: birkaç yüz köşe yeterli, hesap hızlı kalır.
       const k = Math.ceil(this.pts.length / 400);
       return this.finish(this.pts.filter((_, i) => i % k === 0).map((v) => v.ll));
@@ -104,7 +106,7 @@ export class DrawTool {
       this.drag = false;
       this.edge = q; this.shift = e.shiftKey;
       const ring = this.ellipseRing(), { w, h } = this.ellipseSize();
-      if (!ring || w < 1 || h < 1) { this.reset(); this.render(); return this.onStatus('Şekil çok küçük. ' + MODES.circle); }
+      if (!ring || w < 1 || h < 1) { this.reset(); this.render(); return this.onStatus(`${msg("shape.too.small")} ` + displayText(MODES.circle)); }
       return this.finish(ring, { w, h });
     }
     if (this.mode === 'poly') {
@@ -114,7 +116,7 @@ export class DrawTool {
       if (this.pts.length >= 3 && (q.p[0] - first[0]) ** 2 + (q.p[1] - first[1]) ** 2 <= 144) return this.finishPoly();
       if (last && (q.p[0] - last[0]) ** 2 + (q.p[1] - last[1]) ** 2 <= 16) return;   // çift tıklamanın ikinci tıklaması
       this.pts.push(q); this.render();
-      this.onStatus(this.pts.length < 3 ? MODES.poly : `${this.pts.length} köşe. Bitirmek için ilk noktaya tıklayın, çift tıklayın ya da Enter’a basın.`);
+      this.onStatus(this.pts.length < 3 ? displayText(MODES.poly) : msg("vertices.click.the.first.vertex", [this.pts.length]));
     }
   }
   // İlk basılan nokta ile imleç, elipsin çevrelendiği kutunun karşılıklı köşeleridir (ekran düzleminde).
@@ -140,7 +142,7 @@ export class DrawTool {
     return { w: haversine(u(cx - rx, cy), u(cx + rx, cy)), h: haversine(u(cx, cy - ry), u(cx, cy + ry)) };
   }
   finishPoly() {
-    if (this.pts.length < 3) return this.onStatus('Çokgen için en az 3 köşe gerekir.');
+    if (this.pts.length < 3) return this.onStatus(msg("a.polygon.needs.at.least"));
     this.finish(this.pts.map((v) => v.ll));
   }
   finish(ring, extra = {}) {
@@ -150,7 +152,7 @@ export class DrawTool {
   }
   key(e) {
     if (!this.active || e.target.closest?.('input, select, textarea')) return;
-    if (e.key === 'Escape' && this.busy()) { e.stopImmediatePropagation(); this.reset(); this.render(); this.onStatus(MODES[this.mode]); }
+    if (e.key === 'Escape' && this.busy()) { e.stopImmediatePropagation(); this.reset(); this.render(); this.onStatus(displayText(MODES[this.mode])); }
     else if (e.key === 'Enter' && this.mode === 'poly') { e.stopImmediatePropagation(); this.finishPoly(); }
     else if (e.key === 'Backspace' && this.mode === 'poly' && this.pts.length) { e.preventDefault(); e.stopImmediatePropagation(); this.pts.pop(); this.render(); }
   }

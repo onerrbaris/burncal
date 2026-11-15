@@ -1,16 +1,18 @@
+import { t as msg, lang, locale, displayText, percent } from './i18n.js?v=20261115-i18n';
 /* global maplibregl */
 import { regionGeometry } from './regions.js?v=20261115a';
-import { buildStyle, LAYER_GROUPS, RAMP } from './mapstyle.js?v=20261115-bright-points2';
+import { buildStyle, LAYER_GROUPS, RAMP, waterName } from './mapstyle.js?v=20261115-i18n';
 import { MONTHS, MON3, LEVELS, fmt, quantile, inRange, reading, sentence, peaks, sourceOf, csvRows, hotspotRows,
-  calendar, calendarKey, compare, stepChart, setChartWidth } from './charts.js?v=20261115-birlesik';
-import { DrawTool, drawnArea } from './draw.js?v=20261115-ellipse';
+  calendar, calendarKey, compare, stepChart, setChartWidth } from './charts.js?v=20261115-i18n';
+import { DrawTool, drawnArea } from './draw.js?v=20261115-i18n';
 
 const $ = (s) => document.querySelector(s);
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 // MVP: hafif mod varsayılan; uzun kamera uçuşları ve sürekli animasyonlar için adrese ?sinematik ekleyin.
 const FAST = REDUCED || !new URLSearchParams(location.search).has('sinematik');
 const TR_BOUNDS = [[25.6, 35.7], [44.9, 42.2]];
-const up = (s) => s.toLocaleUpperCase('tr');
+// Yer adının özgün değeri seçim ve harita kimliğidir.
+const displayName = (name) => geographic?.regions[name] || name === DRAWN ? displayText(name) : name;
 const low = (s) => s.toLocaleLowerCase('tr');
 // Seriler: varsayılan uyumlaştırılmış seri; ham MODIS ve VIIRS, kaynağı doğrudan incelemek isteyenler için.
 const SENSORS = [
@@ -31,7 +33,7 @@ const SCOPE_LABEL = { province: 'İl', region: 'Bölge', country: 'Ülke', draw:
 const EMPTY = { type: 'FeatureCollection', features: [] };
 const regional = () => state.scope === 'region';
 const multi = () => state.scope !== 'province';     // birden çok ilin serisinden kurulan alan
-const scopeLabel = () => SCOPE_LABEL[state.scope];
+const scopeLabel = () => displayText(SCOPE_LABEL[state.scope]);
 // Ülke görünümünde harita yedi coğrafi bölgeyi boyar (Türkiye seçili kalır); bölgeye tıklamak
 // bölge görünümüne geçirir.
 const regionMap = () => state.scope === 'region' || state.scope === 'country';
@@ -84,7 +86,9 @@ const fullWin = () => state.win[0] === 0 && state.win[1] === 11;
 const inWin = (m) => m >= state.win[0] && m <= state.win[1];
 const winLabel = () => (fullWin() ? '' : `${MON3[state.win[0]]}–${MON3[state.win[1]]}`);
 const isPartial = (y, m) => PARTIAL && y === LY && m === LM;
-const throughLabel = () => `${LD} ${MONTHS[LM]} ${LY}`;
+const throughLabel = () => new Date(Date.UTC(LY, LM, LD)).toLocaleDateString(locale(), {
+  year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC',
+});
 
 // Seçili yılın sezon penceresindeki toplamı (harita, sıralama, KPI).
 function total(name, year = state.year) {
@@ -140,13 +144,13 @@ function indexData() {
 // Aranabilir adlar: ülke görünümünde yalnızca Türkiye (diğer ülkeler ileride), diğerlerinde haritadaki alanlar.
 const COUNTRY_SOON = 'Diğer ülkeler yakında eklenecek';
 const searchNames = () => (state.scope === 'country' ? [COUNTRY] : mapNames());
-function renderAreaSearch() {
-  const names = searchNames().sort((a, b) => a.localeCompare(b, 'tr'));
-  $('#provList').innerHTML = names.map((n) => `<option value="${n}">`).join('');
-  const ph = state.scope === 'country' ? 'Ülke ara' : regionMap() ? 'Bölge ara' : 'İl ara';
-  $('#search').placeholder = ph;
+function renderAreaSearch(clear = true) {
+  const names = searchNames().sort((a, b) => displayName(a).localeCompare(displayName(b), locale()));
+  $('#provList').innerHTML = names.map((n) => `<option value="${displayName(n)}">`).join('');
+  const ph = state.scope === 'country' ? msg("search.countries") : regionMap() ? msg("search.regions") : msg("search.provinces");
+  $('#search').placeholder = matchMedia('(max-width: 1280px)').matches ? msg('search.short') : ph;
   $('#search').setAttribute('aria-label', ph);
-  $('#search').value = '';
+  if (clear) $('#search').value = '';
   // Çizim görünümünde aranacak bir ad yok.
   $('.topbar .search').hidden = state.scope === 'draw';
 }
@@ -187,7 +191,7 @@ function loadAllYears(progress) {
     let done = 0;
     allYears = Promise.all(ys.map((y) => loadYear(y).then((d) => { done++; allYears.progress?.(done, ys.length); return [y, d]; })))
       .then((rows) => {
-        if (rows.some(([, d]) => !d.modis && !d.viirs)) { allYears = null; throw new Error('Nokta dosyaları indirilemedi'); }
+        if (rows.some(([, d]) => !d.modis && !d.viirs)) { allYears = null; throw new Error(msg("could.not.download.detection.files")); }
         return Object.fromEntries(rows);
       });
   }
@@ -205,19 +209,19 @@ function startDraw(mode) {
 const SHAPE = { free: 'Serbest çizim', circle: 'Elips', poly: 'Çokgen' };
 async function finishDraw(shape) {
   drawTool.stop();
-  drawHint('Veriler yükleniyor…');
+  drawHint(msg("loading.data"));
   let byYear;
   try {
-    byYear = await loadAllYears((k, n) => drawHint(`Veriler yükleniyor… ${k}/${n}`));
+    byYear = await loadAllYears((k, n) => drawHint(msg("loading.data2", [k, n])));
   } catch (e) {
     console.error(e);
-    drawHint('Veriler indirilemedi. Bağlantıyı kontrol edip yeniden çizin.');
+    drawHint(msg("could.not.download.the.data"));
     return drawTool.start();
   }
   if (state.scope !== 'draw') return;
   const r = drawnArea(shape.ring, byYear, { data, names: geo.features.map((f) => f.properties.name),
     viirsFrom: data.meta.viirs_from, LM, LD, lcGroup });
-  drawn = { ...r, ...shape, label: SHAPE[shape.mode] || 'Alan',
+  drawn = { ...r, ...shape, label: SHAPE[shape.mode] || msg("area"),
     geo: { type: 'FeatureCollection', features: [{ type: 'Feature', properties: { name: DRAWN }, geometry: { type: 'Polygon', coordinates: [shape.ring] } }] } };
   for (const k of Object.keys(cmpCache)) delete cmpCache[k];
   $('#drawBar').hidden = true;
@@ -245,7 +249,7 @@ function geometry(collection = geo, index = true) {
     bboxes[name] = [[b[0], b[1]], [b[2], b[3]]];
     if (index) provIdx[name] = idx;
     labels.push({ type: 'Feature', geometry: { type: 'Point', coordinates: best },
-      properties: { name, label: up(name), hasData: !!mapData(name) } });
+      properties: { name, label: displayName(name), hasData: !!mapData(name) } });
   });
   return { type: 'FeatureCollection', features: labels };
 }
@@ -289,7 +293,8 @@ let ptKey = '', ptStyle = '', ptTimer = 0;
 let ptDrawn = null, ptPopup = null, ptHoverRaf = 0, ptMouse = null;
 const ptCurrentKey = () => `${state.year}${ptSensor()}${state.win}`;
 const pointsVisible = () => ready && map.getZoom() >= 5.8 && map.getLayoutProperty('pts', 'visibility') !== 'none';
-function closePointPopup() { ptPopup?.remove(); ptPopup = null; }
+let popupHit = null;
+function closePointPopup() { popupHit = null; ptPopup?.remove(); ptPopup = null; }
 // Çizime verilen diziyi paylaşır; yeni istek ya da ayrı nokta feature'ları oluşturmaz.
 function pointHits(point) {
   if (!pointsVisible() || !ptDrawn || ptDrawn.key !== ptCurrentKey()) return null;
@@ -313,26 +318,27 @@ function pointHits(point) {
 }
 function openPointPopup(hit) {
   closePointPopup(); hideTip(); stopOrbit();
+  popupHit = hit;
   const { a, y, s, st, i, count, first, last } = hit;
   const dt = new Date(Date.UTC(y, 0, a[i + 2])), m = dt.getUTCMonth();
   const name = geo.features[a[i + 4]]?.properties.name;
-  const date = (d) => `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
+  const date = (d) => d.toLocaleDateString(locale(), { month: 'long', day: 'numeric', timeZone: 'UTC' });
   const start = new Date(Date.UTC(y, 0, first)), end = new Date(Date.UTC(y, 0, last));
   const span = first === last ? date(start) : start.getUTCMonth() === end.getUTCMonth()
-    ? `${start.getUTCDate()}–${date(end)}` : `${date(start)}–${date(end)}`;
+    ? (lang() === 'en' ? `${date(start)}–${end.getUTCDate()}` : `${start.getUTCDate()}–${date(end)}`) : `${date(start)}–${date(end)}`;
   const nrt = data.meta.nrt_from?.[s] && dt.toISOString().slice(0, 7) >= data.meta.nrt_from[s];
   const body = document.createElement('div');
   const line = (tag, text) => { const el = document.createElement(tag); el.textContent = text; body.append(el); };
-  line('b', `En yakın tespit: ${date(dt)} ${y}`);
-  line('p', `${s === 'viirs' ? 'VIIRS S-NPP' : 'MODIS'} · ${a[i + 3].toLocaleString('tr-TR')} MW FRP`);
-  line('p', `${name || 'İl bilinmiyor'} · ${nrt ? 'yakın gerçek zamanlı (NRT)' : 'arşiv (SP)'}`);
+  line('b', msg("nearest.fire.detection", [date(dt), y]));
+  line('p', `${s === 'viirs' ? 'VIIRS S-NPP' : 'MODIS'} · ${a[i + 3].toLocaleString(locale())} MW FRP`);
+  line('p', `${name || msg("unknown.province")} · ${nrt ? msg("near.real.time.nrt") : msg("archive.sp")}`);
   const lcName = st > 5 && lc ? lc.classes.find((c) => c.i === a[i + 5])?.label : null;
-  if (lcName) line('p', `Arazi: ${lcName}`);
-  if (count > 1) line('p', `Bu konumda ${count} tespit: ${span}`);
-  line('small', `Konum ${s === 'viirs' ? '±375 m (VIIRS)' : '±1 km (MODIS)'}: sensör pikselinin merkezi`);
+  if (lcName) line('p', msg("land.cover", [displayText(lcName)]));
+  if (count > 1) line('p', msg("fire.detections.here", [count, span]));
+  line('small', msg("location.centre.of.the.sensor", [s === 'viirs' ? '±375 m (VIIRS)' : '±1 km (MODIS)']));
   if (name) {
     const link = document.createElement('a');
-    link.href = '#panel'; link.className = 'link'; link.textContent = 'Bu ayı takvimde aç';
+    link.href = '#panel'; link.className = 'link'; link.textContent = msg("open.this.month.in.the");
     link.onclick = (e) => {
       e.preventDefault(); closePointPopup();
       state.month = m; state.tab = 'calendar';
@@ -343,7 +349,7 @@ function openPointPopup(hit) {
   }
   ptPopup = new maplibregl.Popup({ className: 'point-popup', maxWidth: '290px', closeOnClick: false, offset: 10 })
     .setLngLat([a[i] / 1000, a[i + 1] / 1000]).setDOMContent(body).addTo(map);
-  ptPopup.getElement().querySelector('.maplibregl-popup-close-button')?.setAttribute('aria-label', 'Bilgi balonunu kapat');
+  ptPopup.getElement().querySelector('.maplibregl-popup-close-button')?.setAttribute('aria-label', msg("close.popup"));
 }
 const PT_MINZOOM = 5.4; // katman 5.8'de görünür olur; biraz önce hazırlanır
 const ptSensor = () => (state.sensor !== 'merged' ? state.sensor : state.year < 2012 ? 'modis' : 'viirs');
@@ -459,7 +465,7 @@ function initMap() {
       map.getCanvas().style.cursor = 'pointer';
     }
     const t = mapTotal(name);
-    showTip(`<b>${name}</b>${t == null ? 'Veri yok' : `${fmt(t)} tespit · ${periodLabel()}`}`, e.originalEvent.clientX, e.originalEvent.clientY);
+    showTip(`<b>${displayName(name)}</b>${t == null ? msg("no.data") : msg("fire.detections", [fmt(t), periodLabel()])}`, e.originalEvent.clientX, e.originalEvent.clientY);
   });
   map.on('mouseleave', 'prov-hover', () => {
     if (hovered) map.setFeatureState({ source: 'provinces', id: hovered }, { hover: false });
@@ -510,12 +516,16 @@ function initMap() {
 // "2026 (13 Kas itibarıyla)", "2021 · Haz–Eki" gibi kısa dönem etiketi.
 function periodLabel(y = state.year) {
   const w = winLabel();
-  const part = PARTIAL && y === LY && inWin(LM) ? ` (${LD} ${MON3[LM]} itibarıyla)` : '';
+  const part = PARTIAL && y === LY && inWin(LM) ? ` ${msg("as.of", [LD, MON3[LM]])}` : '';
   return `${y}${w ? ' · ' + w : ''}${part}`;
 }
 
 // Arazi türü katmanı: her 3°x3° parça için ~270 m'lik renkli görüntü (scripts/build_landcover.py).
 const lcLayers = [];
+let landLegend = [];
+function renderLandLegend() {
+  $('#lcLegend').innerHTML = landLegend.map((l) => `<li><i style="background:${l.color}"></i>${displayText(l.label)}</li>`).join('');
+}
 async function addLandcover() {
   try {
     const idx = await fetch('data/landcover/index.json').then((r) => (r.ok ? r.json() : null));
@@ -528,9 +538,10 @@ async function addLandcover() {
         paint: { 'raster-opacity': 0.72, 'raster-resampling': 'nearest', 'raster-fade-duration': 0 } }, 'pts-glow');
       lcLayers.push(id);
     }
-    $('#lcLegend').innerHTML = idx.legend.map((l) => `<li><i style="background:${l.color}"></i>${l.label}</li>`).join('');
+    landLegend = idx.legend;
+    renderLandLegend();
     $('#lcRow').hidden = false;
-  } catch (e) { console.warn('Arazi türü katmanı yüklenemedi', e); }
+  } catch (e) { console.warn(msg("could.not.load.land.cover"), e); }
 }
 
 // ── Seçim ───────────────────────────────────────────────
@@ -556,6 +567,10 @@ function select(name, fly = true) {
 }
 
 // ── Yıl ─────────────────────────────────────────────────
+function sensorText(b, s, r) {
+  b.title = s.key === 'merged' ? msg("modis.and.viirs.on.a") : msg("raw.fire.detections.without.adjustment", [s.label]);
+  b.innerHTML = `<b>${displayText(s.label)}</b><small class="${s.key === 'merged' ? '' : 'raw'}">${displayText(s.sub)} · ${r[0]}–${r[1]}</small>`;
+}
 function renderSensors() {
   const nav = $('#sensorTabs');
   for (const s of SENSORS) {
@@ -563,8 +578,7 @@ function renderSensors() {
     if (!r) continue;
     const b = document.createElement('button');
     b.role = 'tab'; b.dataset.key = s.key;
-    b.title = s.key === 'merged' ? 'MODIS ve VIIRS tek ölçekte (VIIRS-eşdeğeri tespit)' : `${s.label} ham tespit sayısı, düzeltme uygulanmamış`;
-    b.innerHTML = `<b>${s.label}</b><small class="${s.key === 'merged' ? '' : 'raw'}">${s.sub} · ${r[0]}–${r[1]}</small>`;
+    sensorText(b, s, r);
     b.onclick = () => setSensor(s.key);
     nav.append(b);
   }
@@ -631,7 +645,7 @@ function renderLegend() {
   if (regionMap()) {
     // Az sayıda bölge: her biri haritadaki tam rengiyle ayrı satırda.
     rows = lv.map((t, i) => [t, i]).reverse().map(([t, i]) =>
-      `<li><i style="background:${mix(i / (n - 1))}"></i><span>${fmt(t)}</span><small>${legendNames[i]}</small></li>`).join('');
+      `<li><i style="background:${mix(i / (n - 1))}"></i><span>${fmt(t)}</span><small>${displayName(legendNames[i])}</small></li>`).join('');
   } else {
     const buckets = RAMP.map(() => []);
     lv.forEach((t, i) => buckets[Math.round((i / (n - 1)) * k)].push(t));
@@ -640,8 +654,8 @@ function renderLegend() {
       return `<li><i style="background:${RAMP[i]}"></i><span>${range}</span></li>`;
     }).join('');
   }
-  el.innerHTML = `<li class="lg-title">${regionMap() ? 'Bölge' : 'İl'} başına ${fullWin() ? 'yıllık' : winLabel()} yangın tespiti · ${state.year}</li>${rows}
-    <li class="lg-dot"><i></i><span>Yakınlaşınca tek tek yangın noktaları</span></li>`;
+  el.innerHTML = `<li class="lg-title">${msg("fire.detections.per", [regionMap() ? msg("region") : msg("province"), fullWin() ? msg("annual") : winLabel(), state.year])}</li>${rows}
+    <li class="lg-dot"><i></i><span>${msg("zoom.in.to.see.individual")}</span></li>`;
 }
 
 function renderRank() {
@@ -649,16 +663,16 @@ function renderRank() {
     .sort((a, b) => b[1] - a[1]).slice(0, regionMap() ? 7 : 6);
   $('#rank').hidden = !rows.length || state.scope === 'draw';
   if (!rows.length || state.scope === 'draw') return;
-  $('#rankTitle').textContent = `En çok yangın tespiti${regionMap() ? ' · bölgeler' : ''} · ${state.year}${fullWin() ? '' : ' · ' + winLabel()}`;
+  $('#rankTitle').textContent = msg("most.fire.detections", [regionMap() ? ` ${msg("regions")}` : '', state.year, fullWin() ? '' : ' · ' + winLabel()]);
   $('#rankList').innerHTML = rows.map(([n, t], i) =>
-    `<li><button data-name="${n}" class="${n === state.sel ? 'on' : ''}"><i>${i + 1}</i><span>${n}</span><em>${fmt(t)}</em>
+    `<li><button data-name="${n}" class="${n === state.sel ? 'on' : ''}"><i>${i + 1}</i><span>${displayName(n)}</span><em>${fmt(t)}</em>
      <u style="width:calc((100% - 34px) * ${rows[0][1] ? t / rows[0][1] : 0})"></u></button></li>`).join('');
 }
 
 // ── Panel ───────────────────────────────────────────────
-const head = (eyebrow, title) => `<div class="p-head"><div><span class="eyebrow">${eyebrow}</span><h2>${title}</h2></div>
-  <button class="close" aria-label="Paneli kapat" title="Kapat (Esc)">×</button></div>`;
-const dec = (n, d = 1) => n.toLocaleString('tr-TR', { minimumFractionDigits: d, maximumFractionDigits: d });
+const head = (eyebrow, title) => `<div class="p-head"><div><span class="eyebrow">${eyebrow}</span><h2>${displayName(title)}</h2></div>
+  <button class="close" aria-label="${msg("close.panel")}" title="${msg("close.esc")}">×</button></div>`;
+const dec = (n, d = 1) => n.toLocaleString(locale(), { minimumFractionDigits: d, maximumFractionDigits: d });
 const viirsYear = () => +(data.meta.viirs_from || '2012-02').slice(0, 4);
 
 // Dönem: kullanıcı seçmediyse bütün yıllar; seçtiyse seri aralığına kırpılır.
@@ -677,23 +691,23 @@ function rangeRow() {
     return o;
   };
   const season = state.win[0] === 5 && state.win[1] === 9;
-  return `<div class="filters"><div class="range" role="group" aria-label="Yıl aralığı">
-      <span class="lbl">Yıllar</span>
-      <select id="rFrom" aria-label="Dönem başlangıç yılı">${opt(state.from, r[0], state.to)}</select>
+  return `<div class="filters"><div class="range" role="group" aria-label="${msg("year.range")}">
+      <span class="lbl">${msg("years")}</span>
+      <select id="rFrom" aria-label="${msg("start.year")}">${opt(state.from, r[0], state.to)}</select>
       <span aria-hidden="true">–</span>
-      <select id="rTo" aria-label="Dönem bitiş yılı">${opt(state.to, state.from, r[1])}</select>
-      <small>${n} yıl</small>
-      ${full ? '' : '<button class="link" id="rAll">Tüm yıllar</button>'}
+      <select id="rTo" aria-label="${msg("end.year")}">${opt(state.to, state.from, r[1])}</select>
+      <small>${msg("years2", [n])}</small>
+      ${full ? '' : `<button class="link" id="rAll">${msg("all.years")}</button>`}
     </div>
-    <div class="range" role="group" aria-label="Ay aralığı">
-      <span class="lbl">Aylar</span>
-      <select id="wFrom" aria-label="İlk ay">${opt(state.win[0], 0, state.win[1], (m) => MON3[m])}</select>
+    <div class="range" role="group" aria-label="${msg("month.range")}">
+      <span class="lbl">${msg("months")}</span>
+      <select id="wFrom" aria-label="${msg("first.month")}">${opt(state.win[0], 0, state.win[1], (m) => MON3[m])}</select>
       <span aria-hidden="true">–</span>
-      <select id="wTo" aria-label="Son ay">${opt(state.win[1], state.win[0], 11, (m) => MON3[m])}</select>
-      ${season ? '' : '<button class="link" id="wSeason" title="Haziran–Ekim">Yangın sezonu</button>'}
-      ${fullWin() ? '' : '<button class="link" id="wAll">Bütün yıl</button>'}
+      <select id="wTo" aria-label="${msg("last.month")}">${opt(state.win[1], state.win[0], 11, (m) => MON3[m])}</select>
+      ${season ? '' : `<button class="link" id="wSeason" title="${msg("june.october")}">${msg("fire.season")}</button>`}
+      ${fullWin() ? '' : `<button class="link" id="wAll">${msg("full.year")}</button>`}
     </div>
-    <p class="range-note">Bu aralık aşağıdaki grafikleri belirler; harita, sol özet, ay ayrıntısındaki kıyas ve indirilen dosyalar da aynı aralığı kullanır.</p></div>`;
+    <p class="range-note">${msg("this.range.applies.to.the")}</p></div>`;
 }
 
 // "Bu ay tarihsel medyana göre nerede?" kartı: seçili ay (varsayılan: son veri ayı).
@@ -703,25 +717,25 @@ function readCard(name, val) {
   if (!r) return '';
   const latest = y === LY && m === READ_M, part = isPartial(y, m), lv = r.level ? LEVELS[r.level] : null;
   const reg = val && data.regions?.[val.region];
-  const src = state.sensor !== 'merged' ? `${sensorOf().label} ham sayı`
-    : sourceOf(y, m, data.meta.viirs_from) === 'viirs' ? 'VIIRS gözlemi' : `MODIS × ${reg ? dec(reg.factors[m], 2) : 'katsayı'}`;
+  const src = state.sensor !== 'merged' ? msg("raw.count", [sensorOf().label])
+    : sourceOf(y, m, data.meta.viirs_from) === 'viirs' ? msg("viirs.observation") : `MODIS × ${reg ? dec(reg.factors[m], 2) : msg("factor")}`;
   const lastM = y === LY ? LM : 11;
   const months = MONTHS.map((n, i) => (i > lastM ? '' : `<option value="${i}"${i === m ? ' selected' : ''}>${n}</option>`)).join('');
   const label = part ? `1–${LD} ${MONTHS[m]} ${y}` : null;
-  return `<section class="read${r.level ? ' lv-' + r.level : ''}" aria-label="Seçili ayın dönem medyanına göre yeri">
+  return `<section class="read${r.level ? ' lv-' + r.level : ''}" aria-label="${msg("selected.month.compared.with.the")}">
       <div class="read-top">
-        <select id="mSel" aria-label="Okunacak ay">${months}</select><b>${y}</b>
-        ${latest ? `<span class="pill">${part ? 'ay sürüyor' : READ_M === LM ? 'son veri' : 'son tam ay'}</span>` : '<button class="link" id="latest">Son aya dön</button>'}
-        ${lv ? `<span class="lvl" title="Aynı ayın seçili yıllardaki değerleriyle kıyas: yılların %25'inden azını geçtiyse düşük, %25–75'ini normal, %75–95'ini yüksek, %95'ten fazlasını olağanüstü.">${lv.mark ? lv.mark + ' ' : ''}${lv.label}</span>` : ''}
+        <select id="mSel" aria-label="${msg("select.month")}">${months}</select><b>${y}</b>
+        ${latest ? `<span class="pill">${part ? msg("month.in.progress") : READ_M === LM ? msg("latest.observation") : msg("last.complete.month")}</span>` : `<button class="link" id="latest">${msg("back.to.latest.month")}</button>`}
+        ${lv ? `<span class="lvl" title="${msg("compared.with.the.same.month")}">${lv.mark ? lv.mark + ' ' : ''}${displayText(lv.label)}</span>` : ''}
       </div>
       <p class="say">${sentence(r, label)}</p>
       <dl class="nums">
-        <div><dt>Bu ay</dt><dd>${fmt(r.v)}</dd></div>
-        <div><dt title="Seçili yıllarda bu ayın medyanı: yılların yarısı bunun altında, yarısı üstünde">Tipik değer</dt><dd>${fmt(r.med)}</dd></div>
-        <div><dt title="Bu ayın, seçili yıllardaki aynı aylardan yüzde kaçını geçtiği">Geçtiği yıllar</dt><dd>${r.pct == null ? '—' : '%' + Math.round(r.pct)}</dd></div>
-        <div><dt>Kaynak</dt><dd>${src}</dd></div>
+        <div><dt>${msg("this.month")}</dt><dd>${fmt(r.v)}</dd></div>
+        <div><dt title="${msg("median.for.this.month.across")}">${msg("typical.value")}</dt><dd>${fmt(r.med)}</dd></div>
+        <div><dt title="${msg("percentage.of.comparison.years.with")}">${msg("years.exceeded")}</dt><dd>${r.pct == null ? '—' : percent(Math.round(r.pct))}</dd></div>
+        <div><dt>${msg("source")}</dt><dd>${src}</dd></div>
       </dl>
-      <p class="fine">${part ? `Ay henüz bitmedi: her yılın 1–${LD} ${MONTHS[m]} değerleriyle kıyaslandı. ` : ''}Başka bir ay için takvimde bir kareye tıklayın.</p>
+      <p class="fine">${msg("select.a.calendar.cell.to", [part ? `${msg("partial.month.days.of.are", [LD, MONTHS[m]])} ` : ''])}</p>
     </section>`;
 }
 
@@ -744,40 +758,40 @@ function landCard(name) {
   const tot = g[0] + g[1] + g[2] + g[3];
   if (tot < 20) return '';
   const pct = g.map((v) => (100 * v) / tot);
-  const rows = lc.groups.map((lab, k) => `<li><i style="background:${LC_COLORS[k]}"></i><span>${lab}</span><b>%${Math.round(pct[k])}</b></li>`).join('');
-  return `<section class="land" aria-label="Arazi türüne göre tespitler">
-      <h3>Yangınlar hangi arazide?</h3>
+  const rows = lc.groups.map((lab, k) => `<li><i style="background:${LC_COLORS[k]}"></i><span>${displayText(lab)}</span><b>${percent(Math.round(pct[k]))}</b></li>`).join('');
+  return `<section class="land" aria-label="${msg("fire.detections.by.land.cover")}">
+      <h3>${msg("where.do.fires.occur")}</h3>
       <div class="land-bar">${pct.map((v, k) => `<span style="width:${v}%;background:${LC_COLORS[k]}"></span>`).join('')}</div>
       <ul>${rows}</ul>
-      <p class="fine" title="Uydu tespitinin konumu ±375 m (VIIRS) ile ±1 km (MODIS) arasında belirsizdir; tek tek noktaların sınıfı sınırda yanlış olabilir, yüzdeler daha güvenilirdir.">${fmt(tot)} tespitin altındaki arazi (ESA WorldCover 2021, 10 m). Tarım arazisindeki yangın noktaları anız yakması olabilir, ancak bu kesin değildir; "ağaçlık alan" bahçeleri de içerir.</p>
+      <p class="fine" title="${msg("pixel.locations.have.an.uncertainty")}">${msg("land.cover.beneath.fire.detections", [fmt(tot)])}</p>
     </section>`;
 }
 
 function caution(val) {
   if (val?.confidence !== 'low') return '';
   const why = val.mean_annual < 100
-    ? `Bu ilde yılda ortalama ${fmt(val.mean_annual)} tespit var; aylık sayılar güvenilir bir okuma için çok az.`
-    : `Bu ilde doğrulama hatası yüksek (yıllık %${Math.round(val.annual_wape * 100)}); aylık okumalar güvenilir değil.`;
-  return `<div class="caution" role="note"><b>Dikkat:</b> ${why} Yıllık toplamlara ve uzun dönem örüntüsüne bakın.</div>`;
+    ? msg("this.province.averages.detections.a", [fmt(val.mean_annual)])
+    : msg("validation.error.is.high.in", [Math.round(val.annual_wape * 100)]);
+  return `<div class="caution" role="note"><b>${msg("note")}</b> ${msg("use.annual.totals.and.long", [why])}</div>`;
 }
 // Çizilen alan için hata ölçülemez; az tespitli ya da küçük alanda okuyucu uyarılır.
 function drawCaution() {
   if (!drawn) return '';
   const full = Object.entries(drawn.series.merged).filter(([y]) => !(PARTIAL && +y === LY));
   const mean = sum(full.map(([, r]) => sum(r))) / Math.max(1, full.length);
-  const why = mean < 100 ? `Bu alanda yılda ortalama ${fmt(mean)} tespit var; aylık sayılar güvenilir bir okuma için çok az.`
-    : drawn.km2 < 2500 ? `Alan küçük (${fmt(drawn.km2)} km²); küçük alanlarda aylık sayılar oynaktır.` : '';
-  return why ? `<div class="caution" role="note"><b>Dikkat:</b> ${why} Yıllık toplamlara ve uzun dönem örüntüsüne bakın.</div>` : '';
+  const why = mean < 100 ? msg("this.area.averages.detections.a", [fmt(mean)])
+    : drawn.km2 < 2500 ? msg("this.area.is.small.km", [fmt(drawn.km2)]) : '';
+  return why ? `<div class="caution" role="note"><b>${msg("note")}</b> ${msg("use.annual.totals.and.long", [why])}</div>` : '';
 }
 function methodNote(name) {
-  if (state.scope === 'region') return `<p>${membersOf(name).length} il toplamı: ${membersOf(name).join(', ')}.</p><p>${geographic.meta.note}</p><p>${geographic.meta.validation_note}</p>`;
-  if (state.scope === 'country') return `<p>81 ilin toplamı. Her ilin birleşik serisi olduğu gibi toplanır; ülke için ayrı bir katsayı hesaplanmadı.</p><p>Türkiye toplamı için ayrı bir hata ölçümü bu sürümde yapılmadı.</p>`;
+  if (state.scope === 'region') return `<p>${msg("total.for.provinces", [membersOf(name).length, membersOf(name).join(', ')])}</p><p>${displayText(geographic.meta.note)}</p><p>${displayText(geographic.meta.validation_note)}</p>`;
+  if (state.scope === 'country') return `<p>${msg("sum.of.the.combined.series")}</p><p>${msg("a.separate.national.error.estimate")}</p>`;
   if (!drawn) return '';
   const tot = sum(drawn.byProv.map(([, v]) => v));
-  const provs = drawn.byProv.slice(0, 6).map(([n, v]) => `${n} %${Math.max(1, Math.round((100 * v) / (tot || 1)))}`).join(', ');
-  return `<p>${drawn.label}${drawn.w ? `, ${dec(drawn.w)} × ${dec(drawn.h)} km` : ''} · ${fmt(drawn.km2)} km².${tot ? ` Tespitlerin illere dağılımı: ${provs}${drawn.byProv.length > 6 ? ` ve ${drawn.byProv.length - 6} il daha` : ''}.` : ''}</p>
-    <p>Ham MODIS ve VIIRS sayıları alanın içine düşen uydu tespitlerinin sayımıdır. Birleşik seri için yeni katsayı hesaplanmadı: her ilin birleşik aylık değeri, o ilin o ayki tespitlerinden alana düşen pay kadar alınıp toplandı. Böylece il serilerindeki 2002 öncesi tek uydu ve uydu kesintisi düzeltmeleri korunur.</p>
-    <p>Hata bu alan için ölçülmedi. Ölçülen değerler (Akdeniz, bir yıl dışarıda bırakılarak): ~100 km ölçekte yıllık %23, aylık %38; ~25 km ölçekte aylık %58.</p>`;
+  const provs = drawn.byProv.slice(0, 6).map(([n, v]) => `${n} ${percent(Math.max(1, Math.round((100 * v) / (tot || 1))))}`).join(', ');
+  return `<p>${displayText(drawn.label)}${drawn.w ? `, ${dec(drawn.w)} × ${dec(drawn.h)} km` : ''} · ${fmt(drawn.km2)} km².${tot ? ` ${msg("detections.by.province", [provs, drawn.byProv.length > 6 ? ` ${msg("and.more.provinces", [drawn.byProv.length - 6])}` : ''])}` : ''}</p>
+    <p>${msg("raw.modis.and.viirs.counts")}</p>
+    <p>${msg("error.was.not.measured.for")}</p>`;
 }
 
 function peaksView(name, years) {
@@ -785,32 +799,30 @@ function peaksView(name, years) {
   const list = (rows, attrs, label, on) => `<ol class="top">${rows.map((r, i) => `<li><button ${attrs(r)} class="${on(r) ? 'on' : ''}">
       <i>${i + 1}</i><span>${label(r)}</span><em>${fmt(r.at(-1))}</em><u style="width:calc((100% - 34px) * ${rows[0].at(-1) ? r.at(-1) / rows[0].at(-1) : 0})"></u></button></li>`).join('')}</ol>`;
   const w = winLabel();
-  return `<h4>En yüksek yıllar · ${state.from}–${state.to}${w ? ' · ' + w : ''}</h4><p>${w ? `${w} toplamı` : 'Yıllık toplam'}; tıklayınca o yıl seçilir.</p>
-    ${list(topYears, ([y]) => `data-year="${y}"`, ([y]) => (PARTIAL && y === LY ? `${y} <small>(${LD} ${MON3[LM]} itibarıyla)</small>` : y), ([y]) => y === state.year)}
-    <h4 class="gap">En yüksek aylar</h4><p>Tek tek ayların değeri; tıklayınca o ay yukarıda açılır.</p>
+  return `<h4>${msg("peak.years", [state.from, state.to, w ? ' · ' + w : ''])}</h4><p>${msg("select.a.year.to.explore", [w ? msg("total.for", [w]) : msg("annual.total")])}</p>
+    ${list(topYears, ([y]) => `data-year="${y}"`, ([y]) => (PARTIAL && y === LY ? `${y} <small>${msg("as.of", [LD, MON3[LM]])}</small>` : y), ([y]) => y === state.year)}
+    <h4 class="gap">${msg("peak.months")}</h4><p>${msg("individual.monthly.totals.select.a")}</p>
     ${list(topMonths, ([y, m]) => `data-year="${y}" data-month="${m}"`, ([y, m]) => `${MONTHS[m]} ${y}${isPartial(y, m) ? ` <small>(1–${LD})</small>` : ''}`, ([y, m]) => y === state.year && m === state.month)}`;
 }
 
 function stepView(p, val) {
   const vy = viirsYear(), reg = val && data.regions?.[val.region];
-  const fac = reg ? `<p class="fine">${vy} öncesi düzeltme katsayısı, ${val.region} bölgesi (${reg.name}), ay ay:</p>
+  const fac = reg ? `<p class="fine">${msg("monthly.adjustment.factors.before.for", [vy, val.region, reg.name])}</p>
     <div class="fac">${reg.factors.map((f, i) => `<span><i>${MON3[i]}</i>${dec(f)}</span>`).join('')}</div>` : '';
-  const step = val?.step_raw != null ? `<p class="say">2009–2011'den 2012–2014'e ortalama yıllık değişim: ham seride ×${dec(val.step_raw, 2)},
-    birleşik seride ×${dec(val.step_harmonized, 2)}. MODIS tek başına ×${dec(val.step_modis, 2)} gösteriyor; birleşik serinin buna yakın olması beklenir.</p>` : '';
+  const step = val?.step_raw != null ? `<p class="say">${msg("change.in.annual.means.from", [dec(val.step_raw, 2), dec(val.step_harmonized, 2), dec(val.step_modis, 2)])}</p>` : '';
   const lastFull = PARTIAL ? LY - 1 : LY;
-  return `<h4>Ham seri ve birleşik seri</h4>
-    <p>${{ region: 'İl serilerinin bölge toplamı; yeni bir bölge katsayısı hesaplanmadı. ',
-    country: 'İl serilerinin Türkiye toplamı; yeni bir ülke katsayısı hesaplanmadı. ',
-    draw: 'Alanın kapsadığı illerin serilerinden tespit payıyla alındı; yeni bir katsayı hesaplanmadı. ' }[state.scope] || ''}Yıllık toplam. Ham seri ${vy}'ye kadar MODIS, sonra VIIRS sayar; VIIRS daha küçük yangınları da gördüğü için ${vy}'de yapay bir sıçrama oluşur.
-    Birleşik seri, ${vy} öncesini MODIS × bölgesel aylık katsayıyla VIIRS ölçeğine taşır.${PARTIAL ? ` ${LY} bitmediği için çizilmedi.` : ''}</p>
-    <div class="key"><span><i class="raw"></i>Ham (MODIS → VIIRS)</span><span><i class="harm"></i>Birleşik</span>
-      <span><i class="dot o"></i>MODIS × katsayı</span><span><i class="dot"></i>VIIRS gözlemi</span></div>
+  return `<h4>${msg("raw.and.combined.series")}</h4>
+    <p>${msg("annual.totals.the.raw.series", [{ region: `${msg("sum.of.provincial.series.within")} `,
+    country: `${msg("sum.of.provincial.series.across")} `,
+    draw: `${msg("provincial.series.are.weighted.by")} ` }[state.scope] || '', vy, vy, vy, PARTIAL ? ` ${msg("the.incomplete.year.is.omitted", [LY])}` : ''])}</p>
+    <div class="key"><span><i class="raw"></i>${msg("raw.modis.viirs")}</span><span><i class="harm"></i>${msg("combined")}</span>
+      <span><i class="dot o"></i>${msg("modis.factor")}</span><span><i class="dot"></i>${msg("viirs.observation")}</span></div>
     ${stepChart(p, vy, state.year, lastFull)}${step}${fac}`;
 }
 
 // OGM'nin bildirdiği orman yangınları ile uydu tespitleri (Türkiye geneli, yıllık).
 function ogmView(name) {
-  if (!ogm) return '<p>OGM verisi yüklenemedi.</p>';
+  if (!ogm) return `<p>${msg("could.not.load.ogm.data")}</p>`;
   const lastFull = PARTIAL ? LY - 1 : LY;
   const ys = Object.keys(ogm.national).map(Number).filter((y) => y >= ranges.merged[0] && y <= lastFull).sort((a, b) => a - b);
   const sat = ys.map((y) => sum(Object.values(data.provinces).map((p) => sum(p.merged?.[y] || []))));
@@ -823,7 +835,7 @@ function ogmView(name) {
   const mS = Math.max(...sat) * 1.05, mF = Math.max(...fires) * 1.05;
   const yS = (v) => T + ih - (v / mS) * ih, yF = (v) => T + ih - (v / mF) * ih;
   let s = `<line x1="${L}" x2="${W - R}" y1="${T + ih}" y2="${T + ih}" class="grid base"/>`;
-  s += `<text x="${L - 6}" y="${T + 4}" class="tick" text-anchor="end">${fmt(mS / 1000)}b</text><text x="${W - R + 6}" y="${T + 4}" class="tick">${fmt(mF)}</text>`;
+  s += `<text x="${L - 6}" y="${T + 4}" class="tick" text-anchor="end">${fmt(mS / 1000)}${lang() === "en" ? "k" : "b"}</text><text x="${W - R + 6}" y="${T + 4}" class="tick">${fmt(mF)}</text>`;
   ys.forEach((y, i) => {
     const bw = Math.max(3, (W - L - R) / ys.length - 3);
     s += `<rect x="${x(i) - bw / 2}" y="${yF(fires[i])}" width="${bw}" height="${T + ih - yF(fires[i])}" rx="1.5" class="band"/>`;
@@ -832,33 +844,34 @@ function ogmView(name) {
   s += `<path d="${sat.map((v, i) => `${i ? 'L' : 'M'}${x(i)},${yS(v)}`).join('')}" class="ln-harm"/>`;
   ys.forEach((y, i) => {
     s += `<circle cx="${x(i)}" cy="${yS(sat[i])}" r="${y === state.year ? 4 : 2.6}" class="pt-harm${y === state.year ? ' on' : ''}"/>`;
-    s += `<rect x="${x(i) - 6}" y="0" width="12" height="${H - 16}" class="hit" data-year="${y}" data-tip="<b>${y}</b>Uydu (birleşik): ${fmt(sat[i])} tespit<br>OGM: ${fmt(fires[i])} orman yangını · ${fmt(ha[i])} ha"/>`;
+    s += `<rect x="${x(i) - 6}" y="0" width="12" height="${H - 16}" class="hit" data-year="${y}" data-tip="<b>${y}</b>${msg("satellite.combined.fire.detections", [fmt(sat[i])])}<br>OGM: ${fmt(fires[i])} ${msg("ogm.fires")} · ${fmt(ha[i])} ha"/>`;
   });
   const key = name.toLocaleUpperCase('tr');
   const obm = Object.entries(ogm.obm2025).find(([u]) => u.toLocaleUpperCase('tr') === key);
   const p25 = series(name, 'merged')?.[2025];
   const local = obm
-    ? `<h4 class="gap">${name} Orman Bölge Müdürlüğü · 2025</h4><p class="say">OGM: <b>${fmt(obm[1].fires)}</b> orman yangını, ${fmt(obm[1].ha)} ha yanan alan. Uydular 2025'te ${name} ilinde ${p25 ? fmt(sum(p25)) : '—'} yangın noktası tespit etti.</p>
-       <p class="fine">Bölge müdürlüğü genellikle birkaç ili kapsar; il sınırıyla birebir karşılaştırılamaz. İl bazında yıllık OGM verisi yalnızca 2025 için bulundu.</p>`
+    ? `<h4 class="gap">${msg("regional.forestry.directorate", [name])}</h4><p class="say">OGM: <b>${fmt(obm[1].fires)}</b> ${msg("forest.fires.and.ha.burned", [fmt(obm[1].ha), name, p25 ? fmt(sum(p25)) : '—'])}</p>
+       <p class="fine">${msg("a.regional.directorate.usually.covers")}</p>`
     : state.scope === 'country' ? ''
-    : `<p class="fine">${multi() ? `${regional() ? 'Coğrafi bölge' : 'Çizilen alan'} ile Orman Bölge Müdürlüğü sınırları aynı değildir; bu görünümde Türkiye toplamı gösterilir.` : `${name} adına bir orman bölge müdürlüğü yok; 2025 bölge tablosunda bu il başka bir müdürlüğe bağlı.`}</p>`;
-  return `<h4>Türkiye: uydu tespitleri ve OGM'nin bildirdiği orman yangınları</h4>
-    <p>Çizgi: uydu tespitleri (birleşik seri, 81 il toplamı, sol eksen). Sütun: OGM'nin müdahale ettiği orman yangını sayısı (sağ eksen).</p>
-    <div class="key"><span><i class="harm"></i>Uydu tespiti</span><span><i class="b"></i>OGM yangın sayısı</span></div>
-    <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Türkiye geneli yıllık uydu tespitleri ve OGM orman yangını sayıları">${s}</svg>
-    <p class="say">Yıl sıralaması benzerliği (Spearman): uydu–OGM yangın sayısı ${dec(rho(sat, fires), 2)}, uydu–OGM yanan alan ${dec(rho(sat, ha), 2)}.</p>
-    <p class="fine">Benzerlik düşük, çünkü iki kaynak aynı şeyi saymıyor. OGM yalnızca orman alanında müdahale edilen yangınları sayar. Uydu tarla ve anız yakmalarını da görür; Türkiye'de tespitlerin çoğu tarımsaldır. Tarla yakmaları azaldıkça (Çukurova'da 20 yılda yaklaşık %70) uydu toplamı düşerken OGM'nin orman yangını sayıları artıyor. Uydu takvimi "orman yangını sayısı" olarak okunmamalı; yanma etkinliğinin tamamını gösterir. ${ogm.note}</p>
+    : `<p class="fine">${multi() ? msg("boundaries.differ.between.the.selected", [regional() ? msg("geographic.region") : msg("drawn.area")]) : msg("no.forestry.directorate.bears.the", [name])}</p>`;
+  return `<h4>${msg("t.rkiye.satellite.fire.detections")}</h4>
+    <p>${msg("line.combined.satellite.detections.across")}</p>
+    <div class="key"><span><i class="harm"></i>${msg("satellite.detections")}</span><span><i class="b"></i>${msg("ogm.forest.fires")}</span></div>
+    <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${msg("annual.satellite.detections.and.ogm")}">${s}</svg>
+    <p class="say">${msg("spearman.rank.correlation.across.years", [dec(rho(sat, fires), 2), dec(rho(sat, ha), 2)])}</p>
+    <p class="fine">${msg("the.two.records.count.different", [displayText(ogm.note)])}</p>
     ${local}
-    <p class="fine">Kaynak: ${Object.values(ogm.sources).join(' · ')}</p>`;
+    <p class="fine">${msg("sources", [Object.values(ogm.sources).map(displayText).join(' · ')])}</p>`;
 }
 
 function renderPanel() {
   const panel = $('#panel'), body = $('#panelBody'), side = $('#side'), sideBody = $('#sideBody');
+  panel.dataset.sel = state.sel || '';
   if (!state.sel) { panel.hidden = true; side.hidden = true; return; }
   panel.hidden = false; side.hidden = false;
   const name = state.sel, years = series(name);
   if (!years || !years[state.year]) {
-    sideBody.innerHTML = head(scopeLabel(), name) + '<div class="empty"><h4>Bu alan için seçili yılda veri yok</h4><p>Alttaki çubuktan başka bir yıl seçin.</p></div>';
+    sideBody.innerHTML = head(scopeLabel(), name) + `<div class="empty"><h4>${msg("no.data.for.this.area")}</h4><p>${msg("choose.another.year.using.the")}</p></div>`;
     body.innerHTML = '';
     return;
   }
@@ -873,32 +886,33 @@ function renderPanel() {
   const med = quantile(refYears.map((y) => (like ? likeTotal(name, y) : total(name, y))), 0.5);
   const ratio = med > 0 ? n / med : 0;
   const level = val ? { low: 1, medium: 2, high: 3 }[val.confidence] || 1 : n >= 200 ? 3 : n >= 50 ? 2 : 1;
-  const confTitle = regional() && merged ? geographic.meta.validation_note
-    : state.scope === 'country' && merged ? 'Türkiye serisi 81 ilin birleşik serilerinin toplamıdır; ülke ölçeğinde ayrı bir hata ölçümü bu sürümde yapılmadı.'
-    : state.scope === 'draw' && merged ? 'Çizilen alan önceden bilinmediği için hatası ölçülemez. Ölçülen değerler (Akdeniz, bir yıl dışarıda): ~100 km ölçekte yıllık %23, aylık %38; ~25 km ölçekte aylık %58.'
+  const confTitle = regional() && merged ? displayText(geographic.meta.validation_note)
+    : state.scope === 'country' && merged ? msg("the.national.series.sums.the")
+    : state.scope === 'draw' && merged ? msg("error.has.not.been.measured")
     : val
-    ? 'Bir yıl dışarıda bırakılarak ölçüldü (2012–2025). Yüksek: yıllık hata %15 ve altı, yılda ortalama 300 ve üzeri tespit. Düşük: hata %30 üzeri ya da yılda 100 altı tespit.'
-    : "Ham seri: tespit sayısına göre. 200 ve üzeri yüksek, 50–199 orta, 50'nin altı düşük. Ham MODIS ve VIIRS sayıları birbiriyle doğrudan karşılaştırılamaz.";
+    ? msg("leave.one.year.out.validation")
+    : msg("raw.series.by.detection.count");
   const sel = { year: state.year, month: state.month };
   const w = winLabel();
   // Durum etiketi: seçili yılın toplamı, geçmiş yılların orta değerine (medyan) göre.
-  const status = !med ? null : ratio < 0.67 ? ['low', 'Normalin altında'] : ratio <= 1.5 ? ['normal', 'Normal']
-    : ratio <= 2.5 ? ['high', 'Normalin üstünde'] : ['extreme', 'Çok yüksek'];
-  const span = like ? `aynı dönemin (${w ? MON3[state.win[0]] : '1 Oca'}–${LD} ${MON3[LM]})` : w ? `${w} döneminin` : 'yıllık toplamın';
+  const status = !med ? null : ratio < 0.67 ? ['low', msg("below.normal")] : ratio <= 1.5 ? ['normal', 'Normal']
+    : ratio <= 2.5 ? ['high', msg("above.normal")] : ['extreme', msg("very.high")];
+  const span = like ? msg("summary.partialPeriod", [w ? MON3[state.win[0]] : msg("jan"), LD, MON3[LM]]) : w ? msg("summary.season", [w]) : msg("summary.annual");
   const sumText = med
-    ? `${from}–${to} arasında ${span} tipik değeri <b>${fmt(med)}</b>. ${state.year} yılında${like ? ' şimdiye kadar' : ''} bunun <b>${dec(ratio)} katı</b> tespit var.`
-    : `Bu ${multi() ? 'alan' : 'il'} için karşılaştırma yapacak kadar tespit yok.`;
+    ? msg('summary.comparison', { from, to, period: span, median: fmt(med), year: state.year,
+      partial: like ? ' ' + msg('so.far') : '', ratio: dec(ratio) })
+    : msg("too.few.detections.for.a", [multi() ? msg("area2") : msg("province2")]);
 
   let view = '';
   if (state.tab === 'calendar') {
-    view = `<h4>${from}–${to} yangın takvimi${w ? ' · ' + w : ''}</h4><p>Her satır bir yıl, her kare bir ay. Renk koyulaştıkça tespit artar. İşaretli kareler, o ay için alışılmadık derecede yüksek değerlerdir. Bir kareye tıklayınca o ay yukarıda açılır.</p>
+    view = `<h4>${msg("fire.calendar", [from, to, w ? ' · ' + w : ''])}</h4><p>${msg("each.row.is.a.year")}</p>
       ${calendarKey()}${calendar(years, from, to, sel, { win: state.win, rd: rdFor(name), partial: isPartial, through: LD })}`;
   } else if (state.tab === 'compare') {
     const ref = inRange(like ? cmpYears(name) : years, from, to);
     if (!like && PARTIAL) delete ref[LY];   // bitmemiş yılın boş ayları başka bir yılın medyanını bozmasın
     const c = compare(ref, row, state.year, state.month, like ? LM : -1);
-    view = `<h4>${state.year} ile geçmiş yıllar, ay ay</h4><p>Turuncu sütunlar ${state.year} yılını gösterir. Beyaz çizgi ${from}–${to} arasında o ayın tipik değeri, gri bant yılların yarısının düştüğü normal aralıktır. Bir sütuna tıklayınca o ay yukarıda açılır.</p>
-      <div class="key"><span><i></i>${state.year}</span><span><i class="m"></i>Tipik değer</span><span><i class="b"></i>Normal aralık</span></div>
+    view = `<h4>${msg("compared.with.past.years.month", [state.year])}</h4><p>${msg("orange.bars.show.the.white", [state.year, from, to])}</p>
+      <div class="key"><span><i></i>${state.year}</span><span><i class="m"></i>${msg("typical.value")}</span><span><i class="b"></i>${msg("normal.range")}</span></div>
       ${c.svg}`;
   } else if (state.tab === 'peaks') {
     view = peaksView(name, years);
@@ -910,45 +924,45 @@ function renderPanel() {
 
   const sel_ = `${from}–${to}${w ? ' · ' + w : ''}`;
   // Sağ panel: seçimler üstte, seçili sekmenin grafiği altta.
-  body.innerHTML = `<div class="p-head charts-head"><div><span class="eyebrow">${sen.label}${merged ? ' seri' : ' · ham veri'} · ${sel_}</span>
-      <h2>${name} grafikleri</h2></div></div>
-    <section class="pblock month-block" aria-label="Ay ayrıntısı">
-      <header class="pblock-head"><span class="pblock-num" aria-hidden="true">1</span><div><h3>Ay ayrıntısı</h3>
-        <p>Seçili ay, geçmiş yılların aynı ayıyla karşılaştırılır.</p></div></header>
+  body.innerHTML = `<div class="p-head charts-head"><div><span class="eyebrow">${displayText(sen.label)}${merged ? ` ${msg("series")}` : ` ${msg("raw.data")}`} · ${sel_}</span>
+      <h2>${msg("charts", [displayName(name)])}</h2></div></div>
+    <section class="pblock month-block" aria-label="${msg("month.detail")}">
+      <header class="pblock-head"><span class="pblock-num" aria-hidden="true">1</span><div><h3>${msg("month.detail")}</h3>
+        <p>${msg("compare.the.selected.month.with")}</p></div></header>
       ${readCard(name, vAll)}
     </section>
-    <section class="pblock charts-block" aria-label="Grafikler">
-      <header class="pblock-head"><span class="pblock-num" aria-hidden="true">2</span><div><h3>Grafikler</h3>
-        <p>Yıl ve ay aralığını seçin, ardından incelemek istediğiniz grafiği açın.</p></div></header>
+    <section class="pblock charts-block" aria-label="${msg("charts2")}">
+      <header class="pblock-head"><span class="pblock-num" aria-hidden="true">2</span><div><h3>${msg("charts2")}</h3>
+        <p>${msg("select.a.year.and.month")}</p></div></header>
       ${rangeRow()}
-      <div class="tabs" role="tablist">${TABS.map(([k, l]) => `<button role="tab" data-tab="${k}" aria-selected="${k === state.tab}">${l}</button>`).join('')}</div>
+      <div class="tabs" role="tablist">${TABS.map(([k, l]) => `<button role="tab" data-tab="${k}" aria-selected="${k === state.tab}">${displayText(l)}</button>`).join('')}</div>
       <div class="view" role="tabpanel">${view}</div>
     </section>`;
   // Sol panel: genel özet, güven, arazi türü ve indirme.
-  sideBody.innerHTML = head(`${sen.label}${merged ? ' seri' : ' · ham veri'} · ${periodLabel()}`, name) + `
-    <section class="summary" aria-label="Özet">
-      <div class="sum-top"><b>${fmt(n)}</b><span>uydu tespiti</span>${status ? `<span class="status ${status[0]}">${status[1]}</span>` : ''}</div>
+  sideBody.innerHTML = head(`${displayText(sen.label)}${merged ? ` ${msg("series")}` : ` ${msg("raw.data")}`} · ${periodLabel()}`, name) + `
+    <section class="summary" aria-label="${msg("summary")}">
+      <div class="sum-top"><b>${fmt(n)}</b><span>${msg("satellite.fire.detections")}</span>${status ? `<span class="status ${status[0]}">${status[1]}</span>` : ''}</div>
       <p>${sumText}</p>
     </section>
     <div class="kpis">
-      <div class="kpi"><span>En yoğun ay</span><b>${peak >= 0 ? MONTHS[peak] : '—'}</b><small>${peak >= 0 ? fmt(row[peak]) + ' tespit' : ''}</small></div>
-      <div class="kpi" title="Seçili yılların medyanı: yılların yarısı bunun altında, yarısı üstünde"><span>Tipik değer</span><b>${fmt(med)}</b><small>${from}–${to}</small></div>
-      <div class="kpi conf" title="${confTitle}"><span>${multi() && merged ? 'Doğruluk' : 'Güvenilirlik'}</span><b>${multi() && merged && !val ? 'Ölçülmedi' : ['Düşük', 'Orta', 'Yüksek'][level - 1]}</b><small>${multi() && merged ? (val ? `Yıllık hata payı %${dec(val.annual_wape * 100)}<br>Aylık hata payı %${dec(val.monthly_wape * 100)}` : 'Hata payı hesaplanmadı') : `<span class="dots">${[1, 2, 3].map((i) => `<i class="${i <= level ? 'on' : ''}"></i>`).join('')}</span>${val?.annual_wape != null ? `hata %${Math.round(val.annual_wape * 100)}` : merged ? '' : 'sayıya göre'}`}</small></div>
+      <div class="kpi"><span>${msg("peak.month")}</span><b>${peak >= 0 ? MONTHS[peak] : '—'}</b><small>${peak >= 0 ? fmt(row[peak]) + ` ${msg("detections")}` : ''}</small></div>
+      <div class="kpi" title="${msg("median.for.the.selected.years")}"><span>${msg("typical.value")}</span><b>${fmt(med)}</b><small>${from}–${to}</small></div>
+      <div class="kpi conf" title="${confTitle}"><span>${multi() && merged ? msg("accuracy") : msg("reliability")}</span><b>${multi() && merged && !val ? msg("not.measured") : [msg("low"), msg("medium"), msg("high")][level - 1]}</b><small>${multi() && merged ? (val ? `${msg("annual.error", [dec(val.annual_wape * 100)])}<br>${msg("monthly.error", [dec(val.monthly_wape * 100)])}` : msg("error.not.measured")) : `<span class="dots">${[1, 2, 3].map((i) => `<i class="${i <= level ? 'on' : ''}"></i>`).join('')}</span>${val?.annual_wape != null ? msg("error", [Math.round(val.annual_wape * 100)]) : merged ? '' : msg("based.on.count")}`}</small></div>
     </div>
     ${state.scope === 'province' ? caution(val) : state.scope === 'draw' ? drawCaution() : ''}
     ${landCard(name)}
-    ${multi() ? `<details class="region-method"${state.scope === 'draw' ? ' open' : ''}><summary>Veri ve yöntem</summary>${methodNote(name)}</details>` : ''}
+    ${multi() ? `<details class="region-method"${state.scope === 'draw' ? ' open' : ''}><summary>${msg("data.and.methods")}</summary>${methodNote(name)}</details>` : ''}
     <div class="p-foot">
       <details class="dl-menu">
-        <summary class="btn"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v10M5.5 8.5 10 13l4.5-4.5M4 16.5h12"/></svg>İndir</summary>
+        <summary class="btn"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v10M5.5 8.5 10 13l4.5-4.5M4 16.5h12"/></svg>${msg("download")}</summary>
         <div class="dl-list">
-          <button id="csv"><b>Aylık tablo (CSV)</b><small>Takvimdeki sayılar · ${sel_}</small></button>
-          <button id="hcsv"><b>Tespit listesi (CSV)</b><small>Her uydu tespiti: tarih, konum, FRP</small></button>
-          <button id="png"><b>Grafik (PNG)</b><small>Açık sekmedeki grafik, sunum için</small></button>
-          <button id="svg"><b>Grafik (SVG)</b><small>Ölçeklenebilir vektör</small></button>
+          <button id="csv"><b>${msg("monthly.table.csv")}</b><small>${msg("calendar.values", [sel_])}</small></button>
+          <button id="hcsv"><b>${msg("fire.detection.list.csv")}</b><small>${msg("individual.detections.with.date.coordinates")}</small></button>
+          <button id="png"><b>${msg("chart.png")}</b><small>${msg("current.chart.for.presentations")}</small></button>
+          <button id="svg"><b>${msg("chart.svg")}</b><small>${msg("scalable.vector.graphic")}</small></button>
         </div>
       </details>
-      <span title="${data.meta.notes?.[state.sensor] || ''}">${data.meta.notes?.[state.sensor] || ''}</span>
+      <span title="${displayText(data.meta.notes?.[state.sensor]) || ''}">${displayText(data.meta.notes?.[state.sensor]) || ''}</span>
     </div>`;
 }
 
@@ -973,23 +987,23 @@ function downloadCsv() {
 async function downloadHotspots(btn) {
   const name = state.sel, lab = btn.querySelector('small') || btn, label = lab.textContent;
   const members = membersOf(name);
-  btn.disabled = true; lab.textContent = 'Hazırlanıyor…';
+  btn.disabled = true; lab.textContent = msg("preparing");
   try {
     // Çizilen alanda yalnızca alanın içine düşen noktalar (hesap sırasında ayrıldı).
     const byYear = {};
     for (let y = state.from; y <= state.to; y++) byYear[y] = state.scope === 'draw' ? drawn.hits[y] : await loadYear(y);
     const lcLabels = [];
-    for (const c of lc?.classes || []) lcLabels[c.i] = c.label;
+    for (const c of lc?.classes || []) lcLabels[c.i] = displayText(c.label);
     let lines = [];
     for (const member of members) {
       const rows = hotspotRows(byYear, provIdx[member], member, state.from, state.to, state.win, data.meta.nrt_from || {}, lcLabels);
       lines.push(...(lines.length ? rows.slice(1) : rows));
     }
     save(csvBlob(lines), `burncal_tespitler_${fileTag()}.csv`);
-    lab.textContent = `${fmt(lines.length - 1)} tespit indirildi`;
+    lab.textContent = msg("downloaded.detections", [fmt(lines.length - 1)]);
     setTimeout(() => { lab.textContent = label; }, 2500);
   } catch (e) {
-    console.error(e); lab.textContent = 'İndirilemedi';
+    console.error(e); lab.textContent = msg("download.failed");
   } finally { btn.disabled = false; }
 }
 
@@ -1010,14 +1024,14 @@ function exportSvg() {
   clone.querySelectorAll('.hit').forEach((el) => el.remove());
   const [, , w, h] = src.getAttribute('viewBox').split(' ').map(Number);
   const pad = 16, top = 44, bottom = 30, W = w + 2 * pad, H = h + top + bottom;
-  const title = `${state.sel} · ${$('#panel .view h4')?.textContent || ''}`;
+  const title = `${displayName(state.sel)} · ${$('#panel .view h4')?.textContent || ''}`;
   const font = getComputedStyle(document.body).fontFamily.replace(/"/g, "'");
   clone.setAttribute('x', pad); clone.setAttribute('y', top); clone.setAttribute('width', w); clone.setAttribute('height', h);
   const esc = (s) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">
     <rect width="${W}" height="${H}" fill="#18181a"/>
     <text x="${pad}" y="22" fill="#f2ede4" style="font: 700 13px ${font}">${esc(title)}</text>
-    <text x="${pad}" y="36" fill="#b9c0c9" style="font: 10px ${font}">VIIRS-eşdeğeri uydu tespiti (MODIS + VIIRS birleşik seri) · veri ${throughLabel()} tarihine kadar</text>
+    <text x="${pad}" y="36" fill="#b9c0c9" style="font: 10px ${font}">${msg("viirs.equivalent.fire.detections.combined", [throughLabel()])}</text>
     ${new XMLSerializer().serializeToString(clone)}
     <text x="${pad}" y="${H - 10}" fill="#7d8792" style="font: 9.5px ${font}">BurnCal · NASA FIRMS (MODIS C6.1, VIIRS S-NPP 375 m) · NASA Space Apps 2026</text>
   </svg>`;
@@ -1107,20 +1121,22 @@ function bindRest() {
   $('#home').onclick = () => select(null);
 
   renderAreaSearch();
+  matchMedia('(max-width: 1280px)').addEventListener('change', () => renderAreaSearch(false));
   for (const button of document.querySelectorAll('[data-scope]')) button.onclick = () => setScope(button.dataset.scope);
   for (const button of document.querySelectorAll('[data-draw]')) button.onclick = () => startDraw(button.dataset.draw);
   $('#drawCancel').onclick = () => { drawTool.stop(); $('#drawBar').hidden = true; if (!drawn) setScope('province'); };
   const search = $('#search');
   const pick = () => {
     const names = searchNames();
-    const q = low(search.value.trim());
+    const fold = (value) => value.toLocaleLowerCase(locale());
+    const q = fold(search.value.trim());
     if (!q) return;
-    const hit = names.find((n) => low(n) === q) || names.find((n) => low(n).startsWith(q));
+    const hit = names.find((n) => fold(displayName(n)) === q || fold(n) === q) || names.find((n) => fold(displayName(n)).startsWith(q) || fold(n).startsWith(q));
     if (hit) { pickArea(hit); search.value = ''; search.blur(); return; }
     // Ülke görünümünde Türkiye dışında bir ad yazılırsa kısa bir not gösterilir.
     if (state.scope === 'country') {
       const r = search.getBoundingClientRect();
-      showTip(`<b>Şimdilik yalnızca Türkiye</b>${COUNTRY_SOON}.`, r.left - 14, r.bottom - 8);
+      showTip(`<b>${msg("currently.available.for.t.rkiye")}</b>${displayText(COUNTRY_SOON)}.`, r.left - 14, r.bottom - 8);
       clearTimeout(pick.t); pick.t = setTimeout(hideTip, 6000);
       search.addEventListener('input', () => { clearTimeout(pick.t); hideTip(); }, { once: true });
     }
@@ -1137,7 +1153,7 @@ function bindRest() {
     };
   }
   document.addEventListener('pointerdown', (e) => {
-    if (!e.target.closest('.pop')) for (const [b, m] of menus) { m.hidden = true; b.setAttribute('aria-expanded', false); }
+    if (!e.target.closest('.pop, .language')) for (const [b, m] of menus) { m.hidden = true; b.setAttribute('aria-expanded', false); }
     if (!e.target.closest('.dl-menu')) document.querySelectorAll('.dl-menu[open]').forEach((d) => d.removeAttribute('open'));
   });
   lm.addEventListener('change', (e) => {
@@ -1169,10 +1185,35 @@ function bindRest() {
 }
 
 // ── Başlat ──────────────────────────────────────────────
+function renderDataBadge() {
+  $('#dataBadge').textContent = msg("latest.data", [throughLabel()]);
+  $('#dataBadge').title = PARTIAL ? msg("is.in.progress.observations.through", [LY, throughLabel()]) : msg("observations.through", [throughLabel()]);
+}
+
+window.addEventListener('burncal:language', () => {
+  if (!RANGE) return;
+  renderDataBadge();
+  for (const sensor of SENSORS) {
+    const button = $('#sensorTabs [data-key=' + sensor.key + ']');
+    if (button) sensorText(button, sensor, ranges[sensor.key]);
+  }
+  moveIndicator();
+  renderAreaSearch(false);
+  if (!ready) return;
+  hideTip();
+  if (ptPopup?.isOpen() && popupHit) openPointPopup(popupHit);
+  map.getSource('provLabels').setData(geometry(activeGeo(), false));
+  map.setLayoutProperty('water-name', 'text-field', waterName());
+  renderPanel();
+  renderRank();
+  renderLegend();
+  renderLandLegend();
+  drawTool.refreshHint();
+});
 async function main() {
   document.body.classList.add('booting');
   [data, geo, geographic] = await Promise.all(['data/atlas.json', 'data/tr-provinces.json', 'data/geographic-regions.json'].map((u) => fetch(u).then((r) => {
-    if (!r.ok) throw new Error(`Veri yüklenemedi: ${u}`);
+    if (!r.ok) throw new Error(msg("could.not.load.data", [u]));
     return r.json();
   })));
   regionGeo = regionGeometry(geo, geographic.regions);
@@ -1195,8 +1236,7 @@ async function main() {
   for (const c of lc?.classes || []) lcGroup[c.i] = c.group;
   indexData();
   setChartWidth(innerWidth > 760 ? 500 : 340);
-  $('#dataBadge').textContent = `Son veri: ${throughLabel()}`;
-  $('#dataBadge').title = PARTIAL ? `${LY} yılı sürüyor; son veri günü ${throughLabel()}. Süren ay ve yıl, geçmiş yılların aynı günleriyle kıyaslanır.` : `Son veri günü ${throughLabel()}.`;
+  renderDataBadge();
   $('#intro span').textContent = `MODIS · VIIRS · ${RANGE[0]}–${RANGE[1]}`;
   renderSensors();
   initMap();
@@ -1206,5 +1246,5 @@ async function main() {
 main().catch((err) => {
   console.error(err);
   document.body.classList.remove('booting');
-  $('#intro').innerHTML = `<div><h1>Yüklenemedi</h1><span>${err.message}</span></div>`;
+  $('#intro').innerHTML = `<div><h1>${msg("could.not.load.atlas")}</h1><span>${err.message}</span></div>`;
 });

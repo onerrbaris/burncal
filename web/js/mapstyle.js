@@ -1,3 +1,4 @@
+import { lang } from './i18n.js?v=20261115-i18n';
 // Harita stili: uydu tabanı + 3B arazi + yakınlaştıkça açılan vektör detay + il katmanları.
 // Karo kaynakları anahtarsızdır; değiştirmek için yalnızca SOURCES bloğunu düzenleyin.
 
@@ -8,6 +9,7 @@ export const rampStops = RAMP.flatMap((c, i) => [i / (RAMP.length - 1), c]);
 const FONT = ['Noto Sans Bold'];
 const CITY_FONT = ['Noto Sans Regular'];
 const FONT_IT = ['Noto Sans Italic'];
+export const waterName = () => ['coalesce', ['get', 'name:' + lang()], ['get', 'name']];
 const NAME = ['coalesce', ['get', 'name:tr'], ['get', 'name']];
 const DEM = {
   type: 'raster-dem',
@@ -174,7 +176,7 @@ export function buildStyle(provinces, labels) {
       },
       {
         id: 'water-name', type: 'symbol', source: 'omt', 'source-layer': 'water_name',
-        layout: { 'text-field': NAME, 'text-font': FONT_IT, 'text-letter-spacing': 0.22,
+        layout: { 'text-field': waterName(), 'text-font': FONT_IT, 'text-letter-spacing': 0.22,
           'text-size': ['interpolate', ['linear'], ['zoom'], 3, 11, 10, 15], 'text-max-width': 6 },
         paint: { 'text-color': '#9cc6e6', 'text-halo-color': 'rgba(2,14,26,0.8)', 'text-halo-width': 1.2 },
       },
@@ -182,7 +184,7 @@ export function buildStyle(provinces, labels) {
         // Uzakta harita sade kalır; il adları yaklaşınca belirir, yerleşim adlarına devreder.
         id: 'prov-label', type: 'symbol', source: 'provLabels', minzoom: 6.4, maxzoom: 8.2,
         layout: {
-          'text-field': ['get', 'name'], 'text-font': CITY_FONT, 'text-letter-spacing': 0.015,
+          'text-field': ['get', 'label'], 'text-font': CITY_FONT, 'text-letter-spacing': 0.015,
           'text-size': ['interpolate', ['linear'], ['zoom'], 6.4, 12, 8.2, 15],
           'symbol-sort-key': ['case', ['get', 'hasData'], 0, 1],
         },

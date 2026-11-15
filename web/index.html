@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>BurnCal · Türkiye Yangın Takvimi</title>
+<title data-i18n="page.title">BurnCal · Türkiye Yangın Takvimi</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -11,90 +11,97 @@
 <link rel="stylesheet" href="css/atlas.css?v=20261115-legend4">
 <link rel="stylesheet" href="css/drawers.css?v=20261115-open">
 <link rel="stylesheet" href="css/timeline.css?v=20261115-legend">
-<link rel="stylesheet" href="css/regions.css?v=20261115-blocks">
+<link rel="stylesheet" href="css/regions.css?v=20261115-i18n">
 </head>
 <body>
-<div id="map" aria-label="Türkiye yanma haritası"></div>
+<div id="map" data-i18n-aria-label="control.t.rkiye.fire.map" aria-label="Türkiye yanma haritası"></div>
 <div class="fx vignette" aria-hidden="true"></div>
 <div class="fx grain" aria-hidden="true"></div>
 
 <header class="topbar">
-  <div class="brand glass">
-    <span class="mark" aria-hidden="true"></span>
-    <div class="brand-text">
-      <strong>BurnCal</strong>
-      <span>Türkiye yangın takvimi</span>
+  <div class="brand-tools">
+    <div class="brand glass">
+      <span class="mark" aria-hidden="true"></span>
+      <div class="brand-text">
+        <strong>BurnCal</strong>
+        <span data-i18n="brand.subtitle">Türkiye yangın takvimi</span>
+      </div>
+      <span id="dataBadge" class="pill"></span>
     </div>
-    <span id="dataBadge" class="pill"></span>
+
+    <div class="language area-control glass" role="group" data-i18n-aria-label="control.language" aria-label="Dil">
+      <button type="button" data-lang="tr" lang="tr" aria-label="Türkçe" aria-pressed="true">TR</button>
+      <button type="button" data-lang="en" lang="en" aria-label="English" aria-pressed="false">EN</button>
+    </div>
   </div>
 
-  <nav class="seg glass" id="sensorTabs" role="tablist" aria-label="Veri serisi">
+  <nav class="seg glass" id="sensorTabs" role="tablist" data-i18n-aria-label="control.data.series" aria-label="Veri serisi">
     <span class="seg-ind" aria-hidden="true"></span>
   </nav>
 
   <div class="tools">
     <div class="area-wrap">
-      <div class="area-control glass" role="group" aria-label="Harita alan birimi">
-        <button type="button" data-scope="draw" aria-pressed="false" disabled title="Haritada kendi alanınızı çizin">
-          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 16.5c2-.4 3-1.6 3.4-3.2L14 5.7a1.7 1.7 0 0 0-2.4-2.4L4 10.9c-1.5.5-2.6 1.5-2.6 3.3"/><path d="m10.6 4.3 3.1 3.1"/></svg>Çiz</button>
-        <button type="button" data-scope="province" aria-pressed="true" disabled>İller</button>
-        <button type="button" data-scope="region" aria-pressed="false" disabled>Bölgeler</button>
-        <button type="button" data-scope="country" aria-pressed="false" disabled title="Türkiye toplamı">Ülke</button>
+      <div class="area-control glass" role="group" data-i18n-aria-label="control.area.selection" aria-label="Harita alan birimi">
+        <button type="button" data-scope="draw" aria-pressed="false" disabled data-i18n-title="control.draw.your.own.area.on.the.map" title="Haritada kendi alanınızı çizin">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 16.5c2-.4 3-1.6 3.4-3.2L14 5.7a1.7 1.7 0 0 0-2.4-2.4L4 10.9c-1.5.5-2.6 1.5-2.6 3.3"/><path d="m10.6 4.3 3.1 3.1"/></svg><span data-i18n="scope.draw">Çiz</span></button>
+        <button type="button" data-scope="province" aria-pressed="true" disabled data-i18n="scope.provinces">İller</button>
+        <button type="button" data-scope="region" aria-pressed="false" disabled data-i18n="scope.regions">Bölgeler</button>
+        <button type="button" data-scope="country" aria-pressed="false" disabled data-i18n-title="control.national.total" title="Türkiye toplamı" data-i18n="scope.country">Ülke</button>
       </div>
-      <div class="draw-bar glass" id="drawBar" role="group" aria-label="Çizim aracı" hidden>
+      <div class="draw-bar glass" id="drawBar" role="group" data-i18n-aria-label="control.drawing.tool" aria-label="Çizim aracı" hidden>
         <div class="draw-modes">
-          <button type="button" data-draw="free" aria-pressed="true">Serbest</button>
-          <button type="button" data-draw="circle" aria-pressed="false" title="Elips; Shift ile tam daire">Elips</button>
-          <button type="button" data-draw="poly" aria-pressed="false">Çokgen</button>
-          <button type="button" id="drawCancel" class="draw-x" aria-label="Çizimi kapat" title="Kapat">×</button>
+          <button type="button" data-draw="free" aria-pressed="true" data-i18n="draw.free">Serbest</button>
+          <button type="button" data-draw="circle" aria-pressed="false" data-i18n-title="control.ellipse.hold.shift.for.a.circle" title="Elips; Shift ile tam daire" data-i18n="draw.ellipse">Elips</button>
+          <button type="button" data-draw="poly" aria-pressed="false" data-i18n="draw.polygon">Çokgen</button>
+          <button type="button" id="drawCancel" class="draw-x" data-i18n-aria-label="control.close.drawing.tool" aria-label="Çizimi kapat" data-i18n-title="control.close" title="Kapat">×</button>
         </div>
         <p id="drawHint" aria-live="polite"></p>
       </div>
     </div>
     <label class="search glass">
       <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="9" cy="9" r="5.5"/><path d="M13.5 13.5 18 18"/></svg>
-      <input id="search" list="provList" placeholder="İl ara" autocomplete="off" aria-label="İl ara">
+      <input id="search" list="provList" data-i18n-placeholder="control.search.provinces" placeholder="İl ara" autocomplete="off" data-i18n-aria-label="control.search.provinces" aria-label="İl ara">
       <datalist id="provList"></datalist>
     </label>
     <div class="pop">
-      <button class="icon-btn glass" id="helpBtn" aria-expanded="false" aria-controls="helpMenu" title="Nasıl kullanılır?">
+      <button class="icon-btn glass" id="helpBtn" aria-expanded="false" aria-controls="helpMenu" data-i18n-title="control.how.to.use.the.atlas" title="Nasıl kullanılır?">
         <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7.5"/><path d="M7.9 7.6a2.2 2.2 0 1 1 3 2.1c-.6.3-.9.7-.9 1.3v.4"/><circle cx="10" cy="14" r=".4" fill="currentColor"/></svg>
       </button>
       <div class="menu help glass" id="helpMenu" hidden>
-        <h3>Nasıl kullanılır?</h3>
+        <h3 data-i18n="help.title">Nasıl kullanılır?</h3>
         <ol>
-          <li><b>Bir alan seçin.</b> Haritada bir bölgeye ya da ile tıklayın veya adını arama kutusuna yazın. <b>Ülke</b> Türkiye toplamını gösterir; <b>Çiz</b> ile haritada kendi alanınızı (serbest, elips ya da çokgen) belirleyebilirsiniz.</li>
-          <li><b>Takvimi inceleyin.</b> Sağdaki <b>Detaylı inceleme</b> panelini açın; takvimde her kare bir aydır. Renk koyulaştıkça uydunun gördüğü yangın noktası sayısı artar. <span class="sym">●</span> normalin üstündeki, <span class="sym">◆</span> olağanüstü yüksek ayları gösterir.</li>
-          <li><b>Yılı değiştirin.</b> Alttaki çubuktan incelemek istediğiniz yılı seçin.</li>
-          <li><b>Yakınlaşın.</b> Kırmızı noktaların her biri, uydunun tespit ettiği bir yangın noktasıdır; üzerine tıklayınca tarihi ve ayrıntıları görünür.</li>
+          <li data-i18n-html="help.1"><b>Bir alan seçin.</b> Haritada bir bölgeye ya da ile tıklayın veya adını arama kutusuna yazın. <b><span data-i18n="scope.country">Ülke</span></b> Türkiye toplamını gösterir; <b><span data-i18n="scope.draw">Çiz</span></b> ile haritada kendi alanınızı (serbest, elips ya da çokgen) belirleyebilirsiniz.</li>
+          <li data-i18n-html="help.2"><b>Takvimi inceleyin.</b> Sağdaki <b>Detaylı inceleme</b> panelini açın; takvimde her kare bir aydır. Renk koyulaştıkça uydunun gördüğü yangın noktası sayısı artar. <span class="sym">●</span> normalin üstündeki, <span class="sym">◆</span> olağanüstü yüksek ayları gösterir.</li>
+          <li data-i18n-html="help.3"><b>Yılı değiştirin.</b> Alttaki çubuktan incelemek istediğiniz yılı seçin.</li>
+          <li data-i18n-html="help.4"><b>Yakınlaşın.</b> Kırmızı noktaların her biri, uydunun tespit ettiği bir yangın noktasıdır; üzerine tıklayınca tarihi ve ayrıntıları görünür.</li>
         </ol>
-        <p><b>Birleşik seri</b> eski (MODIS, 2000–) ve yeni (VIIRS, 2012–) uyduları aynı ölçeğe getirir; böylece 25 yılın tamamı birbiriyle karşılaştırılabilir. Ham MODIS ve VIIRS sekmeleri, kaynak veriyi düzeltmesiz görmek içindir.</p>
-        <p class="muted">Kaynak: NASA FIRMS. Sayılar orman yangınlarını ve tarla/anız yakmalarını birlikte içerir.</p>
+        <p data-i18n-html="help.5"><b>Birleşik seri</b> eski (MODIS, 2000–) ve yeni (VIIRS, 2012–) uyduları aynı ölçeğe getirir; böylece 25 yılın tamamı birbiriyle karşılaştırılabilir. Ham MODIS ve VIIRS sekmeleri, kaynak veriyi düzeltmesiz görmek içindir.</p>
+        <p class="muted" data-i18n-html="help.6">Kaynak: NASA FIRMS. Sayılar orman yangınlarını ve tarla/anız yakmalarını birlikte içerir.</p>
       </div>
     </div>
     <div class="pop">
-      <button class="icon-btn glass" id="layersBtn" aria-expanded="false" aria-controls="layersMenu" title="Harita katmanları">
+      <button class="icon-btn glass" id="layersBtn" aria-expanded="false" aria-controls="layersMenu" data-i18n-title="control.map.layers" title="Harita katmanları">
         <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m10 3 7.5 4L10 11 2.5 7z"/><path d="m2.5 11 7.5 4 7.5-4"/></svg>
       </button>
       <div class="menu glass" id="layersMenu" hidden>
-        <h3>Harita katmanları</h3>
-        <label><input type="checkbox" data-layer="fill" checked><span></span>Renk ölçeği</label>
+        <h3 data-i18n="layers.title">Harita katmanları</h3>
+        <label><input type="checkbox" data-layer="fill" checked><span></span><b class="layer-text" data-i18n="layers.scale">Renk ölçeği</b></label>
         <ul class="lc-legend fill-legend" id="legend" hidden></ul>
-        <label><input type="checkbox" data-layer="points" checked><span></span>Yangın noktaları</label>
-        <label id="lcRow" hidden><input type="checkbox" data-layer="landcover"><span></span>Arazi türü</label>
+        <label><input type="checkbox" data-layer="points" checked><span></span><b class="layer-text" data-i18n="layers.points">Yangın noktaları</b></label>
+        <label id="lcRow" hidden><input type="checkbox" data-layer="landcover"><span></span><b class="layer-text" data-i18n="layers.land">Arazi türü</b></label>
         <ul class="lc-legend" id="lcLegend" hidden></ul>
-        <label><input type="checkbox" data-layer="labels"><span></span>Yer adları</label>
-        <label><input type="checkbox" data-layer="roads"><span></span>Yollar ve binalar</label>
-        <label><input type="checkbox" data-layer="terrain" checked><span></span>3B arazi</label>
+        <label><input type="checkbox" data-layer="labels"><span></span><b class="layer-text" data-i18n="layers.places">Yer adları</b></label>
+        <label><input type="checkbox" data-layer="roads"><span></span><b class="layer-text" data-i18n="layers.roads">Yollar ve binalar</b></label>
+        <label><input type="checkbox" data-layer="terrain" checked><span></span><b class="layer-text" data-i18n="layers.terrain">3B arazi</b></label>
       </div>
     </div>
   </div>
 </header>
 
-<aside class="rank glass" id="rank" aria-label="En çok tespit edilen alanlar">
-  <h3><span id="rankTitle">En çok tespit</span><button id="rankToggle" class="mini" aria-expanded="true" title="Daralt">–</button></h3>
+<aside class="rank glass" id="rank" data-i18n-aria-label="control.areas.with.the.most.fire.detections" aria-label="En çok tespit edilen alanlar">
+  <h3><span id="rankTitle">En çok tespit</span><button id="rankToggle" class="mini" aria-expanded="true" data-i18n-title="control.collapse" title="Daralt">–</button></h3>
   <ol id="rankList"></ol>
-  <p class="rank-hint">Ayrıntı için listeden ya da haritadan bir alan seçin.</p>
+  <p class="rank-hint" data-i18n="rank.hint">Ayrıntı için listeden ya da haritadan bir alan seçin.</p>
 </aside>
 
 <aside class="side glass" id="side" aria-live="polite" hidden>
@@ -108,17 +115,17 @@
 <footer class="dock">
   <div class="hud glass">
     <div class="hud-btns">
-      <button id="zoomIn" title="Yakınlaş (+)" aria-label="Yakınlaş">+</button>
-      <button id="zoomOut" title="Uzaklaş (−)" aria-label="Uzaklaş">−</button>
-      <button id="north" title="Kuzeye çevir" aria-label="Kuzeye çevir"><svg id="needle" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2 13.5 10h-7z" fill="#ff8a3d"/><path d="M10 18 6.5 10h7z" fill="#9aa3ad"/></svg></button>
-      <button id="home" title="Türkiye görünümü (H)" aria-label="Türkiye görünümü"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 9.5 10 3l7 6.5M5 8.5V17h10V8.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button>
+      <button id="zoomIn" data-i18n-title="control.zoom.in.shortcut" title="Yakınlaş (+)" data-i18n-aria-label="control.zoom.in" aria-label="Yakınlaş">+</button>
+      <button id="zoomOut" data-i18n-title="control.zoom.out.shortcut" title="Uzaklaş (−)" data-i18n-aria-label="control.zoom.out" aria-label="Uzaklaş">−</button>
+      <button id="north" data-i18n-title="control.reset.north" title="Kuzeye çevir" data-i18n-aria-label="control.reset.north" aria-label="Kuzeye çevir"><svg id="needle" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2 13.5 10h-7z" fill="#ff8a3d"/><path d="M10 18 6.5 10h7z" fill="#9aa3ad"/></svg></button>
+      <button id="home" data-i18n-title="control.t.rkiye.view.h.shortcut" title="Türkiye görünümü (H)" data-i18n-aria-label="control.t.rkiye.view" aria-label="Türkiye görünümü"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 9.5 10 3l7 6.5M5 8.5V17h10V8.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button>
     </div>
   </div>
 
   <div class="timeline glass">
-    <div class="yearbox"><span>Yıl</span><output id="yearOut" for="year">—</output></div>
+    <div class="yearbox"><span data-i18n="slider.year">Yıl</span><output id="yearOut" for="year">—</output></div>
     <div class="track">
-      <input type="range" id="year" step="1" aria-label="Yıl">
+      <input type="range" id="year" step="1" data-i18n-aria-label="control.year" aria-label="Yıl">
       <div class="ticks" id="yearTicks" aria-hidden="true"></div>
     </div>
   </div>
@@ -135,7 +142,7 @@
 </div>
 
 <script src="vendor/maplibre-gl.js"></script>
-<script type="module" src="js/app.js?v=20261115-country-search4"></script>
-<script type="module" src="js/drawers.js?v=20261115-detail"></script>
+<script type="module" src="js/app.js?v=20261115-i18n"></script>
+<script type="module" src="js/drawers.js?v=20261115-i18n"></script>
 </body>
 </html>

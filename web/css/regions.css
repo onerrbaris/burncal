@@ -68,3 +68,15 @@
 @media (max-width: 760px) {
   .pblock { margin-left: 8px; margin-right: 8px; }
 }
+
+/* Marka ile dil seçimini bütün ekran genişliklerinde bir arada tut. */
+.brand-tools { display: flex; align-items: center; gap: 7px; justify-self: start; }
+.language { height: 36px; }
+.language button { padding: 4px 6px; }
+.search input { min-width: 0; }
+.menu label .layer-text { font-weight: inherit; }
+@media (max-width: 760px) {
+  .brand-tools { grid-column: 1; grid-row: 1; gap: 4px; }
+  .language button { padding: 4px 6px; }
+  .topbar .search { padding: 0 7px; gap: 4px; min-width: 0; width: min(120px, 29vw); }
+}
