@@ -1,6 +1,6 @@
 # BACKLOG
 
-Repo: https://github.com/onerrbaris/burncal (private). Yeni oturum: önce `docs/HANDOFF.md`. Bulgular: `docs/REPORT.md`. `ARCHITECTURE.md` taslaktır.
+Repo: https://github.com/onerrbaris/burncal (public). Yeni oturum: önce `docs/HANDOFF.md`. Bulgular: `docs/REPORT.md`. `ARCHITECTURE.md` taslaktır.
 
 ## Next step
 Takvimde belirgin düşük aylar mavi (`web/js/charts.js` LOW_MIN=20, eşik p25). Türkiye görünümünde karelerin ~%26'sı mavi; kullanıcı %25'te kalmasını onayladı, mavi #1f6bff'e canlandırıldı (tarayıcıda görüldü).

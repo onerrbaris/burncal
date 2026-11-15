@@ -84,7 +84,8 @@ Uncorrected MODIS has 60-80% error at every scale. Province confidence badges (f
 ## Limitations
 
 - Türkiye only. Factors and the static-source mask would have to be rebuilt for another country.
-- Data ends in December 2025. There is no 2026 data and no NOAA-20/21 bridge; the S-NPP record at FIRMS ended on 2 November 2026.
+- Data run to 2 November 2026. Complete years are 2000-2025 (FIRMS archive); 2026 comes from the FIRMS API (near-real-time) and stops on 2 November 2026, when the S-NPP record at FIRMS ends. 2026 is shown as a running year and compared only with the same days of other years.
+- No NOAA-20/21 bridge: their ratios to S-NPP were checked (`docs/data_2026/`) but they are not added to the series.
 - Accuracy for 2000-2011 is not measured directly: the factors are assumed to carry back from the 2012-2025 overlap.
 - VIIRS is treated as the truth. There is no independent burned-area or ground-record validation.
 - 34 of 81 provinces are low confidence.
