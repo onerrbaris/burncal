@@ -391,37 +391,27 @@ async function loadPoints() {
   } catch (e) { ptKey = ''; }
 }
 
-// Aynı alan türü, sensör ve ay penceresinde bütün yıllar ortak ölçek kullanır.
-let scaleGeo, scaleKey, scaleMax;
-function mapScaleMax(collection) {
-  const key = [state.sensor, ...state.win].join(':');
-  if (collection !== scaleGeo || key !== scaleKey) {
-    scaleMax = 1;
-    for (const { properties: { name } } of collection.features) {
-      for (const year of Object.keys(mapData(name)?.[state.sensor] || {})) {
-        scaleMax = Math.max(scaleMax, mapTotal(name, year) ?? 0);
-      }
-    }
-    scaleGeo = collection;
-    scaleKey = key;
-  }
-  return scaleMax;
-}
+// Renkler, seçili yıl ve ay penceresindeki tespit sırasına göre yayılır.
 let legendAreas = [];
 function paintMap() {
-  const collection = activeGeo(), max = mapScaleMax(collection);
   legendAreas = [];
-  for (const { properties: { name } } of collection.features) {
+  for (const { properties: { name } } of activeGeo().features) {
     const total = mapTotal(name);
-    // Karekök, düşük tespit sayılarını da açık tonlarda ayırt edilebilir kılar.
     map.setFeatureState({ source: 'provinces', id: name }, { sel: name === state.sel });
-    if (total != null) legendAreas.push({ name, total, color: rampColor(Math.sqrt(total / max)) });
+    if (total != null) legendAreas.push({ name, total });
   }
+  legendAreas.sort((a, b) => a.total - b.total);
+  const last = Math.max(1, legendAreas.length - 1);
+  let rank = 0;
+  legendAreas.forEach((area, i) => {
+    if (i && area.total !== legendAreas[i - 1].total) rank = i;
+    area.color = rampColor(rank / last);
+    area.bucket = Math.round(rank / last * (RAMP.length - 1));
+  });
   // Dolgu stilini güncellemek, kamera sabitken de 3B arazinin renk dokularını yeniler.
   const colors = legendAreas.flatMap(({ name, color }) => [name, color]);
   const empty = 'rgba(0,0,0,0)';
   map.setPaintProperty('prov-fill', 'fill-color', colors.length ? ['match', ['get', 'name'], ...colors, empty] : empty);
-  legendAreas.sort((a, b) => b.total - a.total);
   renderLegend();
   updatePoints();
 }
@@ -648,17 +638,20 @@ function setYear(y) {
 // Açıklama ve harita aynı normalize edilmiş tespit değerini kullanır.
 function renderLegend() {
   const el = $('#legend'), on = $('#layersMenu [data-layer=fill]')?.checked;
-  el.hidden = !on || !legendAreas.length || state.scope === 'draw';
+  el.hidden = !on || legendAreas.length < 2 || state.scope === 'draw';
   if (el.hidden) return;
   let rows;
   if (regionMap()) {
-    rows = legendAreas.map(({ name, total, color }) =>
+    rows = legendAreas.slice().reverse().map(({ name, total, color }) =>
       `<li><i style="background:${color}"></i><span>${fmt(total)}</span><small>${displayName(name)}</small></li>`).join('');
   } else {
-    // Renk geçişlerinin referans değerleri: il ölçeği yıl değişince sabit kalır.
-    rows = RAMP.map((color, i) => {
-      const value = scaleMax * (i / (RAMP.length - 1)) ** 2;
-      return `<li><i style="background:${color}"></i><span>${fmt(value)}</span></li>`;
+    const buckets = RAMP.map(() => []);
+    for (const { total, bucket } of legendAreas) buckets[bucket].push(total);
+    rows = buckets.map((values, i) => {
+      if (!values.length) return '';
+      const low = values[0], high = values.at(-1);
+      const range = low === high ? fmt(low) : `${fmt(low)}–${fmt(high)}`;
+      return `<li><i style="background:${RAMP[i]}"></i><span>${range}</span></li>`;
     }).reverse().join('');
   }
   el.innerHTML = `<li class="lg-title">${msg("fire.detections.per", [regionMap() ? msg("region") : msg("province"), fullWin() ? msg("annual") : winLabel(), state.year])}</li>${rows}
