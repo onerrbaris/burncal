@@ -258,10 +258,10 @@ body.has-panel .rank { display: none; }
 .key i.dot.o { background: var(--surface); border: 2px solid var(--accent); }
 .cal-key { margin-bottom: 8px; display: block; }
 .cal-key .cal-lead { margin: 0 0 6px; line-height: 1.35; }
-.cal-key .cal-scale { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-.cal-key .cc { display: flex; flex-direction: column; align-items: center; gap: 3px; text-align: center; }
-.cal-key .cc svg { width: 100%; max-width: 34px; height: 18px; }
-.cal-key .cc small { font-size: 10.5px; line-height: 1.2; color: var(--ink-2); }
+.cal-key .cal-grad i { display: block; width: 100%; height: 10px; border-radius: 3px; }
+.cal-key .cal-ticks { display: flex; justify-content: space-between; font-size: 11px; margin-top: 3px; }
+.cal-key i.fade { background: #e2dac8; opacity: 0.35; }
+.cal-key .cal-extra svg { width: 13px; height: 13px; }
 .cal-key .cal-extra { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 6px; }
 .cal-key .cal-extra span { display: inline-flex; align-items: center; gap: 6px; }
 .cal-key i.z { background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.16); }

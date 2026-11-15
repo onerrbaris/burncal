@@ -1,8 +1,8 @@
-import { t as msg, displayText, locale, ordinal } from './i18n.js?v=20261115-tri-marks';
+import { t as msg, displayText, locale, ordinal } from './i18n.js?v=20261115-soft-cal';
 // Panel grafikleri: elle yazılmış SVG. Tek ölçek, tek renk tonu (kor), nötr mürekkep.
 // Bu dosyadaki istatistik işlevleri (inRange, reading, sentence, peaks, csvRows, hotspotRows) saf işlevlerdir;
 // tarayıcı dışında Node ile de sınanabilir.
-import { RAMP } from './mapstyle.js?v=20261115-tri-marks';
+import { RAMP } from './mapstyle.js?v=20261115-soft-cal';
 
 // Ay dizileri canlı dışa aktarımdır; dil değişiminde mevcut seçim aynı ay indeksinde kalır.
 export let MONTHS, MON3;
@@ -40,21 +40,29 @@ export const LEVELS = {
 };
 const SPARSE = 5;   // bu sayının altındaki değerler, dönemin çoğu da böyleyse, yüzdelikle okunmaz
 const MIN_REF = 3;  // karşılaştırma için en az bu kadar başka yıl
-// Küçük sayılar gürültü (il ölçeğinde aylık hata ~%38): ay da tipik değeri de bu sayının altındaysa
-// ay "az tespit" sayılır, yüksek/düşük denmez. Takvimde nötr gri, işaretsiz.
 export const LOW_MIN = 20;
-// Takvim renk sınıfları: aynı takvim ayının diğer yıllarına göre yüzdelik (düzeylerle aynı sınırlar).
-// Mavi = tipikten az, kırmızı = tipikten fazla; sınıf ne kadar uçtaysa renk o kadar koyu.
+// Takvim rengi: ayın aynı takvim ayının diğer yıllarına göre yüzdeliği, yumuşak ve sürekli bir geçişle
+// (mavi az, bej tipik, kırmızı fazla). İşaretler (üçgenler) aşağıdaki sınıflardan, düzeylerle aynı sınırlardan gelir.
+export const CAL_STOPS = [[0, '#3f73d6'], [25, '#8fb1e6'], [50, '#e2dac8'], [75, '#f0a16e'], [100, '#cf4a2f']];
+export function calColor(pct) {
+  const p = Math.max(0, Math.min(100, pct));
+  for (let i = 0; i < CAL_STOPS.length - 1; i++) {
+    const [p0, c0] = CAL_STOPS[i], [p1, c1] = CAL_STOPS[i + 1];
+    if (p <= p1) return mix(c0, c1, (p - p0) / (p1 - p0));
+  }
+  return CAL_STOPS[CAL_STOPS.length - 1][1];
+}
 export const CAL_CLASSES = [
-  { max: 5, fill: '#1d4ed8', key: 'cal.c0' },          // çok düşük  büyük ▼
-  { max: 25, fill: '#4f8df5', key: 'cal.c1' },         // düşük      küçük ▼
-  { max: 45, fill: '#a9c6f7', key: 'cal.c2' },         // biraz düşük
-  { max: 55, fill: '#e8e2d4', key: 'cal.c3' },         // tipik
-  { max: 75, fill: '#fcc48a', key: 'cal.c4' },         // biraz yüksek
-  { max: 95, fill: '#f26b38', key: 'cal.c5' },         // yüksek     küçük ▲
-  { max: Infinity, fill: '#c0151f', key: 'cal.c6' },   // olağanüstü büyük ▲
+  { max: 5 },          // çok düşük  büyük ▼
+  { max: 25 },         // düşük      küçük ▼
+  { max: 45 },         // biraz düşük
+  { max: 55 },         // tipik
+  { max: 75 },         // biraz yüksek
+  { max: 95 },         // yüksek     küçük ▲
+  { max: Infinity },   // olağanüstü büyük ▲
 ];
-export const CAL_SPARSE = '#55595f';
+// Az tespit ya da kıyas yok: nötr, çok soluk (yüksek/düşük denmez).
+export const CAL_SPARSE = '#e2dac8';
 export function calClass(pct) {
   // Sınırlar düzeylerle aynı: <5, <25, <45, <=55, <=75, <=95, >95.
   if (pct < 5) return 0;
@@ -86,8 +94,11 @@ export function reading(years, y, m, from, to) {
   if (n < MIN_REF) return { ...base, level: null, pct: null, short: true };
   const below = ref.filter((x) => x < v).length, eq = ref.filter((x) => x === v).length;
   const pct = (100 * (below + eq / 2)) / n;
-  const sparse = (v < SPARSE && quantile(ref, 0.75) < SPARSE) || (v < LOW_MIN && med < LOW_MIN);
-  const level = sparse ? 'sparse' : pct < 5 ? 'verylow' : pct < 25 ? 'low' : pct <= 75 ? 'normal' : pct <= 95 ? 'high' : 'extreme';
+  const sparse = v < SPARSE && quantile(ref, 0.75) < SPARSE;
+  // Küçük ay: ay da tipik değeri de LOW_MIN altında. Yüzdelik tutulur (takvimde yarım güç renk), ama
+  // gürültü olduğu için yüksek/düşük denmez (il ölçeğinde aylık hata ~%38).
+  const small = !sparse && v < LOW_MIN && med < LOW_MIN;
+  const level = sparse || small ? 'sparse' : pct < 5 ? 'verylow' : pct < 25 ? 'low' : pct <= 75 ? 'normal' : pct <= 95 ? 'high' : 'extreme';
   return { ...base, pct: sparse ? null : pct, level, rank: 1 + ref.filter((x) => x > v).length, below, eq };
 }
 
@@ -258,12 +269,16 @@ export function calendar(years, from, to, sel, opt) {
       }
       const rdg = rd(yy, i), lv = rdg?.level, part = partial(yy, i);
       // Renk: ayın kendi geçmişine göre yeri (yüzdelik). Kıyas yoksa ya da az tespitse nötr.
-      const cls = rdg?.pct != null ? calClass(rdg.pct) : null;
-      const fill = cls != null ? CAL_CLASSES[cls].fill : v === 0 ? 'rgba(255,255,255,0.06)' : CAL_SPARSE;
+      // Renk yüzdelikten; küçük aylarda (düzey 'sparse' ama yüzdelik var) yarım güç, tipiğe doğru.
+      const pc = rdg?.pct, small = pc != null && lv === 'sparse';
+      const fill = pc != null ? calColor(small ? 50 + (pc - 50) * 0.45 : pc) : v === 0 ? 'rgba(255,255,255,0.06)' : CAL_SPARSE;
+      const op = pc != null || v === 0 ? 1 : 0.35;
+      // İşaret düzeyden (ay kartıyla aynı): küçük aylarda işaret yok.
+      const cls = small || pc == null ? null : calClass(pc);
       const tipLv = lv && lv !== 'normal' ? ` · ${displayText(LEVELS[lv].label)}` : '';
       const tipPct = rdg?.pct != null ? `<br>${msg("years.exceeded.typical.value", [Math.round(rdg.pct), fmt(rdg.med)])}` : '';
       const tipPart = part ? `<br>${msg("partial.month.days.of.compared", [through, MONTHS[i]])}` : '';
-      s += `<rect x="${x}" y="${y0 + 1}" width="${cw - 2}" height="${ch - 2}" rx="2.5" fill="${fill}" class="cell${out ? ' out' : ''}${part ? ' part' : ''}" data-year="${yy}" data-month="${i}" data-tip="${esc(`<b>${MONTHS[i]} ${yy}</b>${msg("detections2", [fmt(v), tipLv, tipPct, tipPart])}`)}"/>`;
+      s += `<rect x="${x}" y="${y0 + 1}" width="${cw - 2}" height="${ch - 2}" rx="2.5" fill="${fill}" fill-opacity="${op}" class="cell${out ? ' out' : ''}${part ? ' part' : ''}" data-year="${yy}" data-month="${i}" data-tip="${esc(`<b>${MONTHS[i]} ${yy}</b>${msg("detections2", [fmt(v), tipLv, tipPct, tipPart])}`)}"/>`;
       const cx = x + (cw - 2) / 2, cy = y0 + ch / 2;
       // İşaret, renk sınıfıyla aynı yüzdelikten. Yön = yukarı ▲ fazla, aşağı ▼ az; boyut = ne kadar uç.
       if (!out && cls === 5) marks += `<path d="M${cx - 2.8},${cy + 2.6}h5.6l-2.8,-4.4z" class="flag"/>`;
@@ -279,13 +294,16 @@ export function calendar(years, from, to, sel, opt) {
 
 // Takvim açıklaması: renk + şekil, sıfır ve veri yok ayrımı.
 export function calendarKey() {
-  const marks = { 0: '<path d="M1.6,3h8.8l-4.4,7z" class="flag"/>', 1: '<path d="M3.2,4.2h5.6l-2.8,4.4z" class="flag"/>',
-    5: '<path d="M3.2,8.6h5.6l-2.8,-4.4z" class="flag"/>', 6: '<path d="M1.6,9.8h8.8l-4.4,-7z" class="flag"/>' };
-  const cells = CAL_CLASSES.map((c, i) => `<span class="cc"><svg viewBox="0 0 22 14" aria-hidden="true"><rect x="0.5" y="0.5" width="21" height="13" rx="2.5" fill="${c.fill}"/>${marks[i] ? `<g transform="translate(5,1)">${marks[i]}</g>` : ''}</svg><small>${msg(c.key)}</small></span>`).join('');
+  const grad = `linear-gradient(90deg,${CAL_STOPS.map(([p, c]) => `${c} ${p}%`).join(',')})`;
+  const tri = (up, big) => `<svg viewBox="0 0 12 12" aria-hidden="true"><path d="${big ? (up ? 'M1.6,9.8h8.8l-4.4,-7z' : 'M1.6,3h8.8l-4.4,7z') : (up ? 'M3.2,8.6h5.6l-2.8,-4.4z' : 'M3.2,4.2h5.6l-2.8,4.4z')}" class="flag"/></svg>`;
   return `<div class="key cal-key">
     <p class="cal-lead">${msg("cal.lead")}</p>
-    <div class="cal-scale">${cells}</div>
-    <div class="cal-extra"><span><i style="background:${CAL_SPARSE}"></i>${msg("cal.sparse", [LOW_MIN])}</span><span><i class="z"></i>0</span></div>
+    <div class="cal-grad"><i style="background:${grad}"></i><div class="cal-ticks"><span>${msg("cal.t.low")}</span><span>${msg("cal.t.typ")}</span><span>${msg("cal.t.high")}</span></div></div>
+    <div class="cal-extra">
+      <span>${tri(true, false)}${msg("cal.m.high")}</span><span>${tri(true, true)}${msg("cal.m.ext")}</span>
+      <span>${tri(false, false)}${msg("cal.m.low")}</span><span>${tri(false, true)}${msg("cal.m.vlow")}</span>
+      <span><i class="fade"></i>${msg("cal.fade")}</span><span><i class="z"></i>0</span>
+    </div>
   </div>`;
 }
 

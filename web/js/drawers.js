@@ -1,4 +1,4 @@
-import { t, displayText } from './i18n.js?v=20261115-tri-marks';
+import { t, displayText } from './i18n.js?v=20261115-soft-cal';
 // Kenar panelleri: seçim ve içerik korunur, yalnızca panel haritanın dışına kayar.
 const drawers = [];
 function drawer(id, label, direction, collapsed = false) {
