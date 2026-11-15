@@ -1,4 +1,4 @@
-import { t as msg, displayText, locale } from './i18n.js?v=20261115-pct';
+import { t as msg, displayText, locale } from './i18n.js?v=20261115-brand';
 // Haritada alan çizme (serbest el, daire, çokgen) ve çizilen alanın serisini nokta dosyalarından kurma.
 const R = 6371.0088;
 const rad = (d) => (d * Math.PI) / 180;

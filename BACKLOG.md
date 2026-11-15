@@ -43,6 +43,8 @@ Sunum (7 slayt) ve teslim formu. Veri güncellemek için: `python scripts/fetch_
 
 ## Done
 
+- Sol üst marka alt başlığı TR ve EN için Yangın Takvimi / Fire Calendar olarak güncellendi.
+
 - Ay ayrıntısında ayın yanına, yıl çubuğuyla eşzamanlı çalışan bir yıl giriş alanı eklendi.
 
 - Sağ panel düğmesi Türkçede “Yangın takvimini aç”, İngilizcede “Open fire calendar” olarak güncellendi.

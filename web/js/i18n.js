@@ -239,7 +239,7 @@ const messages = {
   "press.and.drag.diagonally.then": ["Şeklin bir ucuna basın ve çapraz sürükleyin; bırakınca elips kapanır. Tam daire için Shift’e basılı tutun.", "Press and drag diagonally, then release to finish the ellipse. Hold Shift to draw a circle."],
   "click.each.vertex.click.the": ["Köşeleri tek tek tıklayın. Bitirmek için ilk noktaya tıklayın, çift tıklayın ya da Enter’a basın.", "Click each vertex. Click the first vertex, double-click or press Enter to finish."],
   "page.title": ["BurnCal · Türkiye Yangın Takvimi", "BurnCal · Türkiye Fire Calendar"],
-  "brand.subtitle": ["Türkiye yangın takvimi", "Türkiye fire calendar"],
+  "brand.subtitle": ["Yangın Takvimi", "Fire Calendar"],
   "scope.draw": ["Çiz", "Draw"],
   "scope.provinces": ["İller", "Provinces"],
   "scope.regions": ["Bölgeler", "Regions"],
