@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>BurnCal · Türkiye Yanma Takvimi</title>
+<title>BurnCal · Türkiye Yangın Takvimi</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -23,7 +23,7 @@
     <span class="mark" aria-hidden="true"></span>
     <div class="brand-text">
       <strong>BurnCal</strong>
-      <span>Türkiye yanma takvimi</span>
+      <span>Türkiye yangın takvimi</span>
     </div>
     <span id="dataBadge" class="pill"></span>
   </div>
@@ -63,13 +63,13 @@
       <div class="menu help glass" id="helpMenu" hidden>
         <h3>Nasıl kullanılır?</h3>
         <ol>
-          <li><b>Bir il seçin.</b> Haritada ile tıklayın ya da arama kutusuna adını yazın. <b>Bölgeler</b> coğrafi bölgeleri, <b>Ülke</b> Türkiye toplamını gösterir; <b>Çiz</b> ile haritada kendi alanınızı (serbest, elips ya da çokgen) çizebilirsiniz.</li>
-          <li><b>Takvime bakın.</b> Her kare bir ay. Renk koyulaştıkça uydunun gördüğü ateş sayısı artar. <span class="sym">●</span> olağandan yüksek, <span class="sym">◆</span> olağanüstü aylar.</li>
+          <li><b>Bir alan seçin.</b> Haritada bir bölgeye ya da ile tıklayın veya adını arama kutusuna yazın. <b>Ülke</b> Türkiye toplamını gösterir; <b>Çiz</b> ile haritada kendi alanınızı (serbest, elips ya da çokgen) belirleyebilirsiniz.</li>
+          <li><b>Takvimi inceleyin.</b> Sağdaki <b>Detaylı inceleme</b> panelini açın; takvimde her kare bir aydır. Renk koyulaştıkça uydunun gördüğü ateş sayısı artar. <span class="sym">●</span> normalin üstündeki, <span class="sym">◆</span> olağanüstü yüksek ayları gösterir.</li>
           <li><b>Yılı değiştirin.</b> Alttaki çubuktan incelemek istediğiniz yılı seçin.</li>
-          <li><b>Yakınlaşın.</b> Kırmızı noktalar tek tek uydu tespitleridir; tıklayınca tarihi görünür.</li>
+          <li><b>Yakınlaşın.</b> Kırmızı noktaların her biri bir uydu tespitidir; üzerine tıklayınca tarihi ve ayrıntıları görünür.</li>
         </ol>
-        <p><b>Uyumlaştırılmış seri</b> eski (MODIS, 2000–) ve yeni (VIIRS, 2012–) uyduları tek ölçeğe getirir; böylece 25 yıl birbiriyle karşılaştırılabilir. Ham MODIS ve VIIRS sekmeleri kaynağı doğrudan incelemek içindir.</p>
-        <p class="muted">Kaynak: NASA FIRMS. Sayılar orman yangını ile tarla/anız yakmasını birlikte içerir.</p>
+        <p><b>Uyumlaştırılmış seri</b> eski (MODIS, 2000–) ve yeni (VIIRS, 2012–) uyduları aynı ölçeğe getirir; böylece 25 yılın tamamı birbiriyle karşılaştırılabilir. Ham MODIS ve VIIRS sekmeleri, kaynak veriyi düzeltmesiz görmek içindir.</p>
+        <p class="muted">Kaynak: NASA FIRMS. Sayılar orman yangınlarını ve tarla/anız yakmalarını birlikte içerir.</p>
       </div>
     </div>
     <div class="pop">
@@ -93,7 +93,7 @@
 <aside class="rank glass" id="rank" aria-label="En çok tespit edilen alanlar">
   <h3><span id="rankTitle">En çok tespit</span><button id="rankToggle" class="mini" aria-expanded="true" title="Daralt">–</button></h3>
   <ol id="rankList"></ol>
-  <p class="rank-hint">Ayrıntı için haritada bir ile tıklayın.</p>
+  <p class="rank-hint">Ayrıntı için listeden ya da haritadan bir alan seçin.</p>
 </aside>
 
 <aside class="side glass" id="side" aria-live="polite" hidden>
@@ -135,7 +135,7 @@
 </div>
 
 <script src="vendor/maplibre-gl.js"></script>
-<script type="module" src="js/app.js?v=20261115-bright-points2"></script>
+<script type="module" src="js/app.js?v=20261115-tr"></script>
 <script type="module" src="js/drawers.js?v=20261115-detail"></script>
 <script type="module" src="js/timeline.js?v=20261115a"></script>
 </body>

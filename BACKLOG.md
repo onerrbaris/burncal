@@ -42,6 +42,7 @@ Sunum (7 slayt) ve teslim formu. Veri güncellemek için: `python scripts/fetch_
 - Deploy için Render + Vercel hesapları
 
 ## Done
+- 15 Kas: Türkçe dil düzeltmesi. Sözlük: yanma takvimi→yangın takvimi; Olağan/Olağandan düşük-yüksek→Normal/Normalin altında-üstünde; orta değer (medyan)→tipik değer (ortalama denmedi, hesap medyan); yüzdelik→"Geçtiği yıllar"; birleşmiş→uyumlaştırılmış; çarpan→katsayı; "o ay okunur"→"o ay yukarıda açılır"; sekmeler Karşılaştırma/Zirveler/OGM verisi; doğrulama kartı "Doğruluk", "Hata payı". Yardım menüsü ve açıklamalar yeniden yazıldı. Tarayıcıda beş sekme denendi, konsol temiz.
 - 15 Kas: Ateş noktaları belirginleşti: daha büyük ve tam opak, açık renk halka, altında turuncu parıltı katmanı (`pts-glow`, "Ateş noktaları" anahtarına bağlı). Noktalar z5,8'den görünür, böylece bölge görünümünde de seçilir. Tarayıcıda Akdeniz ve Çukurova yakın görünümü kontrol edildi, konsol temiz.
 - 15 Kas: İl sınır çizgileri kalınlaştırıldı (z6'da 0,7→1,6 px, daha parlak) ve altına koyu gölge çizgisi (`prov-casing`) eklendi. Tarayıcıda kontrol edildi.
 - 15 Kas: Ülke görünümünde (açılış) harita illeri değil yedi coğrafi bölgeyi boyar; sıralama, arama ve renk açıklaması bölgelere göre. Bölgeye tıklamak/aramak Bölgeler görünümüne geçirir. Tarayıcıda denendi, konsol temiz.

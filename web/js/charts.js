@@ -61,7 +61,7 @@ export function sentence(r, label) {
   if (!r) return '';
   const M = MONTHS[r.m], head = `${label || `${M} ${r.y}`}: `;
   if (r.short) return `${head}${fmt(r.v)} tespit. Karşılaştırma için dönem çok kısa; en az ${MIN_REF + 1} yıl seçin.`;
-  if (r.level === 'sparse') return `${head}${fmt(r.v)} tespit. Bu ilde ${M} ayında yıllar boyunca neredeyse hiç tespit yok; yüzdelik anlamlı değil.`;
+  if (r.level === 'sparse') return `${head}${fmt(r.v)} tespit. Bu alanda ${M} ayında yıllar boyunca neredeyse hiç tespit yok; kıyaslama anlamlı değil.`;
   let place;
   const per = `${r.from}–${r.to}`;
   if (r.inRange) {
@@ -76,11 +76,11 @@ export function sentence(r, label) {
     else place = `${per} dönemindeki ${r.n} ${M} ayının ${r.below} tanesinden yüksek`;
   }
   let k;
-  if (r.med < 3) k = `orta değer ${fmt(r.med)}`;   // küçük medyana oran ("∞ katı") verilmez
+  if (r.med < 3) k = `tipik değer ${fmt(r.med)}`;   // küçük medyana oran ("∞ katı") verilmez
   else {
     const q = r.v / r.med;
-    k = Math.abs(q - 1) < 0.05 ? 'olağan düzeyde'
-      : q > 1 ? `orta değerin ${q < 10 ? dec(q) : fmt(q)} katı` : `orta değerin altında (orta değer ${fmt(r.med)})`;
+    k = Math.abs(q - 1) < 0.05 ? 'normal düzeyde'
+      : q > 1 ? `tipik değerin ${q < 10 ? dec(q) : fmt(q)} katı` : `tipik değerin altında (tipik değer ${fmt(r.med)})`;
   }
   return `${head}${place}, ${k}.`;
 }
@@ -215,7 +215,7 @@ export function calendar(years, from, to, sel, opt) {
       const rdg = rd(yy, i), lv = rdg?.level, part = partial(yy, i);
       const fill = v === 0 ? 'rgba(255,255,255,0.06)' : rampColor(Math.sqrt(v / max));
       const tipLv = lv && lv !== 'normal' ? ` · ${LEVELS[lv].label}` : '';
-      const tipPct = rdg?.pct != null ? `<br>%${Math.round(rdg.pct)}. yüzdelik · orta değer ${fmt(rdg.med)}` : '';
+      const tipPct = rdg?.pct != null ? `<br>Yılların %${Math.round(rdg.pct)}'ini geçti · tipik değer ${fmt(rdg.med)}` : '';
       const tipPart = part ? `<br>Ay sürüyor: 1–${through} ${MONTHS[i]}; diğer yılların aynı günleriyle kıyaslandı` : '';
       s += `<rect x="${x}" y="${y0 + 1}" width="${cw - 2}" height="${ch - 2}" rx="2.5" fill="${fill}" class="cell${out ? ' out' : ''}${part ? ' part' : ''}" data-year="${yy}" data-month="${i}" data-tip="${esc(`<b>${MONTHS[i]} ${yy}</b>${fmt(v)} tespit${tipLv}${tipPct}${tipPart}`)}"/>`;
       const cx = x + (cw - 2) / 2, cy = y0 + ch / 2;
@@ -225,7 +225,7 @@ export function calendar(years, from, to, sel, opt) {
     }
     if (yy === sel.year) s += `<rect x="${PAD_L - 1}" y="${y0 - 0.5}" width="${W - PAD_L - PAD_R + 2}" height="${ch + 1}" rx="4" class="rowsel"/>`;
   });
-  return `<svg viewBox="0 0 ${W} ${h}" role="img" aria-label="${from}–${to} yılları ve aylara göre ateş tespitleri takvimi; yüksek aylar daire, olağanüstü aylar karo ile işaretli">${s}${marks}</svg>`;
+  return `<svg viewBox="0 0 ${W} ${h}" role="img" aria-label="${from}–${to} yılları ve aylara göre ateş tespitleri takvimi; normalin üstündeki aylar daire, olağanüstü aylar karo ile işaretli">${s}${marks}</svg>`;
 }
 
 // Takvim açıklaması: renk + şekil, sıfır ve veri yok ayrımı.
@@ -233,8 +233,8 @@ export function calendarKey() {
   return `<div class="key cal-key">
     <span><i class="z"></i>0</span>
     <span><i class="ramp" style="background:linear-gradient(90deg,${RAMP.join(',')})"></i>az → çok</span>
-    <span><svg viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="2.6" class="flag"/></svg>yüksek (75–95. yüzdelik)</span>
-    <span><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M6,1.6l4.4,4.4l-4.4,4.4l-4.4,-4.4z" class="flag"/></svg>olağanüstü (&gt;95)</span>
+    <span><svg viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="2.6" class="flag"/></svg>yüksek (yılların %75'inden fazlasını geçen)</span>
+    <span><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M6,1.6l4.4,4.4l-4.4,4.4l-4.4,-4.4z" class="flag"/></svg>olağanüstü (%95'ten fazlasını geçen)</span>
   </div>`;
 }
 
@@ -254,9 +254,9 @@ export function compare(ref, row, selYear, selMonth, partialMonth) {
     if (v != null) s += bar(x0 + bw * 0.3, bw * 0.4, y(v), base, 'bar' + (i === partialMonth ? ' part' : ''));
     s += `<line x1="${x0 + 1}" x2="${x0 + bw - 1}" y1="${y(med[i])}" y2="${y(med[i])}" class="median"/>`;
     if (i === selMonth) s += `<rect x="${x0 + 0.5}" y="${base + 2}" width="${bw - 1}" height="3" rx="1.5" class="msel"/>`;
-    const ratio = v != null && med[i] >= 3 ? ` · orta değerin ${(v / med[i]).toLocaleString('tr-TR', { maximumFractionDigits: 1 })} katı` : '';
-    const val = v == null ? 'henüz veri yok' : fmt(v) + (i === partialMonth ? ' (ay sürüyor; orta değer aynı günlerden)' : '');
-    s += `<rect x="${x0}" y="0" width="${bw}" height="${h - 18}" class="hit"${v == null ? '' : ` data-year="${selYear}" data-month="${i}"`} data-tip="${esc(`<b>${MONTHS[i]}</b>${selYear}: ${val}${ratio}<br>Orta değer: ${fmt(med[i])} · Olağan aralık: ${fmt(q1[i])}–${fmt(q3[i])}`)}"/>`;
+    const ratio = v != null && med[i] >= 3 ? ` · tipik değerin ${(v / med[i]).toLocaleString('tr-TR', { maximumFractionDigits: 1 })} katı` : '';
+    const val = v == null ? 'henüz veri yok' : fmt(v) + (i === partialMonth ? ' (ay sürüyor; tipik değer aynı günlerden)' : '');
+    s += `<rect x="${x0}" y="0" width="${bw}" height="${h - 18}" class="hit"${v == null ? '' : ` data-year="${selYear}" data-month="${i}"`} data-tip="${esc(`<b>${MONTHS[i]}</b>${selYear}: ${val}${ratio}<br>Tipik değer: ${fmt(med[i])} · Normal aralık: ${fmt(q1[i])}–${fmt(q3[i])}`)}"/>`;
   });
   return { svg: `<svg viewBox="0 0 ${W} ${h}" role="img" aria-label="${selYear} yılı ile dönemin medyanının karşılaştırması">${s}</svg>`, med };
 }
@@ -292,9 +292,9 @@ export function stepChart(p, viirsYear, selYear, lastFull) {
   });
   const bw = (W - PAD_L - PAD_R - 12) / Math.max(1, ys.length - 1);
   ys.forEach((y, i) => {
-    const src = y < viirsYear ? `ham: MODIS ${raw[i] == null ? '—' : fmt(raw[i])}<br>birleşmiş: ${fmt(harm[i])} (MODIS × bölge çarpanı)`
-      : `ham: VIIRS ${raw[i] == null ? '—' : fmt(raw[i])}<br>birleşmiş: ${fmt(harm[i])} (VIIRS gözlemi${y === viirsYear ? ', Ocak MODIS × çarpan' : ''})`;
+    const src = y < viirsYear ? `ham: MODIS ${raw[i] == null ? '—' : fmt(raw[i])}<br>uyumlaştırılmış: ${fmt(harm[i])} (MODIS × bölge katsayısı)`
+      : `ham: VIIRS ${raw[i] == null ? '—' : fmt(raw[i])}<br>uyumlaştırılmış: ${fmt(harm[i])} (VIIRS gözlemi${y === viirsYear ? ', Ocak MODIS × katsayı' : ''})`;
     s += `<rect x="${x(y) - bw / 2}" y="0" width="${bw}" height="${h - 16}" class="hit" data-year="${y}" data-tip="${esc(`<b>${y}</b>${src}`)}"/>`;
   });
-  return `<svg viewBox="0 0 ${W} ${h}" role="img" aria-label="Yıllık toplam: ham seri ile birleşmiş seri, ${viirsYear} VIIRS başlangıcı işaretli">${s}</svg>`;
+  return `<svg viewBox="0 0 ${W} ${h}" role="img" aria-label="Yıllık toplam: ham seri ile uyumlaştırılmış seri, ${viirsYear} VIIRS başlangıcı işaretli">${s}</svg>`;
 }

@@ -2,7 +2,7 @@
 import { regionGeometry } from './regions.js?v=20261115a';
 import { buildStyle, LAYER_GROUPS, RAMP } from './mapstyle.js?v=20261115-bright-points2';
 import { MONTHS, MON3, LEVELS, fmt, quantile, inRange, reading, sentence, peaks, sourceOf, csvRows, hotspotRows,
-  calendar, calendarKey, compare, stepChart, setChartWidth } from './charts.js?v=20261115h';
+  calendar, calendarKey, compare, stepChart, setChartWidth } from './charts.js?v=20261115-tr';
 import { DrawTool, drawnArea } from './draw.js?v=20261115-ellipse';
 
 const $ = (s) => document.querySelector(s);
@@ -19,7 +19,7 @@ const SENSORS = [
   { key: 'viirs', label: 'VIIRS', sub: 'ham' },
 ];
 
-const TABS = [['calendar', 'Takvim'], ['compare', 'Karşılaştır'], ['peaks', 'En yoğun'], ['step', 'Uydu uyumu'], ['ogm', 'OGM kaydı']];
+const TABS = [['calendar', 'Takvim'], ['compare', 'Karşılaştırma'], ['peaks', 'Zirveler'], ['step', 'Uydu uyumu'], ['ogm', 'OGM verisi']];
 
 // month: okunan ay (0–11); from/to: dönem yılları; win: sezon penceresi [ilk ay, son ay]; custom: dönemi kullanıcı mı seçti.
 const state = { scope: 'province', sensor: 'merged', year: null, month: 11, from: null, to: null, win: [0, 11], custom: false, sel: null, tab: 'calendar' };
@@ -611,9 +611,9 @@ function setYear(y) {
 
 function renderLegend() {
   const lv = legendVals, n = lv.length;
-  $('#legend').innerHTML = n > 1 ? `<b>${regionMap() ? 'Bölge' : 'İl'} renkleri: ${fullWin() ? 'yıllık' : winLabel()} tespit</b><div class="bar" style="background:linear-gradient(90deg,${RAMP.join(',')})"></div>
+  $('#legend').innerHTML = n > 1 ? `<b>${regionMap() ? 'Bölge' : 'İl'} renkleri: ${fullWin() ? 'yıllık' : winLabel()} ateş tespiti</b><div class="bar" style="background:linear-gradient(90deg,${RAMP.join(',')})"></div>
     <div class="ends"><span>az</span><span>${fmt(lv[n >> 1])}</span><span>çok</span></div>
-    <div class="dotnote"><i></i><span>Tek tek tespitler, yakınlaşınca</span></div>` : '';
+    <div class="dotnote"><i></i><span>Yakınlaşınca tek tek tespitler görünür</span></div>` : '';
 }
 
 function renderRank() {
@@ -621,7 +621,7 @@ function renderRank() {
     .sort((a, b) => b[1] - a[1]).slice(0, regionMap() ? 7 : 6);
   $('#rank').hidden = !rows.length || state.scope === 'draw';
   if (!rows.length || state.scope === 'draw') return;
-  $('#rankTitle').textContent = `En çok tespit${regionMap() ? ' · bölgeler' : ''} · ${state.year}${fullWin() ? '' : ' · ' + winLabel()}`;
+  $('#rankTitle').textContent = `En çok ateş tespiti${regionMap() ? ' · bölgeler' : ''} · ${state.year}${fullWin() ? '' : ' · ' + winLabel()}`;
   $('#rankList').innerHTML = rows.map(([n, t], i) =>
     `<li><button data-name="${n}" class="${n === state.sel ? 'on' : ''}"><i>${i + 1}</i><span>${n}</span><em>${fmt(t)}</em>
      <u style="width:calc((100% - 34px) * ${rows[0][1] ? t / rows[0][1] : 0})"></u></button></li>`).join('');
@@ -676,7 +676,7 @@ function readCard(name, val) {
   const latest = y === LY && m === READ_M, part = isPartial(y, m), lv = r.level ? LEVELS[r.level] : null;
   const reg = val && data.regions?.[val.region];
   const src = state.sensor !== 'merged' ? `${sensorOf().label} ham sayı`
-    : sourceOf(y, m, data.meta.viirs_from) === 'viirs' ? 'VIIRS gözlemi' : `MODIS × ${reg ? dec(reg.factors[m], 2) : 'çarpan'}`;
+    : sourceOf(y, m, data.meta.viirs_from) === 'viirs' ? 'VIIRS gözlemi' : `MODIS × ${reg ? dec(reg.factors[m], 2) : 'katsayı'}`;
   const lastM = y === LY ? LM : 11;
   const months = MONTHS.map((n, i) => (i > lastM ? '' : `<option value="${i}"${i === m ? ' selected' : ''}>${n}</option>`)).join('');
   const label = part ? `1–${LD} ${MONTHS[m]} ${y}` : null;
@@ -684,13 +684,13 @@ function readCard(name, val) {
       <div class="read-top">
         <select id="mSel" aria-label="Okunacak ay">${months}</select><b>${y}</b>
         ${latest ? `<span class="pill">${part ? 'ay sürüyor' : READ_M === LM ? 'son veri' : 'son tam ay'}</span>` : '<button class="link" id="latest">Son aya dön</button>'}
-        ${lv ? `<span class="lvl" title="Aynı takvim ayının dönemdeki diğer yıllarına göre: 25. yüzdeliğin altı düşük, 25–75 normal, 75–95 yüksek, 95 üstü olağanüstü.">${lv.mark ? lv.mark + ' ' : ''}${lv.label}</span>` : ''}
+        ${lv ? `<span class="lvl" title="Aynı ayın seçili yıllardaki değerleriyle kıyas: yılların %25'inden azını geçtiyse düşük, %25–75'ini normal, %75–95'ini yüksek, %95'ten fazlasını olağanüstü.">${lv.mark ? lv.mark + ' ' : ''}${lv.label}</span>` : ''}
       </div>
       <p class="say">${sentence(r, label)}</p>
       <dl class="nums">
         <div><dt>Bu ay</dt><dd>${fmt(r.v)}</dd></div>
-        <div><dt>Orta değer</dt><dd>${fmt(r.med)}</dd></div>
-        <div><dt>Yüzdelik</dt><dd>${r.pct == null ? '—' : '%' + Math.round(r.pct)}</dd></div>
+        <div><dt title="Seçili yıllarda bu ayın medyanı: yılların yarısı bunun altında, yarısı üstünde">Tipik değer</dt><dd>${fmt(r.med)}</dd></div>
+        <div><dt title="Bu ayın, seçili yıllardaki aynı aylardan yüzde kaçını geçtiği">Geçtiği yıllar</dt><dd>${r.pct == null ? '—' : '%' + Math.round(r.pct)}</dd></div>
         <div><dt>Kaynak</dt><dd>${src}</dd></div>
       </dl>
       <p class="fine">${part ? `Ay henüz bitmedi: her yılın 1–${LD} ${MONTHS[m]} değerleriyle kıyaslandı. ` : ''}Başka bir ay için takvimde bir kareye tıklayın.</p>
@@ -759,24 +759,24 @@ function peaksView(name, years) {
   const w = winLabel();
   return `<h4>En yüksek yıllar · ${state.from}–${state.to}${w ? ' · ' + w : ''}</h4><p>${w ? `${w} toplamı` : 'Yıllık toplam'}; tıklayınca o yıl seçilir.</p>
     ${list(topYears, ([y]) => `data-year="${y}"`, ([y]) => (PARTIAL && y === LY ? `${y} <small>(${LD} ${MON3[LM]} itibarıyla)</small>` : y), ([y]) => y === state.year)}
-    <h4 class="gap">En yüksek aylar</h4><p>Tek tek ayların değeri; tıklayınca o ay okunur.</p>
+    <h4 class="gap">En yüksek aylar</h4><p>Tek tek ayların değeri; tıklayınca o ay yukarıda açılır.</p>
     ${list(topMonths, ([y, m]) => `data-year="${y}" data-month="${m}"`, ([y, m]) => `${MONTHS[m]} ${y}${isPartial(y, m) ? ` <small>(1–${LD})</small>` : ''}`, ([y, m]) => y === state.year && m === state.month)}`;
 }
 
 function stepView(p, val) {
   const vy = viirsYear(), reg = val && data.regions?.[val.region];
-  const fac = reg ? `<p class="fine">${vy} öncesi çarpan, ${val.region} bölgesi (${reg.name}), ay ay:</p>
+  const fac = reg ? `<p class="fine">${vy} öncesi düzeltme katsayısı, ${val.region} bölgesi (${reg.name}), ay ay:</p>
     <div class="fac">${reg.factors.map((f, i) => `<span><i>${MON3[i]}</i>${dec(f)}</span>`).join('')}</div>` : '';
   const step = val?.step_raw != null ? `<p class="say">2009–2011'den 2012–2014'e ortalama yıllık değişim: ham seride ×${dec(val.step_raw, 2)},
-    birleşmiş seride ×${dec(val.step_harmonized, 2)}. MODIS tek başına ×${dec(val.step_modis, 2)} gösteriyor; birleşmiş seri buna yakın olmalı.</p>` : '';
+    uyumlaştırılmış seride ×${dec(val.step_harmonized, 2)}. MODIS tek başına ×${dec(val.step_modis, 2)} gösteriyor; uyumlaştırılmış serinin buna yakın olması beklenir.</p>` : '';
   const lastFull = PARTIAL ? LY - 1 : LY;
-  return `<h4>Ham seri ve birleşmiş seri</h4>
+  return `<h4>Ham seri ve uyumlaştırılmış seri</h4>
     <p>${{ region: 'İl serilerinin bölge toplamı; yeni bir bölge katsayısı hesaplanmadı. ',
     country: 'İl serilerinin Türkiye toplamı; yeni bir ülke katsayısı hesaplanmadı. ',
     draw: 'Alanın kapsadığı illerin serilerinden tespit payıyla alındı; yeni bir katsayı hesaplanmadı. ' }[state.scope] || ''}Yıllık toplam. Ham seri ${vy}'ye kadar MODIS, sonra VIIRS sayar; VIIRS daha küçük ateşleri de gördüğü için ${vy}'de yapay bir sıçrama oluşur.
-    Birleşmiş seri ${vy} öncesini MODIS × bölgesel aylık çarpanla VIIRS ölçeğine taşır.${PARTIAL ? ` ${LY} bitmediği için çizilmedi.` : ''}</p>
-    <div class="key"><span><i class="raw"></i>Ham (MODIS → VIIRS)</span><span><i class="harm"></i>Birleşmiş</span>
-      <span><i class="dot o"></i>MODIS × çarpan</span><span><i class="dot"></i>VIIRS gözlemi</span></div>
+    Uyumlaştırılmış seri, ${vy} öncesini MODIS × bölgesel aylık katsayıyla VIIRS ölçeğine taşır.${PARTIAL ? ` ${LY} bitmediği için çizilmedi.` : ''}</p>
+    <div class="key"><span><i class="raw"></i>Ham (MODIS → VIIRS)</span><span><i class="harm"></i>Uyumlaştırılmış</span>
+      <span><i class="dot o"></i>MODIS × katsayı</span><span><i class="dot"></i>VIIRS gözlemi</span></div>
     ${stepChart(p, vy, state.year, lastFull)}${step}${fac}`;
 }
 
@@ -804,18 +804,18 @@ function ogmView(name) {
   s += `<path d="${sat.map((v, i) => `${i ? 'L' : 'M'}${x(i)},${yS(v)}`).join('')}" class="ln-harm"/>`;
   ys.forEach((y, i) => {
     s += `<circle cx="${x(i)}" cy="${yS(sat[i])}" r="${y === state.year ? 4 : 2.6}" class="pt-harm${y === state.year ? ' on' : ''}"/>`;
-    s += `<rect x="${x(i) - 6}" y="0" width="12" height="${H - 16}" class="hit" data-year="${y}" data-tip="<b>${y}</b>Uydu (birleşmiş): ${fmt(sat[i])} tespit<br>OGM: ${fmt(fires[i])} orman yangını · ${fmt(ha[i])} ha"/>`;
+    s += `<rect x="${x(i) - 6}" y="0" width="12" height="${H - 16}" class="hit" data-year="${y}" data-tip="<b>${y}</b>Uydu (uyumlaştırılmış): ${fmt(sat[i])} tespit<br>OGM: ${fmt(fires[i])} orman yangını · ${fmt(ha[i])} ha"/>`;
   });
   const key = name.toLocaleUpperCase('tr');
   const obm = Object.entries(ogm.obm2025).find(([u]) => u.toLocaleUpperCase('tr') === key);
   const p25 = series(name, 'merged')?.[2025];
   const local = obm
-    ? `<h4 class="gap">${name} Orman Bölge Müdürlüğü · 2025</h4><p class="say">OGM: <b>${fmt(obm[1].fires)}</b> orman yangını, ${fmt(obm[1].ha)} ha yanan alan. Uydu, ${name} ilinde 2025'te ${p25 ? fmt(sum(p25)) : '—'} tespit görüyor.</p>
+    ? `<h4 class="gap">${name} Orman Bölge Müdürlüğü · 2025</h4><p class="say">OGM: <b>${fmt(obm[1].fires)}</b> orman yangını, ${fmt(obm[1].ha)} ha yanan alan. Uydular 2025'te ${name} ilinde ${p25 ? fmt(sum(p25)) : '—'} ateş tespit etti.</p>
        <p class="fine">Bölge müdürlüğü genellikle birkaç ili kapsar; il sınırıyla birebir karşılaştırılamaz. İl bazında yıllık OGM verisi yalnızca 2025 için bulundu.</p>`
     : state.scope === 'country' ? ''
     : `<p class="fine">${multi() ? `${regional() ? 'Coğrafi bölge' : 'Çizilen alan'} ile Orman Bölge Müdürlüğü sınırları aynı değildir; bu görünümde Türkiye toplamı gösterilir.` : `${name} adına bir orman bölge müdürlüğü yok; 2025 bölge tablosunda bu il başka bir müdürlüğe bağlı.`}</p>`;
   return `<h4>Türkiye: uydu tespitleri ve OGM'nin bildirdiği orman yangınları</h4>
-    <p>Çizgi: uydu (birleşmiş, 81 il toplamı, sol eksen). Sütun: OGM'nin müdahale ettiği orman yangını sayısı (sağ eksen).</p>
+    <p>Çizgi: uydu tespitleri (uyumlaştırılmış, 81 il toplamı, sol eksen). Sütun: OGM'nin müdahale ettiği orman yangını sayısı (sağ eksen).</p>
     <div class="key"><span><i class="harm"></i>Uydu tespiti</span><span><i class="b"></i>OGM yangın sayısı</span></div>
     <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Türkiye geneli yıllık uydu tespitleri ve OGM orman yangını sayıları">${s}</svg>
     <p class="say">Yıl sıralaması benzerliği (Spearman): uydu–OGM yangın sayısı ${dec(rho(sat, fires), 2)}, uydu–OGM yanan alan ${dec(rho(sat, ha), 2)}.</p>
@@ -830,7 +830,7 @@ function renderPanel() {
   panel.hidden = false; side.hidden = false;
   const name = state.sel, years = series(name);
   if (!years || !years[state.year]) {
-    sideBody.innerHTML = head(scopeLabel(), name) + '<div class="empty"><h4>Bu alan için bu yılda veri yok</h4><p>Alttaki çubuktan başka bir yıl seçin.</p></div>';
+    sideBody.innerHTML = head(scopeLabel(), name) + '<div class="empty"><h4>Bu alan için seçili yılda veri yok</h4><p>Alttaki çubuktan başka bir yıl seçin.</p></div>';
     body.innerHTML = '';
     return;
   }
@@ -854,23 +854,23 @@ function renderPanel() {
   const sel = { year: state.year, month: state.month };
   const w = winLabel();
   // Durum etiketi: seçili yılın toplamı, geçmiş yılların orta değerine (medyan) göre.
-  const status = !med ? null : ratio < 0.67 ? ['low', 'Olağandan düşük'] : ratio <= 1.5 ? ['normal', 'Olağan']
-    : ratio <= 2.5 ? ['high', 'Olağandan yüksek'] : ['extreme', 'Çok yüksek'];
+  const status = !med ? null : ratio < 0.67 ? ['low', 'Normalin altında'] : ratio <= 1.5 ? ['normal', 'Normal']
+    : ratio <= 2.5 ? ['high', 'Normalin üstünde'] : ['extreme', 'Çok yüksek'];
   const span = like ? `aynı dönemin (${w ? MON3[state.win[0]] : '1 Oca'}–${LD} ${MON3[LM]})` : w ? `${w} döneminin` : 'yıllık toplamın';
   const sumText = med
-    ? `${from}–${to} yıllarında ${span} orta değeri <b>${fmt(med)}</b>. ${state.year}${like ? ' şimdiye kadar' : ''} bunun <b>${dec(ratio)} katı</b>.`
+    ? `${from}–${to} arasında ${span} tipik değeri <b>${fmt(med)}</b>. ${state.year} yılında${like ? ' şimdiye kadar' : ''} bunun <b>${dec(ratio)} katı</b> tespit var.`
     : `Bu ${multi() ? 'alan' : 'il'} için karşılaştırma yapacak kadar tespit yok.`;
 
   let view = '';
   if (state.tab === 'calendar') {
-    view = `<h4>${from}–${to} yanma takvimi${w ? ' · ' + w : ''}</h4><p>Her satır bir yıl, her kare bir ay. Renk koyulaştıkça tespit artar. İşaretli kareler o ay için olağan dışı yüksektir. Kareye tıklayınca o ay okunur.</p>
+    view = `<h4>${from}–${to} yangın takvimi${w ? ' · ' + w : ''}</h4><p>Her satır bir yıl, her kare bir ay. Renk koyulaştıkça tespit artar. İşaretli kareler, o ay için alışılmadık derecede yüksek değerlerdir. Bir kareye tıklayınca o ay yukarıda açılır.</p>
       ${calendarKey()}${calendar(years, from, to, sel, { win: state.win, rd: rdFor(name), partial: isPartial, through: LD })}`;
   } else if (state.tab === 'compare') {
     const ref = inRange(like ? cmpYears(name) : years, from, to);
     if (!like && PARTIAL) delete ref[LY];   // bitmemiş yılın boş ayları başka bir yılın medyanını bozmasın
     const c = compare(ref, row, state.year, state.month, like ? LM : -1);
-    view = `<h4>${state.year}, geçmiş yıllarla ay ay</h4><p>Turuncu sütun ${state.year}. Beyaz çizgi ${from}–${to} yıllarında o ayın orta değeri, gri bant yılların yarısının düştüğü olağan aralık. Sütuna tıklayınca o ay okunur.</p>
-      <div class="key"><span><i></i>${state.year}</span><span><i class="m"></i>Orta değer</span><span><i class="b"></i>Olağan aralık</span></div>
+    view = `<h4>${state.year} ile geçmiş yıllar, ay ay</h4><p>Turuncu sütunlar ${state.year} yılını gösterir. Beyaz çizgi ${from}–${to} arasında o ayın tipik değeri, gri bant yılların yarısının düştüğü normal aralıktır. Bir sütuna tıklayınca o ay yukarıda açılır.</p>
+      <div class="key"><span><i></i>${state.year}</span><span><i class="m"></i>Tipik değer</span><span><i class="b"></i>Normal aralık</span></div>
       ${c.svg}`;
   } else if (state.tab === 'peaks') {
     view = peaksView(name, years);
@@ -886,12 +886,12 @@ function renderPanel() {
       <h2>${name} grafikleri</h2></div></div>
     <section class="pblock month-block" aria-label="Ay ayrıntısı">
       <header class="pblock-head"><span class="pblock-num" aria-hidden="true">1</span><div><h3>Ay ayrıntısı</h3>
-        <p>Tek bir ay: geçmiş yılların aynı ayına göre nerede?</p></div></header>
+        <p>Seçili ay, geçmiş yılların aynı ayıyla karşılaştırılır.</p></div></header>
       ${readCard(name, vAll)}
     </section>
     <section class="pblock charts-block" aria-label="Grafikler">
       <header class="pblock-head"><span class="pblock-num" aria-hidden="true">2</span><div><h3>Grafikler</h3>
-        <p>Önce yıl ve ay aralığını seçin, sonra grafiği.</p></div></header>
+        <p>Yıl ve ay aralığını seçin, ardından incelemek istediğiniz grafiği açın.</p></div></header>
       ${rangeRow()}
       <div class="tabs" role="tablist">${TABS.map(([k, l]) => `<button role="tab" data-tab="${k}" aria-selected="${k === state.tab}">${l}</button>`).join('')}</div>
       <div class="view" role="tabpanel">${view}</div>
@@ -904,8 +904,8 @@ function renderPanel() {
     </section>
     <div class="kpis">
       <div class="kpi"><span>En yoğun ay</span><b>${peak >= 0 ? MONTHS[peak] : '—'}</b><small>${peak >= 0 ? fmt(row[peak]) + ' tespit' : ''}</small></div>
-      <div class="kpi"><span>Orta değer</span><b>${fmt(med)}</b><small>${from}–${to}</small></div>
-      <div class="kpi conf" title="${confTitle}"><span>${multi() && merged ? `${{ region: 'Bölge', country: 'Ülke', draw: 'Alan' }[state.scope]} doğrulaması` : 'Güvenilirlik'}</span><b>${multi() && merged && !val ? 'Ölçülmedi' : ['Düşük', 'Orta', 'Yüksek'][level - 1]}</b><small>${multi() && merged ? (val ? `Yıllık hata %${dec(val.annual_wape * 100)}<br>Aylık hata %${dec(val.monthly_wape * 100)}` : 'Hata yüzdesi verilmez') : `<span class="dots">${[1, 2, 3].map((i) => `<i class="${i <= level ? 'on' : ''}"></i>`).join('')}</span>${val?.annual_wape != null ? `hata %${Math.round(val.annual_wape * 100)}` : merged ? '' : 'sayıya göre'}`}</small></div>
+      <div class="kpi" title="Seçili yılların medyanı: yılların yarısı bunun altında, yarısı üstünde"><span>Tipik değer</span><b>${fmt(med)}</b><small>${from}–${to}</small></div>
+      <div class="kpi conf" title="${confTitle}"><span>${multi() && merged ? 'Doğruluk' : 'Güvenilirlik'}</span><b>${multi() && merged && !val ? 'Ölçülmedi' : ['Düşük', 'Orta', 'Yüksek'][level - 1]}</b><small>${multi() && merged ? (val ? `Yıllık hata payı %${dec(val.annual_wape * 100)}<br>Aylık hata payı %${dec(val.monthly_wape * 100)}` : 'Hata payı hesaplanmadı') : `<span class="dots">${[1, 2, 3].map((i) => `<i class="${i <= level ? 'on' : ''}"></i>`).join('')}</span>${val?.annual_wape != null ? `hata %${Math.round(val.annual_wape * 100)}` : merged ? '' : 'sayıya göre'}`}</small></div>
     </div>
     ${state.scope === 'province' ? caution(val) : state.scope === 'draw' ? drawCaution() : ''}
     ${landCard(name)}
