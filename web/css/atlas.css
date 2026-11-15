@@ -300,6 +300,10 @@ svg .rowsel { fill: none; stroke: rgba(255, 255, 255, 0.85); stroke-width: 1.2; 
 svg .band { fill: rgba(160, 175, 195, 0.18); }
 svg .median { stroke: var(--ink); stroke-width: 2; stroke-linecap: round; }
 svg .flag { fill: #111; stroke: #fff; stroke-width: 1.1; pointer-events: none; }
+svg .hotcell { fill: none; stroke: #ffd23f; stroke-width: 1.6; pointer-events: none; }
+svg .hotlbl { fill: #fff; font: 700 9px var(--font); font-variant-numeric: tabular-nums; letter-spacing: -0.2px; pointer-events: none; }
+.cal-key svg.wide { width: 26px; height: 14px; }
+.cal-key .hotcell { stroke-width: 1.4; }
 svg .cellsel { fill: none; stroke: var(--accent-2); stroke-width: 2; pointer-events: none; }
 svg .nodata { fill: none; stroke: rgba(255, 255, 255, 0.2); stroke-dasharray: 2 2; }
 svg .msel { fill: var(--ink); }

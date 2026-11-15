@@ -42,7 +42,7 @@ const SPARSE = 5;   // bu sayının altındaki değerler, dönemin çoğu da bö
 const MIN_REF = 3;  // karşılaştırma için en az bu kadar başka yıl
 export const LOW_MIN = 20;
 // Takvim rengi: ayın aynı takvim ayının diğer yıllarına göre yüzdeliği, yumuşak ve sürekli bir geçişle
-// (mavi az, bej tipik, kırmızı fazla). İşaretler (üçgenler) aşağıdaki sınıflardan, düzeylerle aynı sınırlardan gelir.
+// (mavi az, bej tipik, kırmızı fazla). İşaretler (üçgenler) yüzdelikten değil kat sayısından gelir: bkz. MARK.
 export const CAL_STOPS = [[0, '#3f73d6'], [25, '#8fb1e6'], [50, '#e2dac8'], [75, '#f0a16e'], [100, '#cf4a2f']];
 export function calColor(pct) {
   const p = Math.max(0, Math.min(100, pct));
@@ -73,6 +73,24 @@ export function calClass(pct) {
   if (pct <= 95) return 5;
   return 6;
 }
+
+// Takvim işareti büyüklükten: kat = ay ÷ tipik (medyan). Yüzdelik %95'te tavan yapar (3 kat da 83 kat da
+// "olağanüstü"); kat sayısının tavanı yok. Yalnızca fazlası işaretlenir: düşüş en çok %100'dür, olay sayılmaz.
+// Küçük sayılarda sahte kat çıkmasın diye mutlak alt sınırlar var.
+export const MARK = {
+  minMed: 3,          // tipik değer bunun altındaysa kat hesaplanmaz (sentence ile aynı)
+  minV: LOW_MIN,      // işaret için en az bu kadar tespit
+  tiers: [2, 5, 20],  // ×2 küçük, ×5 orta, ×20 büyük üçgen
+  topN: 5,            // en büyük bu kadar ay hücre içinde "×83" ile yazılır
+  topMinQ: 5,         // ...ama en az ×5
+  topMinV: 100,       // ...ve en az bu kadar tespit
+};
+export function markTier(r) {
+  if (!r || r.pct == null || r.small || r.level === 'sparse' || r.med < MARK.minMed || r.v < MARK.minV) return 0;
+  const q = r.v / r.med;
+  return q >= MARK.tiers[2] ? 3 : q >= MARK.tiers[1] ? 2 : q >= MARK.tiers[0] ? 1 : 0;
+}
+const fmtQ = (q) => `×${q < 10 ? dec(q) : fmt(q)}`;
 
 export function inRange(years, from, to) {
   const out = {};
@@ -258,6 +276,15 @@ export function calendar(years, from, to, sel, opt) {
   const cw = (W - PAD_L - PAD_R) / 12, ch = W > 400 ? 19 : 17, top = 16;
   const h = top + ys.length * ch + 4;
   let s = '', marks = '';
+  // Takvimin en büyük olayları: pencere içindeki aylardan kat sayısı en yüksek topN (eşikleri geçenler).
+  const hot = new Map();
+  ys.flatMap((yy) => (years[yy] || []).map((v, i) => [yy, i, v]))
+    .filter(([, i, v]) => v != null && i >= win[0] && i <= win[1])
+    .map(([yy, i]) => [yy, i, rd(yy, i)])
+    .filter(([, , r]) => markTier(r) && r.v >= MARK.topMinV && r.v / r.med >= MARK.topMinQ)
+    .sort((a, b) => b[2].v / b[2].med - a[2].v / a[2].med).slice(0, MARK.topN)
+    .forEach(([yy, i, r]) => hot.set(`${yy}-${i}`, r.v / r.med));
+  let labels = '';
   M1.forEach((m, i) => { s += `<text x="${PAD_L + cw * (i + 0.5)}" y="10" class="tick${i >= win[0] && i <= win[1] ? '' : ' off'}" text-anchor="middle">${m}</text>`; });
   ys.forEach((yy, r) => {
     const y0 = top + r * ch;
@@ -272,11 +299,12 @@ export function calendar(years, from, to, sel, opt) {
       const rdg = rd(yy, i), lv = rdg?.level, part = partial(yy, i);
       // Renk: ayın kendi geçmişine göre yeri (yüzdelik). Kıyas yoksa ya da az tespitse nötr.
       // Renk yüzdelikten; küçük aylarda (düzey 'sparse' ama yüzdelik var) yarım güç, tipiğe doğru.
-      const pc = rdg?.pct, small = pc != null && lv === 'sparse';
-      const fill = pc != null ? calColor(small ? 50 + (pc - 50) * 0.45 : pc) : v === 0 ? 'rgba(255,255,255,0.06)' : CAL_SPARSE;
+      const pc = rdg?.pct, small = pc != null && lv === 'sparse', hq = out ? null : hot.get(`${yy}-${i}`);
+      // En büyük olaylar koyu kırmızı dolgu + beyaz "×83": takvimde ilk göze çarpan şey.
+      const fill = hq ? HOT_FILL : pc != null ? calColor(small ? 50 + (pc - 50) * 0.45 : pc) : v === 0 ? 'rgba(255,255,255,0.06)' : CAL_SPARSE;
       const op = pc != null || v === 0 ? 1 : 0.35;
-      // İşaret düzeyden (ay kartıyla aynı): küçük aylarda işaret yok.
-      const cls = small || pc == null ? null : calClass(pc);
+      // İşaret kat sayısından (markTier): yalnızca fazla, büyüklüğe göre üç boy.
+      const tier = out || hq ? 0 : markTier(rdg);
       // Şerit içeriği (takvimin üstü): her kare için aynı üç satır, böylece şerit boyu oynamaz.
       const title = part ? `1–${through} ${MONTHS[i]} ${yy}` : `${MONTHS[i]} ${yy}`;
       const L = lv && lv !== 'normal' ? LEVELS[lv] : null;
@@ -288,28 +316,34 @@ export function calendar(years, from, to, sel, opt) {
       const read = `<div class="cr-top"><b>${title}</b>${badge}</div><p class="cr-say">${say}</p><p class="cr-nums">${nums}</p>`;
       s += `<rect x="${x}" y="${y0 + 1}" width="${cw - 2}" height="${ch - 2}" rx="2.5" fill="${fill}" fill-opacity="${op}" class="cell${out ? ' out' : ''}${part ? ' part' : ''}" data-year="${yy}" data-month="${i}" data-read="${esc(read)}"/>`;
       const cx = x + (cw - 2) / 2, cy = y0 + ch / 2;
-      // İşaret, renk sınıfıyla aynı yüzdelikten. Yön = yukarı ▲ fazla, aşağı ▼ az; boyut = ne kadar uç.
-      if (!out && cls === 5) marks += `<path d="M${cx - 2.8},${cy + 2.6}h5.6l-2.8,-4.4z" class="flag"/>`;
-      else if (!out && cls === 6) marks += `<path d="M${cx - 4.4},${cy + 3.8}h8.8l-4.4,-7z" class="flag"/>`;
-      else if (!out && cls === 1) marks += `<path d="M${cx - 2.8},${cy - 1.8}h5.6l-2.8,4.4z" class="flag"/>`;
-      else if (!out && cls === 0) marks += `<path d="M${cx - 4.4},${cy - 3}h8.8l-4.4,7z" class="flag"/>`;
+      if (tier) marks += upTri(cx, cy, TRI[tier - 1]);
+      if (hq) {
+        marks += `<rect x="${x - 0.5}" y="${y0 + 0.5}" width="${cw - 1}" height="${ch - 1}" rx="3" class="hotcell"/>`;
+        labels += `<text x="${cx}" y="${cy + 3.2}" class="hotlbl" text-anchor="middle">${fmtQ(hq)}</text>`;
+      }
       if (yy === sel.year && i === sel.month) marks += `<rect x="${x - 1}" y="${y0 - 0.5}" width="${cw}" height="${ch + 1}" rx="3.5" class="cellsel"/>`;
     }
     if (yy === sel.year) s += `<rect x="${PAD_L - 1}" y="${y0 - 0.5}" width="${W - PAD_L - PAD_R + 2}" height="${ch + 1}" rx="4" class="rowsel"/>`;
   });
-  return `<svg viewBox="0 0 ${W} ${h}" role="img" aria-label="${msg("fire.calendar.by.year.and", [from, to])}">${s}${marks}</svg>`;
+  return `<svg viewBox="0 0 ${W} ${h}" role="img" aria-label="${msg("fire.calendar.by.year.and", [from, to])}">${s}${marks}${labels}</svg>`;
 }
+
+// Yukarı üçgen, merkez (cx, cy), yarı genişlik w (yükseklik 1.6w).
+const TRI = [2.4, 3.6, 5];
+const HOT_FILL = '#8f1d14';
+const upTri = (cx, cy, w) => `<path d="M${cx - w},${cy + 0.8 * w}h${2 * w}l${-w},${-1.6 * w}z" class="flag"/>`;
 
 // Takvim açıklaması: renk + şekil, sıfır ve veri yok ayrımı.
 export function calendarKey() {
   const grad = `linear-gradient(90deg,${CAL_STOPS.map(([p, c]) => `${c} ${p}%`).join(',')})`;
-  const tri = (up, big) => `<svg viewBox="0 0 12 12" aria-hidden="true"><path d="${big ? (up ? 'M1.6,9.8h8.8l-4.4,-7z' : 'M1.6,3h8.8l-4.4,7z') : (up ? 'M3.2,8.6h5.6l-2.8,-4.4z' : 'M3.2,4.2h5.6l-2.8,4.4z')}" class="flag"/></svg>`;
+  const tri = (k) => `<svg viewBox="0 0 12 12" aria-hidden="true">${upTri(6, 6.4, TRI[k])}</svg>`;
+  const hotK = `<svg viewBox="0 0 26 14" class="wide" aria-hidden="true"><rect x="0.5" y="0.5" width="25" height="13" rx="3" fill="${HOT_FILL}" class="hotcell"/><text x="13" y="10.2" class="hotlbl" text-anchor="middle">×83</text></svg>`;
   return `<div class="key cal-key">
     <p class="cal-lead">${msg("cal.lead")}</p>
     <div class="cal-grad"><i style="background:${grad}"></i><div class="cal-ticks"><span>${msg("cal.t.low")}</span><span>${msg("cal.t.typ")}</span><span>${msg("cal.t.high")}</span></div></div>
     <div class="cal-extra">
-      <span>${tri(true, false)}${msg("cal.m.high")}</span><span>${tri(true, true)}${msg("cal.m.ext")}</span>
-      <span>${tri(false, false)}${msg("cal.m.low")}</span><span>${tri(false, true)}${msg("cal.m.vlow")}</span>
+      <span>${tri(0)}${msg("cal.m.x2")}</span><span>${tri(1)}${msg("cal.m.x5")}</span><span>${tri(2)}${msg("cal.m.x20")}</span>
+      <span>${hotK}${msg("cal.m.top", [MARK.topN])}</span>
       <span><i class="fade"></i>${msg("cal.fade")}</span><span><i class="z"></i>0</span>
     </div>
   </div>`;
