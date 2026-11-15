@@ -4,7 +4,6 @@ import { lang } from './i18n.js?v=20261115-map-year';
 
 // Açık sarıdan koyu kırmızıya (az -> çok); parlaklık tek yönde azalır.
 export const RAMP = ['#fffbe0', '#ffe9a0', '#fec45c', '#fd8d3c', '#ec4a25', '#b10026'];
-export const rampStops = RAMP.flatMap((c, i) => [i / (RAMP.length - 1), c]);
 
 const FONT = ['Noto Sans Bold'];
 const CITY_FONT = ['Noto Sans Regular'];
@@ -96,9 +95,7 @@ export function buildStyle(provinces, labels) {
       {
         id: 'prov-fill', type: 'fill', source: 'provinces',
         paint: {
-          'fill-color': ['case',
-            ['<', ['coalesce', ['feature-state', 'v'], -1], 0], 'rgba(0,0,0,0)',
-            ['interpolate', ['linear'], ['coalesce', ['feature-state', 'v'], 0], ...rampStops]],
+          'fill-color': 'rgba(0,0,0,0)',
           'fill-opacity': ['interpolate', ['linear'], ['zoom'],
             6, ['case', ['boolean', ['feature-state', 'sel'], false], 0.34, 0.56],
             9, ['case', ['boolean', ['feature-state', 'sel'], false], 0.14, 0.34],

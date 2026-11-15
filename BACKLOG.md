@@ -43,6 +43,8 @@ Sunum (7 slayt) ve teslim formu. Veri güncellemek için: `python scripts/fetch_
 
 ## Done
 
+- Yıl değişince 3B arazideki il ve bölge dolguları kamera sabitken de yenileniyor.
+
 - İl ve bölge renkleri yıllar arasında ortak tespit ölçeğine bağlandı; harita ve açıklama aynı renk değerini kullanıyor.
 
 - Yıl kaydırıcısı iki dilde, daha büyük ve yüksek kontrastlı bir harita yılı etiketiyle belirtildi.

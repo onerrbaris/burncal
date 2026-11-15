@@ -1,9 +1,9 @@
 import { t as msg, lang, locale, displayText, percent } from './i18n.js?v=20261115-map-year';
 /* global maplibregl */
 import { regionGeometry } from './regions.js?v=20261115a';
-import { buildStyle, LAYER_GROUPS, RAMP, waterName } from './mapstyle.js?v=20261115-map-year';
+import { buildStyle, LAYER_GROUPS, RAMP, waterName } from './mapstyle.js?v=20261115-terrain-color';
 import { MONTHS, MON3, LEVELS, fmt, quantile, inRange, reading, sentence, peaks, sourceOf, csvRows, hotspotRows,
-  calendar, calendarKey, compare, stepChart, setChartWidth, vsTypical, rampColor } from './charts.js?v=20261115-map-year';
+  calendar, calendarKey, compare, stepChart, setChartWidth, vsTypical, rampColor } from './charts.js?v=20261115-terrain-color';
 import { DrawTool, drawnArea } from './draw.js?v=20261115-map-year';
 
 const $ = (s) => document.querySelector(s);
@@ -414,10 +414,13 @@ function paintMap() {
   for (const { properties: { name } } of collection.features) {
     const total = mapTotal(name);
     // Karekök, düşük tespit sayılarını da açık tonlarda ayırt edilebilir kılar.
-    const v = total == null ? -1 : Math.sqrt(total / max);
-    map.setFeatureState({ source: 'provinces', id: name }, { v, sel: name === state.sel });
-    if (total != null) legendAreas.push({ name, total, v });
+    map.setFeatureState({ source: 'provinces', id: name }, { sel: name === state.sel });
+    if (total != null) legendAreas.push({ name, total, color: rampColor(Math.sqrt(total / max)) });
   }
+  // Dolgu stilini güncellemek, kamera sabitken de 3B arazinin renk dokularını yeniler.
+  const colors = legendAreas.flatMap(({ name, color }) => [name, color]);
+  const empty = 'rgba(0,0,0,0)';
+  map.setPaintProperty('prov-fill', 'fill-color', colors.length ? ['match', ['get', 'name'], ...colors, empty] : empty);
   legendAreas.sort((a, b) => b.total - a.total);
   renderLegend();
   updatePoints();
@@ -649,8 +652,8 @@ function renderLegend() {
   if (el.hidden) return;
   let rows;
   if (regionMap()) {
-    rows = legendAreas.map(({ name, total, v }) =>
-      `<li><i style="background:${rampColor(v)}"></i><span>${fmt(total)}</span><small>${displayName(name)}</small></li>`).join('');
+    rows = legendAreas.map(({ name, total, color }) =>
+      `<li><i style="background:${color}"></i><span>${fmt(total)}</span><small>${displayName(name)}</small></li>`).join('');
   } else {
     // Renk geçişlerinin referans değerleri: il ölçeği yıl değişince sabit kalır.
     rows = RAMP.map((color, i) => {
