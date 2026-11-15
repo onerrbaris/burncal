@@ -56,7 +56,7 @@ button { cursor: pointer; }
 .brand .mark { width: 30px; height: 30px; border-radius: 8px; flex: none;
   background: radial-gradient(circle at 50% 72%, #ffd08a 0, #ff8a3d 40%, #8a2f0c 78%, #2a1206 100%); }
 .brand-text { line-height: 1.15; }
-.brand strong { display: block; font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
+.brand strong { display: block; font-size: 16px; font-weight: 700; letter-spacing: 0.035em; }
 .brand-text span { font-size: 11.5px; color: var(--ink-3); }
 .pill { font-size: 11px; font-weight: 500; padding: 4px 9px; border-radius: 99px; border: 1px solid var(--line-2);
   color: var(--ink-2); white-space: nowrap; background: rgba(255, 255, 255, 0.03); }
@@ -369,7 +369,7 @@ body.has-panel .timeline { margin-right: calc(var(--panel-w) + 10px); }
   transition: opacity 1.4s ease 0.3s; }
 #intro.out { opacity: 0; }
 #intro p { margin: 0; font-size: 12px; font-weight: 500; letter-spacing: 0.24em; text-transform: uppercase; color: var(--accent-2); }
-#intro h1 { margin: 8px 0 10px; font-size: clamp(44px, 8vw, 92px); font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
+#intro h1 { margin: 8px 0 10px; font-size: clamp(44px, 8vw, 92px); font-weight: 700; letter-spacing: 0.01em; line-height: 1; }
 #intro span { color: var(--ink-3); font-size: 13px; letter-spacing: 0.06em; }
 body.booting .topbar, body.booting .dock, body.booting .rank { opacity: 0; transform: translateY(-6px); }
 .topbar, .dock, .rank { transition: opacity 0.8s ease, transform 0.8s var(--ease); }
