@@ -103,12 +103,6 @@ export function buildStyle(provinces, labels) {
             12, 0.08],
         },
       },
-      { // Ormanlık alan (OpenStreetMap arazi örtüsü); yalnızca yakınlaşınca görünür.
-        id: 'forest', type: 'fill', source: 'omt', 'source-layer': 'landcover', minzoom: 6,
-        filter: ['==', ['get', 'class'], 'wood'],
-        paint: { 'fill-color': '#2f7d4f', 'fill-antialias': false,
-          'fill-opacity': ['interpolate', ['linear'], ['zoom'], 6, 0, 7.5, 0.42, 12, 0.34] },
-      },
       { // Tek tek uydu tespitleri (seçili yıl); yalnızca yakınlaşınca görünür.
         id: 'pts', type: 'circle', source: 'pts', minzoom: 6.2,
         paint: {
@@ -200,7 +194,6 @@ export function buildStyle(provinces, labels) {
 
 export const LAYER_GROUPS = {
   fill: ['prov-fill'],
-  forest: ['forest'],
   points: ['pts'],
   labels: ['prov-label', 'place-city', 'place-village', 'place-small', 'water-name', 'road-name'],
   roads: ['road-minor', 'road-mid', 'road-major', 'buildings'],

@@ -11,7 +11,7 @@
 <link rel="stylesheet" href="css/atlas.css?v=20261115h">
 <link rel="stylesheet" href="css/drawers.css?v=20261115a">
 <link rel="stylesheet" href="css/timeline.css?v=20261115a">
-<link rel="stylesheet" href="css/regions.css?v=20261115a">
+<link rel="stylesheet" href="css/regions.css?v=20261115-clean-controls">
 </head>
 <body>
 <div id="map" aria-label="Türkiye yanma haritası"></div>
@@ -33,6 +33,10 @@
   </nav>
 
   <div class="tools">
+    <div class="area-control glass" role="group" aria-label="Harita alan birimi">
+      <button type="button" data-scope="province" aria-pressed="true" disabled>İller</button>
+      <button type="button" data-scope="region" aria-pressed="false" disabled>Bölgeler</button>
+    </div>
     <label class="search glass">
       <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="9" cy="9" r="5.5"/><path d="M13.5 13.5 18 18"/></svg>
       <input id="search" list="provList" placeholder="İl ara" autocomplete="off" aria-label="İl ara">
@@ -60,11 +64,10 @@
       </button>
       <div class="menu glass" id="layersMenu" hidden>
         <h3>Harita katmanları</h3>
-        <label><input type="checkbox" data-layer="fill"><span></span>İl renkleri</label>
+        <label><input type="checkbox" data-layer="fill"><span></span>Tespit yoğunluğu</label>
         <label><input type="checkbox" data-layer="points"><span></span>Ateş noktaları</label>
         <label id="lcRow" hidden><input type="checkbox" data-layer="landcover"><span></span>Arazi türü</label>
         <ul class="lc-legend" id="lcLegend" hidden></ul>
-        <label><input type="checkbox" data-layer="forest"><span></span>Ormanlık alan (OSM)</label>
         <label><input type="checkbox" data-layer="labels"><span></span>Yer adları</label>
         <label><input type="checkbox" data-layer="roads"><span></span>Yollar ve binalar</label>
         <label><input type="checkbox" data-layer="terrain" checked><span></span>3B arazi</label>
@@ -72,12 +75,6 @@
     </div>
   </div>
 </header>
-
-<div class="area-control glass" role="group" aria-label="Harita alan birimi">
-  <button type="button" data-scope="province" aria-pressed="true" disabled>İller</button>
-  <button type="button" data-scope="region" aria-pressed="false" disabled>7 bölge</button>
-  <select id="regionPick" aria-label="Coğrafi bölge seç" hidden><option value="">Bölge seç</option></select>
-</div>
 
 <aside class="rank glass" id="rank" aria-label="En çok tespit edilen alanlar">
   <h3><span id="rankTitle">En çok tespit</span><button id="rankToggle" class="mini" aria-expanded="true" title="Daralt">–</button></h3>
@@ -127,7 +124,7 @@
 </div>
 
 <script src="vendor/maplibre-gl.js"></script>
-<script type="module" src="js/app.js?v=20261115-region-validation"></script>
+<script type="module" src="js/app.js?v=20261115-clean-controls"></script>
 <script type="module" src="js/drawers.js?v=20261115a"></script>
 <script type="module" src="js/timeline.js?v=20261115a"></script>
 </body>

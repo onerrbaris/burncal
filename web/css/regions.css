@@ -1,20 +1,31 @@
-/* İl ve bölge seçimi, harita üzerinde küçük ve her zaman erişilebilir bir kontrol. */
-.area-control { position: fixed; z-index: 7; top: 76px; left: 50%; transform: translateX(-50%);
-  display: flex; align-items: center; gap: 5px; padding: 5px; }
+/* Alan birimi üstte aramanın hemen solundadır; ayrı bölge listesi yoktur. */
+.area-control { display: flex; align-items: center; gap: 3px; padding: 4px; flex: none; height: 48px; }
 .area-control button { border: 0; background: none; color: var(--ink-2); padding: 7px 10px; border-radius: 7px; font-size: 12px; }
 .area-control button[aria-pressed='true'] { background: var(--accent-dim); color: var(--accent-2); }
-.area-control select { max-width: 180px; background: var(--surface-3); color: var(--ink); border: 1px solid var(--line);
-  border-radius: 7px; padding: 6px; font: inherit; font-size: 12px; }
+.kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.kpi.conf { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center; }
+.kpi.conf b { margin: 0; }
+.kpi.conf small { grid-column: 1 / -1; white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.7; }
 .region-note { margin: 0 20px 12px; font-size: 11px; color: var(--ink-3); line-height: 1.5; }
 /* Grafik seçimleri aynı panelde, sekmelerden önce okunur. */
 .chart-controls .filters { margin-top: 8px; padding: 9px 11px; gap: 6px; }
 .chart-controls .section-title { margin-top: 12px; }
 .chart-controls .read { padding: 10px 12px; }
 .chart-controls .read .fine { margin-top: 6px; }
+@media (min-width: 761px) and (max-width: 1280px) {
+  .topbar { grid-template-columns: 1fr auto; }
+  .topbar .seg { grid-column: 1 / -1; grid-row: 2; justify-self: center; }
+  .topbar .tools { grid-column: 2; grid-row: 1; }
+  .panel.edge-drawer, .side.edge-drawer, .rank.edge-drawer { top: 126px; }
+}
 @media (max-width: 760px) {
-  .area-control { top: 108px; max-width: calc(100vw - 76px); }
+  .topbar .tools { display: contents; }
+  .area-control { grid-column: 1; grid-row: 3; justify-self: start; height: 36px; }
   .area-control button { padding: 6px; }
-  .area-control select { max-width: 140px; }
+  .topbar .search { display: flex; grid-column: 2; grid-row: 3; height: 36px; width: min(180px, 42vw); }
+  .tools > .pop { grid-column: 2; grid-row: 1; justify-self: end; }
+  .tools > .pop:nth-last-child(2) { margin-right: 48px; }
+  .rank.edge-drawer { top: 156px; }
   .panel.edge-drawer { top: 154px; }
   .side.edge-drawer > .drawer-toggle { right: 0; top: 48px; }
   .side.edge-drawer.drawer-closed > .drawer-toggle { right: -30px; }

@@ -1,6 +1,6 @@
 /* global maplibregl */
 import { regionGeometry } from './regions.js?v=20261115a';
-import { buildStyle, LAYER_GROUPS, RAMP } from './mapstyle.js?v=20261115h';
+import { buildStyle, LAYER_GROUPS, RAMP } from './mapstyle.js?v=20261115-clean-controls';
 import { MONTHS, MON3, LEVELS, fmt, quantile, inRange, reading, sentence, peaks, sourceOf, csvRows, hotspotRows,
   calendar, calendarKey, compare, stepChart, setChartWidth } from './charts.js?v=20261115h';
 
@@ -114,17 +114,11 @@ function setScope(scope) {
   state.scope = scope;
   state.sel = null;
   for (const button of document.querySelectorAll('[data-scope]')) button.setAttribute('aria-pressed', String(button.dataset.scope === scope));
-  $('#regionPick').hidden = !regional();
-  $('#regionPick').value = '';
-  $('#layersMenu [data-layer=fill]').nextElementSibling.nextSibling.textContent = regional() ? 'Bölge renkleri' : 'İl renkleri';
   map.removeFeatureState({ source: 'provinces' });
   map.getSource('provinces').setData(activeGeo());
   map.getSource('provLabels').setData(geometry(activeGeo(), false));
   renderAreaSearch();
-  // Bölgeyi seçmek il renklerini açmakla aynı kullanıcı tercihidir; diğer katmanlar değişmez.
-  const fill = $('#layersMenu [data-layer=fill]');
-  fill.checked = true;
-  fill.dispatchEvent(new Event('change', { bubbles: true }));
+  // İl/bölge geçişinde yoğunluk katmanının açık/kapalı tercihi korunur.
   select(regional() && previous ? areaName(previous) : null, false);
   renderLegend();
 }
@@ -421,7 +415,6 @@ async function addLandcover() {
 // ── Seçim ───────────────────────────────────────────────
 function select(name, fly = true) {
   if (name) name = areaName(name);
-  if ($('#regionPick')) $('#regionPick').value = regional() && name ? name : '';
   stopOrbit();
   state.sel = name;
   document.body.classList.toggle('has-panel', !!name);
@@ -942,7 +935,6 @@ function bindRest() {
 
   renderAreaSearch();
   for (const button of document.querySelectorAll('[data-scope]')) button.onclick = () => setScope(button.dataset.scope);
-  $('#regionPick').onchange = (e) => { if (ready && regional() && e.target.value) select(e.target.value); };
   const search = $('#search');
   const pick = () => {
     const names = areaNames();
@@ -1003,7 +995,6 @@ async function main() {
   })));
   regionGeo = regionGeometry(geo, geographic.regions);
   for (const [name, region] of Object.entries(geographic.regions)) for (const p of region.members) provinceRegion[p] = name;
-  $('#regionPick').innerHTML += Object.keys(geographic.regions).map((n) => `<option value="${n}">${n}</option>`).join('');
   ogm = await fetch('data/ogm.json').then((r) => (r.ok ? r.json() : null)).catch(() => null);
   lc = await fetch('data/landcover.json').then((r) => (r.ok ? r.json() : null)).catch(() => null);
   indexData();
