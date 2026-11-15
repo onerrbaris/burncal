@@ -40,6 +40,7 @@ Sunum (7 slayt) ve teslim formu. Veri güncellemek için: `python scripts/fetch_
 - Deploy için Render + Vercel hesapları
 
 ## Done
+- 15 Kas: Varsayılan harita katmanları yalnızca 3B arazi açık olacak şekilde düzenlendi; il renkleri, noktalar, orman, yer adları ve yollar kapalı. Stil ve kutucuk durumları eşleştirildi; JS ve stil üretimi doğrulandı.
 - 15 Kas: Yıl çubuğu altta ortalanmış en fazla 480 px genişlikte, yaklaşık 48 px yüksekliğinde kompakt kontrole dönüştürüldü. Oynatma ve kaydırıcı korundu; renk ölçeği açılır menüye taşındı, mobil yerleşim ayarlandı. JS ve HTTP sunumu doğrulandı; görsel kontrol bekliyor.
 - 15 Kas: Deniz ilk yarı saydam uydu görünümüne döndürüldü. Sıralama ve iki il paneline bağımsız, animasyonlu kenar okları eklendi; liste başlangıçta gizli, yeni il seçilince il panelleri açılır. Sözdizimi, panel etkileşimleri ve HTTP sunumu doğrulandı; görsel kontrol bekliyor.
 - 15 Kas: Son görselden ölçülen #49659B tüm su yüzeylerine uygulandı; önbellek sürümleri yenilendi, JS ve stil doğrulandı.

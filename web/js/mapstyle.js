@@ -42,10 +42,11 @@ const place = (id, classes, minzoom, size0, size1, color) => ({
 });
 
 export function buildStyle(provinces, labels) {
-  return {
+  const style = {
     version: 8,
     projection: { type: 'mercator' },
     glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
+    terrain: { source: 'dem', exaggeration: 1.35 },
     sky: {
       'sky-color': '#081425', 'horizon-color': '#6f8fb0', 'fog-color': '#0a1422',
       'sky-horizon-blend': 0.7, 'horizon-fog-blend': 0.8, 'fog-ground-blend': 0.55,
@@ -189,6 +190,12 @@ export function buildStyle(provinces, labels) {
       },
     ],
   };
+  // Açılışta yalnızca 3B arazi açık; yardımcı katmanları kullanıcı seçer.
+  const optional = new Set(Object.values(LAYER_GROUPS).flat());
+  for (const layer of style.layers) {
+    if (optional.has(layer.id)) layer.layout = { ...layer.layout, visibility: 'none' };
+  }
+  return style;
 }
 
 export const LAYER_GROUPS = {
