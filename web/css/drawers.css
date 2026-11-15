@@ -26,7 +26,7 @@ body.has-panel.right-drawer-closed .timeline { margin-right: 0; }
   .drawer-closed > :not(.drawer-toggle) { transition: none; }
 }
 
-/* Kapalı grafik paneli: "Detaylı inceleme" etiketli tutamaç. */
+/* Kapalı grafik paneli: "Yangın takvimini aç" etiketli tutamaç. */
 .drawer-right > .drawer-toggle.labeled { left: auto; right: 100%; width: auto; height: 44px; padding: 0 14px 0 10px;
   display: flex; align-items: center; gap: 8px; font-size: 22px; color: var(--accent-2); }
 .drawer-toggle.labeled b { font: 600 13px/1 var(--font, system-ui); color: var(--ink); white-space: nowrap; }

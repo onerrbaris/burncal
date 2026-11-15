@@ -1,10 +1,10 @@
-import { t as msg, lang, locale, displayText, percent } from './i18n.js?v=20261115-csv';
+import { t as msg, lang, locale, displayText, percent } from './i18n.js?v=20261115-calendar-button';
 /* global maplibregl */
 import { regionGeometry } from './regions.js?v=20261115a';
-import { buildStyle, LAYER_GROUPS, RAMP, waterName } from './mapstyle.js?v=20261115-csv';
+import { buildStyle, LAYER_GROUPS, RAMP, waterName } from './mapstyle.js?v=20261115-calendar-button';
 import { MONTHS, MON3, LEVELS, fmt, quantile, inRange, reading, sentence, peaks, sourceOf, csvRows, hotspotRows,
-  calendar, calendarKey, compare, stepChart, setChartWidth } from './charts.js?v=20261115-csv';
-import { DrawTool, drawnArea } from './draw.js?v=20261115-csv';
+  calendar, calendarKey, compare, stepChart, setChartWidth } from './charts.js?v=20261115-calendar-button';
+import { DrawTool, drawnArea } from './draw.js?v=20261115-calendar-button';
 
 const $ = (s) => document.querySelector(s);
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -447,7 +447,7 @@ function initMap() {
     drawTool = new DrawTool(map, { onDone: finishDraw, onStatus: drawHint });
     ready = true;
     for (const button of document.querySelectorAll('[data-scope]')) button.disabled = false;
-    // Açılış: Türkiye toplamı; grafik paneli kapalı, "Detaylı inceleme" ile açılır.
+    // Açılış: Türkiye toplamı; grafik paneli kapalı, "Yangın takvimini aç" ile açılır.
     setScope('country', false);
     document.body.classList.remove('booting');
     $('#intro').classList.add('out');

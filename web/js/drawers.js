@@ -1,4 +1,4 @@
-import { t, displayText } from './i18n.js?v=20261115-csv';
+import { t, displayText } from './i18n.js?v=20261115-calendar-button';
 // Kenar panelleri: seçim ve içerik korunur, yalnızca panel haritanın dışına kayar.
 const drawers = [];
 function drawer(id, label, direction, collapsed = false) {
@@ -23,10 +23,10 @@ function drawer(id, label, direction, collapsed = false) {
     content.inert = closed;
     if (direction === 'left') button.textContent = closed ? '›' : '‹';
     // Kapalı grafik paneli kenarda etiketli tutamaç olarak durur.
-    else button.innerHTML = closed ? `<span aria-hidden="true">‹</span><b>${displayText("Detaylı inceleme")}</b>` : '›';
+    else button.innerHTML = closed ? `<span aria-hidden="true">‹</span><b>${t('drawer.openCalendar')}</b>` : '›';
     button.classList.toggle('labeled', direction === 'right' && closed);
     button.setAttribute('aria-expanded', String(!closed));
-    const title = t(closed ? 'drawer.open' : 'drawer.close', [displayText(label)]);
+    const title = id === 'panel' && closed ? t('drawer.openCalendar') : t(closed ? 'drawer.open' : 'drawer.close', [displayText(label)]);
     button.setAttribute('aria-label', title); button.title = title;
     if (id === 'panel') document.body.classList.toggle('right-drawer-closed', closed);
   };
@@ -43,7 +43,7 @@ drawer('side', 'İl özetini', 'left');
 drawer('panel', 'Grafikleri', 'right', true);
 
 // Her yeni seçimde (il, bölge, ülke, çizilen alan) özet açılır, grafik paneli kapalı başlar ve
-// "Detaylı inceleme" ile açılır. Yıl, ay ya da sekme değişimi panelin durumuna dokunmaz.
+// "Yangın takvimini aç" ile açılır. Yıl, ay ya da sekme değişimi panelin durumuna dokunmaz.
 let selected = '';
 const panel = document.getElementById('panel');
 new MutationObserver(() => {
