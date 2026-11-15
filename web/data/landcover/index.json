@@ -1,0 +1,460 @@
+{
+ "tiles": [
+  {
+   "tile": "N33E033",
+   "file": "data/landcover/N33E033.png",
+   "coordinates": [
+    [
+     33,
+     36
+    ],
+    [
+     36,
+     36
+    ],
+    [
+     36,
+     33
+    ],
+    [
+     33,
+     33
+    ]
+   ]
+  },
+  {
+   "tile": "N33E036",
+   "file": "data/landcover/N33E036.png",
+   "coordinates": [
+    [
+     36,
+     36
+    ],
+    [
+     39,
+     36
+    ],
+    [
+     39,
+     33
+    ],
+    [
+     36,
+     33
+    ]
+   ]
+  },
+  {
+   "tile": "N36E024",
+   "file": "data/landcover/N36E024.png",
+   "coordinates": [
+    [
+     24,
+     39
+    ],
+    [
+     27,
+     39
+    ],
+    [
+     27,
+     36
+    ],
+    [
+     24,
+     36
+    ]
+   ]
+  },
+  {
+   "tile": "N36E027",
+   "file": "data/landcover/N36E027.png",
+   "coordinates": [
+    [
+     27,
+     39
+    ],
+    [
+     30,
+     39
+    ],
+    [
+     30,
+     36
+    ],
+    [
+     27,
+     36
+    ]
+   ]
+  },
+  {
+   "tile": "N36E030",
+   "file": "data/landcover/N36E030.png",
+   "coordinates": [
+    [
+     30,
+     39
+    ],
+    [
+     33,
+     39
+    ],
+    [
+     33,
+     36
+    ],
+    [
+     30,
+     36
+    ]
+   ]
+  },
+  {
+   "tile": "N36E033",
+   "file": "data/landcover/N36E033.png",
+   "coordinates": [
+    [
+     33,
+     39
+    ],
+    [
+     36,
+     39
+    ],
+    [
+     36,
+     36
+    ],
+    [
+     33,
+     36
+    ]
+   ]
+  },
+  {
+   "tile": "N36E036",
+   "file": "data/landcover/N36E036.png",
+   "coordinates": [
+    [
+     36,
+     39
+    ],
+    [
+     39,
+     39
+    ],
+    [
+     39,
+     36
+    ],
+    [
+     36,
+     36
+    ]
+   ]
+  },
+  {
+   "tile": "N36E039",
+   "file": "data/landcover/N36E039.png",
+   "coordinates": [
+    [
+     39,
+     39
+    ],
+    [
+     42,
+     39
+    ],
+    [
+     42,
+     36
+    ],
+    [
+     39,
+     36
+    ]
+   ]
+  },
+  {
+   "tile": "N36E042",
+   "file": "data/landcover/N36E042.png",
+   "coordinates": [
+    [
+     42,
+     39
+    ],
+    [
+     45,
+     39
+    ],
+    [
+     45,
+     36
+    ],
+    [
+     42,
+     36
+    ]
+   ]
+  },
+  {
+   "tile": "N39E024",
+   "file": "data/landcover/N39E024.png",
+   "coordinates": [
+    [
+     24,
+     42
+    ],
+    [
+     27,
+     42
+    ],
+    [
+     27,
+     39
+    ],
+    [
+     24,
+     39
+    ]
+   ]
+  },
+  {
+   "tile": "N39E027",
+   "file": "data/landcover/N39E027.png",
+   "coordinates": [
+    [
+     27,
+     42
+    ],
+    [
+     30,
+     42
+    ],
+    [
+     30,
+     39
+    ],
+    [
+     27,
+     39
+    ]
+   ]
+  },
+  {
+   "tile": "N39E030",
+   "file": "data/landcover/N39E030.png",
+   "coordinates": [
+    [
+     30,
+     42
+    ],
+    [
+     33,
+     42
+    ],
+    [
+     33,
+     39
+    ],
+    [
+     30,
+     39
+    ]
+   ]
+  },
+  {
+   "tile": "N39E033",
+   "file": "data/landcover/N39E033.png",
+   "coordinates": [
+    [
+     33,
+     42
+    ],
+    [
+     36,
+     42
+    ],
+    [
+     36,
+     39
+    ],
+    [
+     33,
+     39
+    ]
+   ]
+  },
+  {
+   "tile": "N39E036",
+   "file": "data/landcover/N39E036.png",
+   "coordinates": [
+    [
+     36,
+     42
+    ],
+    [
+     39,
+     42
+    ],
+    [
+     39,
+     39
+    ],
+    [
+     36,
+     39
+    ]
+   ]
+  },
+  {
+   "tile": "N39E039",
+   "file": "data/landcover/N39E039.png",
+   "coordinates": [
+    [
+     39,
+     42
+    ],
+    [
+     42,
+     42
+    ],
+    [
+     42,
+     39
+    ],
+    [
+     39,
+     39
+    ]
+   ]
+  },
+  {
+   "tile": "N39E042",
+   "file": "data/landcover/N39E042.png",
+   "coordinates": [
+    [
+     42,
+     42
+    ],
+    [
+     45,
+     42
+    ],
+    [
+     45,
+     39
+    ],
+    [
+     42,
+     39
+    ]
+   ]
+  },
+  {
+   "tile": "N42E024",
+   "file": "data/landcover/N42E024.png",
+   "coordinates": [
+    [
+     24,
+     45
+    ],
+    [
+     27,
+     45
+    ],
+    [
+     27,
+     42
+    ],
+    [
+     24,
+     42
+    ]
+   ]
+  },
+  {
+   "tile": "N42E027",
+   "file": "data/landcover/N42E027.png",
+   "coordinates": [
+    [
+     27,
+     45
+    ],
+    [
+     30,
+     45
+    ],
+    [
+     30,
+     42
+    ],
+    [
+     27,
+     42
+    ]
+   ]
+  },
+  {
+   "tile": "N42E033",
+   "file": "data/landcover/N42E033.png",
+   "coordinates": [
+    [
+     33,
+     45
+    ],
+    [
+     36,
+     45
+    ],
+    [
+     36,
+     42
+    ],
+    [
+     33,
+     42
+    ]
+   ]
+  }
+ ],
+ "legend": [
+  {
+   "label": "Ağaçlık alan (orman ya da bahçe)",
+   "color": "#2e7d4f"
+  },
+  {
+   "label": "Çalılık",
+   "color": "#8a9848"
+  },
+  {
+   "label": "Otlak / çayır",
+   "color": "#c4c470"
+  },
+  {
+   "label": "Tarım arazisi",
+   "color": "#ecba52"
+  },
+  {
+   "label": "Yapılaşmış alan",
+   "color": "#cc5248"
+  },
+  {
+   "label": "Çıplak / seyrek bitki",
+   "color": "#968c7c"
+  },
+  {
+   "label": "Kar ve buz",
+   "color": "#e8eef4"
+  },
+  {
+   "label": "Su",
+   "color": "#3e7abe"
+  },
+  {
+   "label": "Sulak alan",
+   "color": "#3ea6a0"
+  }
+ ]
+}

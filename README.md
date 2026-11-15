@@ -38,6 +38,7 @@ Example, Adana (from `docs/DEMO_ILLER.md`): the raw series shows a 2.6x rise at 
 - OGM view: national satellite totals next to the forest fires reported by the General Directorate of Forestry (2001-2025), with the rank correlation and why the two differ, plus the 2025 regional directorate figures where the province has one (`web/data/ogm.json`, sources inside).
 - Downloads: monthly CSV (harmonized value, source, complete flag, raw MODIS and VIIRS, median, percentile, level), hotspot list CSV (every detection in the province and period: date, coordinates, sensor, FRP), and the open chart as PNG or SVG.
 - Hotspot points layer: individual detections for the selected year, drawn at the sensor footprint when zoomed in.
+- Land cover (ESA WorldCover 2021, 10 m): a colour-coded map layer, the land-cover class of every hotspot in its popup and in the hotspot CSV, and a "where do the fires burn" card per province (cropland / tree cover / shrub and grass / other) for the selected period. Cropland fire is not proof of stubble burning; tree cover includes orchards.
 
 ## Updating the data
 
@@ -46,6 +47,8 @@ python scripts/fetch_firms.py              # yearly archive files (complete year
 python scripts/fetch_firms_recent.py       # current year via the FIRMS API; needs FIRMS_MAP_KEY in .env
 .venv\Scripts\python.exe scripts/build_harmonized.py --force
 .venv\Scripts\python.exe scripts/build_points.py
+.venv\Scripts\python.exe scripts/fetch_worldcover.py    # once: ESA WorldCover 2021 tiles (~1.6 GB)
+.venv\Scripts\python.exe scripts/build_landcover.py     # after build_points: land cover per point, per province, map layer
 python scripts/build_atlas_json.py
 ```
 

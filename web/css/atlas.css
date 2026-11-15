@@ -94,6 +94,9 @@ button { cursor: pointer; }
 .menu input:checked + span { background: var(--accent); }
 .menu input:checked + span::after { transform: translateX(14px); background: #fff; }
 .menu input:focus-visible + span { outline: 2px solid var(--accent-2); outline-offset: 2px; }
+.lc-legend { list-style: none; margin: 0 0 6px 42px; padding: 0; display: grid; gap: 3px; font-size: 11.5px; color: var(--ink-2); }
+.lc-legend li { display: flex; align-items: center; gap: 7px; }
+.lc-legend i { width: 10px; height: 10px; border-radius: 2px; flex: none; }
 .menu.help { width: 340px; padding: 16px 18px 12px; }
 .menu.help h3 { font-size: 14px; color: var(--ink); margin-bottom: 10px; }
 .menu.help ol { margin: 0 0 10px; padding-left: 18px; font-size: 13px; color: var(--ink-2); }
@@ -172,6 +175,15 @@ body.has-panel .rank { display: none; }
 .conf .dots i { width: 12px; height: 5px; border-radius: 2px; background: rgba(255, 255, 255, 0.14); }
 .conf .dots i.on { background: var(--accent-2); }
 
+.land { margin: 8px 20px 0; padding: 12px 14px 10px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--line); }
+.land h3 { margin: 0 0 8px; font-size: 12.5px; font-weight: 600; color: var(--ink); }
+.land-bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: rgba(255, 255, 255, 0.06); }
+.land-bar span { display: block; height: 100%; }
+.land ul { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; font-size: 12.5px; }
+.land li { display: flex; align-items: center; gap: 7px; color: var(--ink-2); }
+.land li i { width: 9px; height: 9px; border-radius: 2px; flex: none; }
+.land li b { margin-left: auto; color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.land .fine { margin-top: 8px; }
 .caution { margin: 8px 20px 0; padding: 9px 12px; border-radius: 10px; font-size: 12.5px; line-height: 1.45; color: var(--ink-2);
   border: 1px solid rgba(242, 193, 78, 0.35); background: rgba(242, 193, 78, 0.07); }
 .caution b { color: var(--warn); font-weight: 600; }

@@ -1,7 +1,7 @@
 /* global maplibregl */
-import { buildStyle, LAYER_GROUPS, RAMP } from './mapstyle.js?v=20261115-terrain-default';
+import { buildStyle, LAYER_GROUPS, RAMP } from './mapstyle.js?v=20261115h';
 import { MONTHS, MON3, LEVELS, fmt, quantile, inRange, reading, sentence, peaks, sourceOf, csvRows, hotspotRows,
-  calendar, calendarKey, compare, stepChart, setChartWidth } from './charts.js?v=20261115f';
+  calendar, calendarKey, compare, stepChart, setChartWidth } from './charts.js?v=20261115h';
 
 const $ = (s) => document.querySelector(s);
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -21,7 +21,7 @@ const TABS = [['calendar', 'Takvim'], ['compare', 'Karşılaştır'], ['peaks', 
 
 // month: okunan ay (0–11); from/to: dönem yılları; win: sezon penceresi [ilk ay, son ay]; custom: dönemi kullanıcı mı seçti.
 const state = { sensor: 'merged', year: null, month: 11, from: null, to: null, win: [0, 11], custom: false, sel: null, tab: 'calendar', playing: false };
-let data, geo, ogm, map, timer, ready = false, hovered = null, orbitOK = false, orbitRaf = 0;
+let data, geo, ogm, lc, map, timer, ready = false, hovered = null, orbitOK = false, orbitRaf = 0;
 let RANGE, LY, LM, LD, PARTIAL, READ_M;   // etkin serinin yıl aralığı; son veri yılı, ayı (0–11), günü; son yıl bitmemiş mi
 const bboxes = {}, provIdx = {}, ranges = {};
 
@@ -152,14 +152,14 @@ function closePointPopup() { ptPopup?.remove(); ptPopup = null; }
 // Çizime verilen diziyi paylaşır; yeni istek ya da ayrı nokta feature'ları oluşturmaz.
 function pointHits(point) {
   if (!pointsVisible() || !ptDrawn || ptDrawn.key !== ptCurrentKey()) return null;
-  const { a, y, s } = ptDrawn;
+  const { a, y, s, st } = ptDrawn;
   let nearest = -1, distance = Infinity, count = 0, first = 367, last = 0;
   // Ön eleme: imlecin ±8 piksellik kutusunu enlem/boylama çevir, yalnızca içindeki noktaları ekrana izdüşür.
   // Böylece fare hareketinde 35 bin map.project yerine birkaç tanesi çalışır.
   const c = [[-9, -9], [9, -9], [-9, 9], [9, 9]].map(([dx, dy]) => map.unproject([point.x + dx, point.y + dy]));
   const x0 = Math.min(...c.map((q) => q.lng)) * 1000, x1 = Math.max(...c.map((q) => q.lng)) * 1000;
   const y0 = Math.min(...c.map((q) => q.lat)) * 1000, y1 = Math.max(...c.map((q) => q.lat)) * 1000;
-  for (let i = 0; i < a.length; i += 5) {
+  for (let i = 0; i < a.length; i += st) {
     if (a[i] < x0 || a[i] > x1 || a[i + 1] < y0 || a[i + 1] > y1) continue;
     if (!fullWin() && !inWin(new Date(Date.UTC(y, 0, a[i + 2])).getUTCMonth())) continue;
     const p = map.project([a[i] / 1000, a[i + 1] / 1000]);
@@ -168,11 +168,11 @@ function pointHits(point) {
     count++; first = Math.min(first, a[i + 2]); last = Math.max(last, a[i + 2]);
     if (d < distance) { distance = d; nearest = i; }
   }
-  return nearest < 0 ? null : { a, y, s, i: nearest, count, first, last };
+  return nearest < 0 ? null : { a, y, s, st, i: nearest, count, first, last };
 }
 function openPointPopup(hit) {
   closePointPopup(); hideTip(); stopOrbit();
-  const { a, y, s, i, count, first, last } = hit;
+  const { a, y, s, st, i, count, first, last } = hit;
   const dt = new Date(Date.UTC(y, 0, a[i + 2])), m = dt.getUTCMonth();
   const name = geo.features[a[i + 4]]?.properties.name;
   const date = (d) => `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
@@ -185,6 +185,8 @@ function openPointPopup(hit) {
   line('b', `En yakın tespit: ${date(dt)} ${y}`);
   line('p', `${s === 'viirs' ? 'VIIRS S-NPP' : 'MODIS'} · ${a[i + 3].toLocaleString('tr-TR')} MW FRP`);
   line('p', `${name || 'İl bilinmiyor'} · ${nrt ? 'yakın gerçek zamanlı (NRT)' : 'arşiv (SP)'}`);
+  const lcName = st > 5 && lc ? lc.classes.find((c) => c.i === a[i + 5])?.label : null;
+  if (lcName) line('p', `Arazi: ${lcName}`);
   if (count > 1) line('p', `Bu konumda ${count} tespit: ${span}`);
   line('small', `Konum ${s === 'viirs' ? '±375 m (VIIRS)' : '±1 km (MODIS)'}: sensör pikselinin merkezi`);
   if (name) {
@@ -222,13 +224,13 @@ async function loadPoints() {
   try {
     const d = await loadYear(y);
     if (ptKey !== key) return;
-    const a = d[s] || [], coordinates = [];
-    for (let i = 0; i < a.length; i += 5) {
+    const a = d[s] || [], st = d.stride || 5, coordinates = [];
+    for (let i = 0; i < a.length; i += st) {
       if (fullWin() || inWin(new Date(Date.UTC(y, 0, a[i + 2])).getUTCMonth())) coordinates.push([a[i] / 1000, a[i + 1] / 1000]);
     }
     // Tek çok-noktalı geometri: on binlerce ayrı nesne kurmaktan çok daha hafif.
     src.setData({ type: 'Feature', properties: {}, geometry: { type: 'MultiPoint', coordinates } });
-    ptDrawn = { a, y, s, key };
+    ptDrawn = { a, y, s, key, st };
     if (ptStyle === s) return;
     ptStyle = s;
     // Nokta, yakın görünümde sensörün piksel ayak izi kadar yer kaplar (VIIRS ~375 m, MODIS ~1 km):
@@ -283,6 +285,7 @@ function initMap() {
   window.__map = map;
 
   map.on('load', () => {
+    addLandcover();
     ready = true; paintMap();
     document.body.classList.remove('booting');
     $('#intro').classList.add('out');
@@ -351,6 +354,25 @@ function periodLabel(y = state.year) {
   const w = winLabel();
   const part = PARTIAL && y === LY && inWin(LM) ? ` (${LD} ${MON3[LM]} itibarıyla)` : '';
   return `${y}${w ? ' · ' + w : ''}${part}`;
+}
+
+// Arazi türü katmanı: her 3°x3° parça için ~270 m'lik renkli görüntü (scripts/build_landcover.py).
+const lcLayers = [];
+async function addLandcover() {
+  try {
+    const idx = await fetch('data/landcover/index.json').then((r) => (r.ok ? r.json() : null));
+    if (!idx) return;
+    const on = $('#layersMenu [data-layer=landcover]')?.checked;
+    for (const t of idx.tiles) {
+      const id = `lc-${t.tile}`;
+      map.addSource(id, { type: 'image', url: t.file, coordinates: t.coordinates });
+      map.addLayer({ id, type: 'raster', source: id, layout: { visibility: on ? 'visible' : 'none' },
+        paint: { 'raster-opacity': 0.72, 'raster-resampling': 'nearest', 'raster-fade-duration': 0 } }, 'pts');
+      lcLayers.push(id);
+    }
+    $('#lcLegend').innerHTML = idx.legend.map((l) => `<li><i style="background:${l.color}"></i>${l.label}</li>`).join('');
+    $('#lcRow').hidden = false;
+  } catch (e) { console.warn('Arazi türü katmanı yüklenemedi', e); }
 }
 
 // ── Seçim ───────────────────────────────────────────────
@@ -525,6 +547,29 @@ function readCard(name, val) {
     </section>`;
 }
 
+// "Ateşler nerede yanıyor?": seçili yıllar ve aylardaki tespitlerin arazi türüne göre payı (ESA WorldCover 2021).
+const LC_COLORS = ['#ecba52', '#2e7d4f', '#a8a85a', '#7d8792'];
+function landCard(name) {
+  const p = lc?.provinces?.[name];
+  if (!p) return '';
+  const g = [0, 0, 0, 0];
+  for (let y = state.from; y <= state.to; y++) {
+    const r = p[y];
+    if (!r) continue;
+    for (let m = state.win[0]; m <= state.win[1]; m++) for (let k = 0; k < 4; k++) g[k] += r[m * 4 + k];
+  }
+  const tot = g[0] + g[1] + g[2] + g[3];
+  if (tot < 20) return '';
+  const pct = g.map((v) => (100 * v) / tot);
+  const rows = lc.groups.map((lab, k) => `<li><i style="background:${LC_COLORS[k]}"></i><span>${lab}</span><b>%${Math.round(pct[k])}</b></li>`).join('');
+  return `<section class="land" aria-label="Arazi türüne göre tespitler">
+      <h3>Ateşler nerede yanıyor?</h3>
+      <div class="land-bar">${pct.map((v, k) => `<span style="width:${v}%;background:${LC_COLORS[k]}"></span>`).join('')}</div>
+      <ul>${rows}</ul>
+      <p class="fine" title="Uydu tespitinin konumu ±375 m (VIIRS) ile ±1 km (MODIS) arasında belirsizdir; tek tek noktaların sınıfı sınırda yanlış olabilir, yüzdeler daha güvenilirdir.">${fmt(tot)} tespitin altındaki arazi (ESA WorldCover 2021, 10 m). Tarım arazisindeki ateş anız yakma olabilir ama kanıtı değildir; "ağaçlık alan" bahçeleri de içerir.</p>
+    </section>`;
+}
+
 function caution(val) {
   if (val?.confidence !== 'low') return '';
   const why = val.mean_annual < 100
@@ -672,6 +717,7 @@ function renderPanel() {
       <div class="kpi conf" title="${confTitle}"><span>Güvenilirlik</span><b>${['Düşük', 'Orta', 'Yüksek'][level - 1]}</b><small><span class="dots">${[1, 2, 3].map((i) => `<i class="${i <= level ? 'on' : ''}"></i>`).join('')}</span>${val?.annual_wape != null ? `hata %${Math.round(val.annual_wape * 100)}` : merged ? '' : 'sayıya göre'}</small></div>
     </div>
     ${caution(val)}
+    ${landCard(name)}
     ${rangeRow()}
     <h3 class="section-title">Ay ayrıntısı</h3>
     ${readCard(name, vAll)}
@@ -712,7 +758,9 @@ async function downloadHotspots(btn) {
   try {
     const byYear = {};
     for (let y = state.from; y <= state.to; y++) byYear[y] = await loadYear(y);
-    const lines = hotspotRows(byYear, provIdx[name], name, state.from, state.to, state.win, data.meta.nrt_from || {});
+    const lcLabels = [];
+    for (const c of lc?.classes || []) lcLabels[c.i] = c.label;
+    const lines = hotspotRows(byYear, provIdx[name], name, state.from, state.to, state.win, data.meta.nrt_from || {}, lcLabels);
     save(csvBlob(lines), `burncal_tespitler_${fileTag()}.csv`);
     lab.textContent = `${fmt(lines.length - 1)} tespit indirildi`;
     setTimeout(() => { lab.textContent = label; }, 2500);
@@ -863,6 +911,14 @@ function bindRest() {
   lm.addEventListener('change', (e) => {
     const g = e.target.dataset.layer, on = e.target.checked;
     if (g === 'terrain') return map.setTerrain(on ? { source: 'dem', exaggeration: 1.35 } : null);
+    if (g === 'landcover') {
+      for (const id of lcLayers) map.setLayoutProperty(id, 'visibility', on ? 'visible' : 'none');
+      $('#lcLegend').hidden = !on;
+      // İki renk düzeni üst üste okunmaz: arazi türü açılınca il renkleri kapanır.
+      const fill = lm.querySelector('[data-layer=fill]');
+      if (on && fill.checked) { fill.checked = false; for (const id of LAYER_GROUPS.fill) map.setLayoutProperty(id, 'visibility', 'none'); }
+      return;
+    }
     for (const id of LAYER_GROUPS[g]) map.setLayoutProperty(id, 'visibility', on ? 'visible' : 'none');
     if (g === 'points' && !on) closePointPopup();
     if (g === 'points' && on) updatePoints();
@@ -885,6 +941,7 @@ async function main() {
   document.body.classList.add('booting');
   [data, geo] = await Promise.all(['data/atlas.json', 'data/tr-provinces.json'].map((u) => fetch(u).then((r) => r.json())));
   ogm = await fetch('data/ogm.json').then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  lc = await fetch('data/landcover.json').then((r) => (r.ok ? r.json() : null)).catch(() => null);
   indexData();
   setChartWidth(innerWidth > 760 ? 500 : 340);
   $('#dataBadge').textContent = `Son veri: ${throughLabel()}`;
