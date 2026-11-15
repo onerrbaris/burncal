@@ -2,7 +2,7 @@
 import { regionGeometry } from './regions.js?v=20261115a';
 import { buildStyle, LAYER_GROUPS, RAMP } from './mapstyle.js?v=20261115-bright-points2';
 import { MONTHS, MON3, LEVELS, fmt, quantile, inRange, reading, sentence, peaks, sourceOf, csvRows, hotspotRows,
-  calendar, calendarKey, compare, stepChart, setChartWidth } from './charts.js?v=20261115-tr';
+  calendar, calendarKey, compare, stepChart, setChartWidth } from './charts.js?v=20261115-tr2';
 import { DrawTool, drawnArea } from './draw.js?v=20261115-ellipse';
 
 const $ = (s) => document.querySelector(s);
@@ -611,7 +611,7 @@ function setYear(y) {
 
 function renderLegend() {
   const lv = legendVals, n = lv.length;
-  $('#legend').innerHTML = n > 1 ? `<b>${regionMap() ? 'Bölge' : 'İl'} renkleri: ${fullWin() ? 'yıllık' : winLabel()} ateş tespiti</b><div class="bar" style="background:linear-gradient(90deg,${RAMP.join(',')})"></div>
+  $('#legend').innerHTML = n > 1 ? `<b>${regionMap() ? 'Bölge' : 'İl'} renkleri: ${fullWin() ? 'yıllık' : winLabel()} yangın tespiti</b><div class="bar" style="background:linear-gradient(90deg,${RAMP.join(',')})"></div>
     <div class="ends"><span>az</span><span>${fmt(lv[n >> 1])}</span><span>çok</span></div>
     <div class="dotnote"><i></i><span>Yakınlaşınca tek tek tespitler görünür</span></div>` : '';
 }
@@ -621,7 +621,7 @@ function renderRank() {
     .sort((a, b) => b[1] - a[1]).slice(0, regionMap() ? 7 : 6);
   $('#rank').hidden = !rows.length || state.scope === 'draw';
   if (!rows.length || state.scope === 'draw') return;
-  $('#rankTitle').textContent = `En çok ateş tespiti${regionMap() ? ' · bölgeler' : ''} · ${state.year}${fullWin() ? '' : ' · ' + winLabel()}`;
+  $('#rankTitle').textContent = `En çok yangın tespiti${regionMap() ? ' · bölgeler' : ''} · ${state.year}${fullWin() ? '' : ' · ' + winLabel()}`;
   $('#rankList').innerHTML = rows.map(([n, t], i) =>
     `<li><button data-name="${n}" class="${n === state.sel ? 'on' : ''}"><i>${i + 1}</i><span>${n}</span><em>${fmt(t)}</em>
      <u style="width:calc((100% - 34px) * ${rows[0][1] ? t / rows[0][1] : 0})"></u></button></li>`).join('');
@@ -718,10 +718,10 @@ function landCard(name) {
   const pct = g.map((v) => (100 * v) / tot);
   const rows = lc.groups.map((lab, k) => `<li><i style="background:${LC_COLORS[k]}"></i><span>${lab}</span><b>%${Math.round(pct[k])}</b></li>`).join('');
   return `<section class="land" aria-label="Arazi türüne göre tespitler">
-      <h3>Ateşler nerede yanıyor?</h3>
+      <h3>Yangınlar hangi arazide?</h3>
       <div class="land-bar">${pct.map((v, k) => `<span style="width:${v}%;background:${LC_COLORS[k]}"></span>`).join('')}</div>
       <ul>${rows}</ul>
-      <p class="fine" title="Uydu tespitinin konumu ±375 m (VIIRS) ile ±1 km (MODIS) arasında belirsizdir; tek tek noktaların sınıfı sınırda yanlış olabilir, yüzdeler daha güvenilirdir.">${fmt(tot)} tespitin altındaki arazi (ESA WorldCover 2021, 10 m). Tarım arazisindeki ateş anız yakma olabilir ama kanıtı değildir; "ağaçlık alan" bahçeleri de içerir.</p>
+      <p class="fine" title="Uydu tespitinin konumu ±375 m (VIIRS) ile ±1 km (MODIS) arasında belirsizdir; tek tek noktaların sınıfı sınırda yanlış olabilir, yüzdeler daha güvenilirdir.">${fmt(tot)} tespitin altındaki arazi (ESA WorldCover 2021, 10 m). Tarım arazisindeki yangın noktaları anız yakması olabilir, ancak bu kesin değildir; "ağaçlık alan" bahçeleri de içerir.</p>
     </section>`;
 }
 
@@ -773,7 +773,7 @@ function stepView(p, val) {
   return `<h4>Ham seri ve uyumlaştırılmış seri</h4>
     <p>${{ region: 'İl serilerinin bölge toplamı; yeni bir bölge katsayısı hesaplanmadı. ',
     country: 'İl serilerinin Türkiye toplamı; yeni bir ülke katsayısı hesaplanmadı. ',
-    draw: 'Alanın kapsadığı illerin serilerinden tespit payıyla alındı; yeni bir katsayı hesaplanmadı. ' }[state.scope] || ''}Yıllık toplam. Ham seri ${vy}'ye kadar MODIS, sonra VIIRS sayar; VIIRS daha küçük ateşleri de gördüğü için ${vy}'de yapay bir sıçrama oluşur.
+    draw: 'Alanın kapsadığı illerin serilerinden tespit payıyla alındı; yeni bir katsayı hesaplanmadı. ' }[state.scope] || ''}Yıllık toplam. Ham seri ${vy}'ye kadar MODIS, sonra VIIRS sayar; VIIRS daha küçük yangınları da gördüğü için ${vy}'de yapay bir sıçrama oluşur.
     Uyumlaştırılmış seri, ${vy} öncesini MODIS × bölgesel aylık katsayıyla VIIRS ölçeğine taşır.${PARTIAL ? ` ${LY} bitmediği için çizilmedi.` : ''}</p>
     <div class="key"><span><i class="raw"></i>Ham (MODIS → VIIRS)</span><span><i class="harm"></i>Uyumlaştırılmış</span>
       <span><i class="dot o"></i>MODIS × katsayı</span><span><i class="dot"></i>VIIRS gözlemi</span></div>
@@ -810,7 +810,7 @@ function ogmView(name) {
   const obm = Object.entries(ogm.obm2025).find(([u]) => u.toLocaleUpperCase('tr') === key);
   const p25 = series(name, 'merged')?.[2025];
   const local = obm
-    ? `<h4 class="gap">${name} Orman Bölge Müdürlüğü · 2025</h4><p class="say">OGM: <b>${fmt(obm[1].fires)}</b> orman yangını, ${fmt(obm[1].ha)} ha yanan alan. Uydular 2025'te ${name} ilinde ${p25 ? fmt(sum(p25)) : '—'} ateş tespit etti.</p>
+    ? `<h4 class="gap">${name} Orman Bölge Müdürlüğü · 2025</h4><p class="say">OGM: <b>${fmt(obm[1].fires)}</b> orman yangını, ${fmt(obm[1].ha)} ha yanan alan. Uydular 2025'te ${name} ilinde ${p25 ? fmt(sum(p25)) : '—'} yangın noktası tespit etti.</p>
        <p class="fine">Bölge müdürlüğü genellikle birkaç ili kapsar; il sınırıyla birebir karşılaştırılamaz. İl bazında yıllık OGM verisi yalnızca 2025 için bulundu.</p>`
     : state.scope === 'country' ? ''
     : `<p class="fine">${multi() ? `${regional() ? 'Coğrafi bölge' : 'Çizilen alan'} ile Orman Bölge Müdürlüğü sınırları aynı değildir; bu görünümde Türkiye toplamı gösterilir.` : `${name} adına bir orman bölge müdürlüğü yok; 2025 bölge tablosunda bu il başka bir müdürlüğe bağlı.`}</p>`;

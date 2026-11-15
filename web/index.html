@@ -64,9 +64,9 @@
         <h3>Nasıl kullanılır?</h3>
         <ol>
           <li><b>Bir alan seçin.</b> Haritada bir bölgeye ya da ile tıklayın veya adını arama kutusuna yazın. <b>Ülke</b> Türkiye toplamını gösterir; <b>Çiz</b> ile haritada kendi alanınızı (serbest, elips ya da çokgen) belirleyebilirsiniz.</li>
-          <li><b>Takvimi inceleyin.</b> Sağdaki <b>Detaylı inceleme</b> panelini açın; takvimde her kare bir aydır. Renk koyulaştıkça uydunun gördüğü ateş sayısı artar. <span class="sym">●</span> normalin üstündeki, <span class="sym">◆</span> olağanüstü yüksek ayları gösterir.</li>
+          <li><b>Takvimi inceleyin.</b> Sağdaki <b>Detaylı inceleme</b> panelini açın; takvimde her kare bir aydır. Renk koyulaştıkça uydunun gördüğü yangın noktası sayısı artar. <span class="sym">●</span> normalin üstündeki, <span class="sym">◆</span> olağanüstü yüksek ayları gösterir.</li>
           <li><b>Yılı değiştirin.</b> Alttaki çubuktan incelemek istediğiniz yılı seçin.</li>
-          <li><b>Yakınlaşın.</b> Kırmızı noktaların her biri bir uydu tespitidir; üzerine tıklayınca tarihi ve ayrıntıları görünür.</li>
+          <li><b>Yakınlaşın.</b> Kırmızı noktaların her biri, uydunun tespit ettiği bir yangın noktasıdır; üzerine tıklayınca tarihi ve ayrıntıları görünür.</li>
         </ol>
         <p><b>Uyumlaştırılmış seri</b> eski (MODIS, 2000–) ve yeni (VIIRS, 2012–) uyduları aynı ölçeğe getirir; böylece 25 yılın tamamı birbiriyle karşılaştırılabilir. Ham MODIS ve VIIRS sekmeleri, kaynak veriyi düzeltmesiz görmek içindir.</p>
         <p class="muted">Kaynak: NASA FIRMS. Sayılar orman yangınlarını ve tarla/anız yakmalarını birlikte içerir.</p>
@@ -79,7 +79,7 @@
       <div class="menu glass" id="layersMenu" hidden>
         <h3>Harita katmanları</h3>
         <label><input type="checkbox" data-layer="fill" checked><span></span>Tespit yoğunluğu</label>
-        <label><input type="checkbox" data-layer="points" checked><span></span>Ateş noktaları</label>
+        <label><input type="checkbox" data-layer="points" checked><span></span>Yangın noktaları</label>
         <label id="lcRow" hidden><input type="checkbox" data-layer="landcover"><span></span>Arazi türü</label>
         <ul class="lc-legend" id="lcLegend" hidden></ul>
         <label><input type="checkbox" data-layer="labels"><span></span>Yer adları</label>
@@ -135,7 +135,7 @@
 </div>
 
 <script src="vendor/maplibre-gl.js"></script>
-<script type="module" src="js/app.js?v=20261115-tr"></script>
+<script type="module" src="js/app.js?v=20261115-tr2"></script>
 <script type="module" src="js/drawers.js?v=20261115-detail"></script>
 <script type="module" src="js/timeline.js?v=20261115a"></script>
 </body>

@@ -225,7 +225,7 @@ export function calendar(years, from, to, sel, opt) {
     }
     if (yy === sel.year) s += `<rect x="${PAD_L - 1}" y="${y0 - 0.5}" width="${W - PAD_L - PAD_R + 2}" height="${ch + 1}" rx="4" class="rowsel"/>`;
   });
-  return `<svg viewBox="0 0 ${W} ${h}" role="img" aria-label="${from}–${to} yılları ve aylara göre ateş tespitleri takvimi; normalin üstündeki aylar daire, olağanüstü aylar karo ile işaretli">${s}${marks}</svg>`;
+  return `<svg viewBox="0 0 ${W} ${h}" role="img" aria-label="${from}–${to} yılları ve aylara göre yangın tespitleri takvimi; normalin üstündeki aylar daire, olağanüstü aylar karo ile işaretli">${s}${marks}</svg>`;
 }
 
 // Takvim açıklaması: renk + şekil, sıfır ve veri yok ayrımı.
