@@ -1,8 +1,8 @@
-import { t as msg, displayText, locale, ordinal } from './i18n.js?v=20261115-low-blue';
+import { t as msg, displayText, locale, ordinal } from './i18n.js?v=20261115-blue-ramp';
 // Panel grafikleri: elle yazılmış SVG. Tek ölçek, tek renk tonu (kor), nötr mürekkep.
 // Bu dosyadaki istatistik işlevleri (inRange, reading, sentence, peaks, csvRows, hotspotRows) saf işlevlerdir;
 // tarayıcı dışında Node ile de sınanabilir.
-import { RAMP } from './mapstyle.js?v=20261115-low-blue';
+import { RAMP } from './mapstyle.js?v=20261115-blue-ramp';
 
 // Ay dizileri canlı dışa aktarımdır; dil değişiminde mevcut seçim aynı ay indeksinde kalır.
 export let MONTHS, MON3;
@@ -43,6 +43,13 @@ const MIN_REF = 3;  // karşılaştırma için en az bu kadar başka yıl
 // Medyanı küçük aylarda düşüklük gürültüdür (il ölçeğinde aylık hata ~%38).
 export const LOW_MIN = 20;
 export const LOW_FILL = '#1f6bff';
+// Belirgin düşük aylar için mavi kademe: tipik değere yakın açık mavi, tipik değerin çok altı koyu mavi.
+export const LOW_RAMP = ['#d6e4ff', '#9dbfff', '#5b95ff', '#1f6bff', '#1446d6'];
+export function lowColor(t) {
+  t = Math.max(0, Math.min(1, t));
+  const x = t * (LOW_RAMP.length - 1), i = Math.min(LOW_RAMP.length - 2, Math.floor(x));
+  return mix(LOW_RAMP[i], LOW_RAMP[i + 1], x - i);
+}
 
 export function inRange(years, from, to) {
   const out = {};
@@ -238,7 +245,8 @@ export function calendar(years, from, to, sel, opt) {
       const rdg = rd(yy, i), lv = rdg?.level, part = partial(yy, i);
       // Belirgin düşük: sezon içinde, bitmiş ay, yılların %25'inden azını geçmiş, tipik değer >= LOW_MIN.
       const lowFlag = !out && !part && lv === 'low' && rdg.med >= LOW_MIN;
-      const fill = lowFlag ? LOW_FILL : v === 0 ? 'rgba(255,255,255,0.06)' : rampColor(Math.sqrt(v / max));
+      // Mavinin koyuluğu: ay, yılların ne kadar azını geçmiş (%25'e yakın açık, hiçbirini geçmemiş en koyu).
+      const fill = lowFlag ? lowColor(1 - rdg.pct / 25) : v === 0 ? 'rgba(255,255,255,0.06)' : rampColor(Math.sqrt(v / max));
       const tipLv = lv && lv !== 'normal' ? ` · ${displayText(LEVELS[lv].label)}` : '';
       const tipPct = rdg?.pct != null ? `<br>${msg("years.exceeded.typical.value", [Math.round(rdg.pct), fmt(rdg.med)])}` : '';
       const tipPart = part ? `<br>${msg("partial.month.days.of.compared", [through, MONTHS[i]])}` : '';
@@ -260,7 +268,7 @@ export function calendarKey() {
     <span><i class="ramp" style="background:linear-gradient(90deg,${RAMP.join(',')})"></i>${msg("low.high")}</span>
     <span><svg viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="2.6" class="flag"/></svg>${msg("high.exceeds.of.years")}</span>
     <span><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M6,1.6l4.4,4.4l-4.4,4.4l-4.4,-4.4z" class="flag"/></svg>${msg("exceptional.exceeds.of.years")}</span>
-    <span><i style="background:${LOW_FILL}"></i>${msg("low.below.of.years", [LOW_MIN])}</span>
+    <span><i class="ramp" style="background:linear-gradient(90deg,${LOW_RAMP.join(',')})"></i>${msg("low.below.of.years", [LOW_MIN])}</span>
   </div>`;
 }
 

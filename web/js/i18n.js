@@ -204,7 +204,7 @@ const messages = {
   "fire.calendar.by.year.and": ["{0}–{1} yılları ve aylara göre yangın tespitleri takvimi; normalin üstündeki aylar daire, olağanüstü aylar karo ile işaretli", "Fire calendar by year and month, {0}–{1}. Circles mark above-normal months and diamonds mark exceptional months."],
   "low.high": ["az → çok", "low → high"],
   "high.exceeds.of.years": ["yüksek (yılların %75'inden fazlasını geçen)", "high (exceeds 75% of years)"],
-  "low.below.of.years": ["belirgin düşük (yılların %25'ini bile geçemeyen; tipik değeri {0}+ olan aylar)", "clearly low (below 75% of years; months with a typical value of {0}+)"],
+  "low.below.of.years": ["belirgin düşük: ne kadar düşükse o kadar koyu (yılların %25'ini bile geçemeyen; tipik değeri {0}+ olan aylar)", "clearly low: darker the lower it is (below 75% of years; months with a typical value of {0}+)"],
   "exceptional.exceeds.of.years": ["olağanüstü (%95'ten fazlasını geçen)", "exceptional (exceeds 95% of years)"],
   "no.data.yet2": ["henüz veri yok", "no data yet"],
   "partial.month.median.for.the": ["(ay sürüyor; tipik değer aynı günlerden)", "(partial month; median for the same days)"],
