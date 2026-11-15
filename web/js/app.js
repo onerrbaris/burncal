@@ -3,6 +3,7 @@ import { regionGeometry } from './regions.js?v=20261115a';
 import { buildStyle, LAYER_GROUPS, RAMP } from './mapstyle.js?v=20261115-clean-controls';
 import { MONTHS, MON3, LEVELS, fmt, quantile, inRange, reading, sentence, peaks, sourceOf, csvRows, hotspotRows,
   calendar, calendarKey, compare, stepChart, setChartWidth } from './charts.js?v=20261115h';
+import { DrawTool, drawnArea } from './draw.js?v=20261115-draw';
 
 const $ = (s) => document.querySelector(s);
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -22,15 +23,41 @@ const TABS = [['calendar', 'Takvim'], ['compare', 'Karşılaştır'], ['peaks', 
 
 // month: okunan ay (0–11); from/to: dönem yılları; win: sezon penceresi [ilk ay, son ay]; custom: dönemi kullanıcı mı seçti.
 const state = { scope: 'province', sensor: 'merged', year: null, month: 11, from: null, to: null, win: [0, 11], custom: false, sel: null, tab: 'calendar' };
-let geographic, regionGeo;
+let geographic, regionGeo, countryGeo, country, drawn = null, drawTool, lcGroup = [];
 const provinceRegion = {};
+// Alan birimleri: il, coğrafi bölge, Türkiye (81 il toplamı) ve kullanıcının çizdiği alan.
+const COUNTRY = 'Türkiye', DRAWN = 'Çizilen alan';
+const SCOPE_LABEL = { province: 'İl', region: 'Bölge', country: 'Ülke', draw: 'Çizilen alan' };
+const EMPTY = { type: 'FeatureCollection', features: [] };
 const regional = () => state.scope === 'region';
-const activeGeo = () => regional() ? regionGeo : geo;
-const areaData = (name) => regional() ? geographic.regions[name]?.series : data.provinces[name];
-const areaNames = () => regional() ? Object.keys(geographic.regions) : Object.keys(data.provinces);
-const areaName = (name) => regional() ? provinceRegion[name] || name : name;
-const membersOf = (name) => geographic.regions[name]?.members || [name];
-const partialValues = (key, name) => regional() ? geographic.partial[key]?.[name] : data.partial[key]?.[name];
+const multi = () => state.scope !== 'province';     // birden çok ilin serisinden kurulan alan
+const single = () => state.scope === 'country' || state.scope === 'draw';   // haritada tek alan
+const scopeLabel = () => SCOPE_LABEL[state.scope];
+const activeGeo = () => ({ province: geo, region: regionGeo, country: countryGeo, draw: drawn?.geo || EMPTY })[state.scope];
+function areaData(name) {
+  if (state.scope === 'region') return geographic.regions[name]?.series;
+  if (state.scope === 'country') return name === COUNTRY ? country.series : null;
+  if (state.scope === 'draw') return name === DRAWN ? drawn?.series : null;
+  return data.provinces[name];
+}
+function areaNames() {
+  if (state.scope === 'region') return Object.keys(geographic.regions);
+  if (state.scope === 'country') return [COUNTRY];
+  if (state.scope === 'draw') return drawn ? [DRAWN] : [];
+  return Object.keys(data.provinces);
+}
+const areaName = (name) => ({ region: provinceRegion[name] || name, country: COUNTRY, draw: DRAWN })[state.scope] || name;
+function membersOf(name) {
+  if (state.scope === 'country') return Object.keys(data.provinces);
+  if (state.scope === 'draw') return drawn ? drawn.byProv.map(([n]) => n) : [];
+  return geographic.regions[name]?.members || [name];
+}
+function partialValues(key, name) {
+  if (state.scope === 'region') return geographic.partial[key]?.[name];
+  if (state.scope === 'country') return country.partial[key];
+  if (state.scope === 'draw') return drawn?.partial[key];
+  return data.partial[key]?.[name];
+}
 let data, geo, ogm, lc, map, ready = false, hovered = null, orbitOK = false, orbitRaf = 0;
 let RANGE, LY, LM, LD, PARTIAL, READ_M;   // etkin serinin yıl aralığı; son veri yılı, ayı (0–11), günü; son yıl bitmemiş mi
 const bboxes = {}, provIdx = {}, ranges = {};
@@ -103,24 +130,83 @@ function renderAreaSearch() {
   $('#search').placeholder = regional() ? 'Bölge ara' : 'İl ara';
   $('#search').setAttribute('aria-label', regional() ? 'Bölge ara' : 'İl ara');
   $('#search').value = '';
+  // Ülke ve çizim görünümünde aranacak bir ad yok.
+  $('.topbar .search').hidden = single();
 }
 function setScope(scope) {
-  if (scope === state.scope || !ready) return;
+  if (!ready) return;
+  if (scope === state.scope) { if (scope === 'draw') startDraw(); return; }
   closePointPopup(); hideTip(); stopOrbit();
-  const previous = state.sel;
+  const previous = state.scope === 'province' ? state.sel : null;
+  if (state.scope === 'draw') { drawTool.stop(); $('#drawBar').hidden = true; }
   if (hovered) map.setFeatureState({ source: 'provinces', id: hovered }, { hover: false });
   hovered = null;
   map.getCanvas().style.cursor = '';
   state.scope = scope;
   state.sel = null;
   for (const button of document.querySelectorAll('[data-scope]')) button.setAttribute('aria-pressed', String(button.dataset.scope === scope));
+  setAreaGeo();
+  renderAreaSearch();
+  // İl/bölge geçişinde yoğunluk katmanının açık/kapalı tercihi korunur.
+  if (scope === 'country') select(COUNTRY);
+  else if (scope === 'draw') { select(drawn ? DRAWN : null, false); startDraw(); }
+  else select(regional() && previous ? areaName(previous) : null, false);
+  renderLegend();
+}
+function setAreaGeo() {
   map.removeFeatureState({ source: 'provinces' });
   map.getSource('provinces').setData(activeGeo());
   map.getSource('provLabels').setData(geometry(activeGeo(), false));
-  renderAreaSearch();
-  // İl/bölge geçişinde yoğunluk katmanının açık/kapalı tercihi korunur.
-  select(regional() && previous ? areaName(previous) : null, false);
-  renderLegend();
+}
+
+// ── Çizim ───────────────────────────────────────────────
+// Çizilen alan için bütün yılların noktaları gerekir (~5 MB sıkıştırılmış). İndirme "Çiz"e basılınca
+// başlar; kullanıcı çizerken arka planda biter.
+let allYears = null;
+function loadAllYears(progress) {
+  const lo = Math.min(...Object.values(ranges).map((r) => r[0])), hi = Math.max(...Object.values(ranges).map((r) => r[1]));
+  const ys = Array.from({ length: hi - lo + 1 }, (_, i) => lo + i);
+  if (!allYears) {
+    let done = 0;
+    allYears = Promise.all(ys.map((y) => loadYear(y).then((d) => { done++; allYears.progress?.(done, ys.length); return [y, d]; })))
+      .then((rows) => {
+        if (rows.some(([, d]) => !d.modis && !d.viirs)) { allYears = null; throw new Error('Nokta dosyaları indirilemedi'); }
+        return Object.fromEntries(rows);
+      });
+  }
+  allYears.progress = progress;
+  return allYears;
+}
+const drawHint = (t) => { $('#drawHint').textContent = t; };
+function startDraw(mode) {
+  closePointPopup(); hideTip(); stopOrbit();
+  $('#drawBar').hidden = false;
+  if (mode) for (const b of document.querySelectorAll('[data-draw]')) b.setAttribute('aria-pressed', String(b.dataset.draw === mode));
+  drawTool.start(mode || $('[data-draw][aria-pressed=true]')?.dataset.draw || 'free');
+  loadAllYears().catch(() => {});
+}
+const SHAPE = { free: 'Serbest çizim', circle: 'Daire', poly: 'Çokgen' };
+async function finishDraw(shape) {
+  drawTool.stop();
+  drawHint('Veriler yükleniyor…');
+  let byYear;
+  try {
+    byYear = await loadAllYears((k, n) => drawHint(`Veriler yükleniyor… ${k}/${n}`));
+  } catch (e) {
+    console.error(e);
+    drawHint('Veriler indirilemedi. Bağlantıyı kontrol edip yeniden çizin.');
+    return drawTool.start();
+  }
+  if (state.scope !== 'draw') return;
+  const r = drawnArea(shape.ring, byYear, { data, names: geo.features.map((f) => f.properties.name),
+    viirsFrom: data.meta.viirs_from, LM, LD, lcGroup });
+  drawn = { ...r, ...shape, label: SHAPE[shape.mode] || 'Alan',
+    geo: { type: 'FeatureCollection', features: [{ type: 'Feature', properties: { name: DRAWN }, geometry: { type: 'Polygon', coordinates: [shape.ring] } }] } };
+  for (const k of Object.keys(cmpCache)) delete cmpCache[k];
+  $('#drawBar').hidden = true;
+  setAreaGeo();
+  state.sel = null;
+  select(DRAWN);
 }
 
 function geometry(collection = geo, index = true) {
@@ -322,6 +408,17 @@ function initMap() {
 
   map.on('load', () => {
     addLandcover();
+    // Çizilen alanın dolgusu ve çizim sırasındaki taslak.
+    map.addLayer({ id: 'area-fill', type: 'fill', source: 'provinces', filter: ['==', ['get', 'name'], DRAWN],
+      paint: { 'fill-color': '#ff8a3d', 'fill-opacity': 0.12 } }, 'sel-glow');
+    map.addSource('draft', { type: 'geojson', data: EMPTY });
+    map.addLayer({ id: 'draft-fill', type: 'fill', source: 'draft', filter: ['==', ['get', 'k'], 'a'],
+      paint: { 'fill-color': '#ff8a3d', 'fill-opacity': 0.16 } });
+    map.addLayer({ id: 'draft-line', type: 'line', source: 'draft', filter: ['==', ['get', 'k'], 'l'],
+      layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#ffd2ad', 'line-width': 2.4 } });
+    map.addLayer({ id: 'draft-pt', type: 'circle', source: 'draft', filter: ['==', ['get', 'k'], 'v'],
+      paint: { 'circle-radius': 4.5, 'circle-color': '#ff8a3d', 'circle-stroke-color': '#fff', 'circle-stroke-width': 1.5 } });
+    drawTool = new DrawTool(map, { onDone: finishDraw, onStatus: drawHint });
     ready = true; paintMap();
     for (const button of document.querySelectorAll('[data-scope]')) button.disabled = false;
     document.body.classList.remove('booting');
@@ -331,6 +428,7 @@ function initMap() {
   });
 
   map.on('mousemove', 'prov-hover', (e) => {
+    if (drawTool?.active) return hideTip();
     const name = e.features[0]?.properties.name;
     if (name !== hovered) {
       if (hovered) map.setFeatureState({ source: 'provinces', id: hovered }, { hover: false });
@@ -347,6 +445,7 @@ function initMap() {
   });
   // Tek tıklama yolu: nokta önceliklidir, boş yerde mevcut il seçimi sürer.
   map.on('click', (e) => {
+    if (drawTool?.active) return;
     const hit = pointHits(e.point);
     if (hit) return openPointPopup(hit);
     closePointPopup();
@@ -418,11 +517,12 @@ function select(name, fly = true) {
   stopOrbit();
   state.sel = name;
   document.body.classList.toggle('has-panel', !!name);
-  const f = ['==', ['get', 'name'], name || ''];
+  // Türkiye seçiliyken 81 ilin iç sınırları parlatılmaz; ülke sınırı altlıkta zaten çizili.
+  const f = ['==', ['get', 'name'], state.scope === 'country' ? '' : name || ''];
   map.setFilter('sel-glow', f); map.setFilter('sel-line', f);
   paintMap(); renderPanel(); renderRank();
   if (!fly) return;
-  if (!name) return goHome(2200);
+  if (!name || state.scope === 'country') return goHome(2200);
   const cam = fit(bboxes[name], pads());
   const bearing = ((name.length * 37) % 50) - 25;
   move({ center: cam.center, zoom: Math.min(cam.zoom - 0.25, 10), pitch: 54, bearing, padding: pads() }, 2600);
@@ -491,7 +591,7 @@ function setYear(y) {
 
 function renderLegend() {
   const lv = legendVals, n = lv.length;
-  $('#legend').innerHTML = n ? `<b>${regional() ? 'Bölge' : 'İl'} renkleri: ${fullWin() ? 'yıllık' : winLabel()} tespit</b><div class="bar" style="background:linear-gradient(90deg,${RAMP.join(',')})"></div>
+  $('#legend').innerHTML = n > 1 ? `<b>${regional() ? 'Bölge' : 'İl'} renkleri: ${fullWin() ? 'yıllık' : winLabel()} tespit</b><div class="bar" style="background:linear-gradient(90deg,${RAMP.join(',')})"></div>
     <div class="ends"><span>az</span><span>${fmt(lv[n >> 1])}</span><span>çok</span></div>
     <div class="dotnote"><i></i><span>Tek tek tespitler, yakınlaşınca</span></div>` : '';
 }
@@ -499,8 +599,8 @@ function renderLegend() {
 function renderRank() {
   const rows = areaNames().map((n) => [n, total(n)]).filter((r) => r[1] != null)
     .sort((a, b) => b[1] - a[1]).slice(0, regional() ? 7 : 6);
-  $('#rank').hidden = !rows.length;
-  if (!rows.length) return;
+  $('#rank').hidden = !rows.length || single();
+  if (!rows.length || single()) return;
   $('#rankTitle').textContent = `En çok tespit${regional() ? ' · bölgeler' : ''} · ${state.year}${fullWin() ? '' : ' · ' + winLabel()}`;
   $('#rankList').innerHTML = rows.map(([n, t], i) =>
     `<li><button data-name="${n}" class="${n === state.sel ? 'on' : ''}"><i>${i + 1}</i><span>${n}</span><em>${fmt(t)}</em>
@@ -583,8 +683,9 @@ function landCard(name) {
   if (!lc?.provinces) return '';
   const g = [0, 0, 0, 0];
   // Bölge payları il yüzdelerinin ortalaması değil, tespit sayılarının toplamıdır.
-  for (const member of regional() ? membersOf(name) : [name]) {
-    const p = lc.provinces[member];
+  // Çizilen alanda il toplamı değil, alanın içindeki noktaların arazi sınıfı sayılır.
+  const sources = state.scope === 'draw' ? [drawn?.lc] : membersOf(name).map((m) => lc.provinces[m]);
+  for (const p of sources) {
     if (!p) continue;
     for (let y = state.from; y <= state.to; y++) {
       const r = p[y];
@@ -611,6 +712,25 @@ function caution(val) {
     : `Bu ilde doğrulama hatası yüksek (yıllık %${Math.round(val.annual_wape * 100)}); aylık okumalar güvenilir değil.`;
   return `<div class="caution" role="note"><b>Dikkat:</b> ${why} Yıllık toplamlara ve uzun dönem örüntüsüne bakın.</div>`;
 }
+// Çizilen alan için hata ölçülemez; az tespitli ya da küçük alanda okuyucu uyarılır.
+function drawCaution() {
+  if (!drawn) return '';
+  const full = Object.entries(drawn.series.merged).filter(([y]) => !(PARTIAL && +y === LY));
+  const mean = sum(full.map(([, r]) => sum(r))) / Math.max(1, full.length);
+  const why = mean < 100 ? `Bu alanda yılda ortalama ${fmt(mean)} tespit var; aylık sayılar güvenilir bir okuma için çok az.`
+    : drawn.km2 < 2500 ? `Alan küçük (${fmt(drawn.km2)} km²); küçük alanlarda aylık sayılar oynaktır.` : '';
+  return why ? `<div class="caution" role="note"><b>Dikkat:</b> ${why} Yıllık toplamlara ve uzun dönem örüntüsüne bakın.</div>` : '';
+}
+function methodNote(name) {
+  if (state.scope === 'region') return `<p>${membersOf(name).length} il toplamı: ${membersOf(name).join(', ')}.</p><p>${geographic.meta.note}</p><p>${geographic.meta.validation_note}</p>`;
+  if (state.scope === 'country') return `<p>81 ilin toplamı. Her ilin uyumlaştırılmış serisi olduğu gibi toplanır; ülke için ayrı bir katsayı hesaplanmadı.</p><p>Türkiye toplamı için ayrı bir hata ölçümü bu sürümde yapılmadı.</p>`;
+  if (!drawn) return '';
+  const tot = sum(drawn.byProv.map(([, v]) => v));
+  const provs = drawn.byProv.slice(0, 6).map(([n, v]) => `${n} %${Math.max(1, Math.round((100 * v) / (tot || 1)))}`).join(', ');
+  return `<p>${drawn.label}${drawn.km ? `, yarıçap ${dec(drawn.km)} km` : ''} · ${fmt(drawn.km2)} km².${tot ? ` Tespitlerin illere dağılımı: ${provs}${drawn.byProv.length > 6 ? ` ve ${drawn.byProv.length - 6} il daha` : ''}.` : ''}</p>
+    <p>Ham MODIS ve VIIRS sayıları alanın içine düşen uydu tespitlerinin sayımıdır. Uyumlaştırılmış seri için yeni katsayı hesaplanmadı: her ilin uyumlaştırılmış aylık değeri, o ilin o ayki tespitlerinden alana düşen pay kadar alınıp toplandı. Böylece il serilerindeki 2002 öncesi tek uydu ve uydu kesintisi düzeltmeleri korunur.</p>
+    <p>Hata bu alan için ölçülmedi. Ölçülen değerler (Akdeniz, bir yıl dışarıda bırakılarak): ~100 km ölçekte yıllık %23, aylık %38; ~25 km ölçekte aylık %58.</p>`;
+}
 
 function peaksView(name, years) {
   const { topYears, topMonths } = peaks(years, state.from, state.to, state.win, (y) => total(name, y));
@@ -631,7 +751,9 @@ function stepView(p, val) {
     birleşmiş seride ×${dec(val.step_harmonized, 2)}. MODIS tek başına ×${dec(val.step_modis, 2)} gösteriyor; birleşmiş seri buna yakın olmalı.</p>` : '';
   const lastFull = PARTIAL ? LY - 1 : LY;
   return `<h4>Ham seri ve birleşmiş seri</h4>
-    <p>${regional() ? 'İl serilerinin bölge toplamı; yeni bir bölge katsayısı hesaplanmadı. ' : ''}Yıllık toplam. Ham seri ${vy}'ye kadar MODIS, sonra VIIRS sayar; VIIRS daha küçük ateşleri de gördüğü için ${vy}'de yapay bir sıçrama oluşur.
+    <p>${{ region: 'İl serilerinin bölge toplamı; yeni bir bölge katsayısı hesaplanmadı. ',
+    country: 'İl serilerinin Türkiye toplamı; yeni bir ülke katsayısı hesaplanmadı. ',
+    draw: 'Alanın kapsadığı illerin serilerinden tespit payıyla alındı; yeni bir katsayı hesaplanmadı. ' }[state.scope] || ''}Yıllık toplam. Ham seri ${vy}'ye kadar MODIS, sonra VIIRS sayar; VIIRS daha küçük ateşleri de gördüğü için ${vy}'de yapay bir sıçrama oluşur.
     Birleşmiş seri ${vy} öncesini MODIS × bölgesel aylık çarpanla VIIRS ölçeğine taşır.${PARTIAL ? ` ${LY} bitmediği için çizilmedi.` : ''}</p>
     <div class="key"><span><i class="raw"></i>Ham (MODIS → VIIRS)</span><span><i class="harm"></i>Birleşmiş</span>
       <span><i class="dot o"></i>MODIS × çarpan</span><span><i class="dot"></i>VIIRS gözlemi</span></div>
@@ -670,7 +792,8 @@ function ogmView(name) {
   const local = obm
     ? `<h4 class="gap">${name} Orman Bölge Müdürlüğü · 2025</h4><p class="say">OGM: <b>${fmt(obm[1].fires)}</b> orman yangını, ${fmt(obm[1].ha)} ha yanan alan. Uydu, ${name} ilinde 2025'te ${p25 ? fmt(sum(p25)) : '—'} tespit görüyor.</p>
        <p class="fine">Bölge müdürlüğü genellikle birkaç ili kapsar; il sınırıyla birebir karşılaştırılamaz. İl bazında yıllık OGM verisi yalnızca 2025 için bulundu.</p>`
-    : `<p class="fine">${regional() ? 'Coğrafi bölge ile Orman Bölge Müdürlüğü sınırları aynı değildir; bu görünümde Türkiye toplamı gösterilir.' : `${name} adına bir orman bölge müdürlüğü yok; 2025 bölge tablosunda bu il başka bir müdürlüğe bağlı.`}</p>`;
+    : state.scope === 'country' ? ''
+    : `<p class="fine">${multi() ? `${regional() ? 'Coğrafi bölge' : 'Çizilen alan'} ile Orman Bölge Müdürlüğü sınırları aynı değildir; bu görünümde Türkiye toplamı gösterilir.` : `${name} adına bir orman bölge müdürlüğü yok; 2025 bölge tablosunda bu il başka bir müdürlüğe bağlı.`}</p>`;
   return `<h4>Türkiye: uydu tespitleri ve OGM'nin bildirdiği orman yangınları</h4>
     <p>Çizgi: uydu (birleşmiş, 81 il toplamı, sol eksen). Sütun: OGM'nin müdahale ettiği orman yangını sayısı (sağ eksen).</p>
     <div class="key"><span><i class="harm"></i>Uydu tespiti</span><span><i class="b"></i>OGM yangın sayısı</span></div>
@@ -687,11 +810,12 @@ function renderPanel() {
   panel.hidden = false; side.hidden = false;
   const name = state.sel, years = series(name);
   if (!years || !years[state.year]) {
-    sideBody.innerHTML = head(regional() ? 'Bölge' : 'İl', name) + '<div class="empty"><h4>Bu alan için bu yılda veri yok</h4><p>Alttaki çubuktan başka bir yıl seçin.</p></div>';
+    sideBody.innerHTML = head(scopeLabel(), name) + '<div class="empty"><h4>Bu alan için bu yılda veri yok</h4><p>Alttaki çubuktan başka bir yıl seçin.</p></div>';
     body.innerHTML = '';
     return;
   }
-  const { from, to } = state, vAll = regional() ? geographic.regions[name]?.validation : data.validation?.[name];
+  const { from, to } = state;
+  const vAll = regional() ? geographic.regions[name]?.validation : multi() ? null : data.validation?.[name];
   const merged = state.sensor === 'merged', val = merged ? vAll : null, sen = sensorOf();
   const row = years[state.year], n = total(name);
   const wm = row.map((v, m) => (inWin(m) && v != null ? v : -1)), peak = wm.indexOf(Math.max(...wm));
@@ -701,7 +825,10 @@ function renderPanel() {
   const med = quantile(refYears.map((y) => (like ? likeTotal(name, y) : total(name, y))), 0.5);
   const ratio = med > 0 ? n / med : 0;
   const level = val ? { low: 1, medium: 2, high: 3 }[val.confidence] || 1 : n >= 200 ? 3 : n >= 50 ? 2 : 1;
-  const confTitle = regional() && merged ? geographic.meta.validation_note : val
+  const confTitle = regional() && merged ? geographic.meta.validation_note
+    : state.scope === 'country' && merged ? 'Türkiye serisi 81 ilin uyumlaştırılmış serilerinin toplamıdır; ülke ölçeğinde ayrı bir hata ölçümü bu sürümde yapılmadı.'
+    : state.scope === 'draw' && merged ? 'Çizilen alan önceden bilinmediği için hatası ölçülemez. Ölçülen değerler (Akdeniz, bir yıl dışarıda): ~100 km ölçekte yıllık %23, aylık %38; ~25 km ölçekte aylık %58.'
+    : val
     ? 'Bir yıl dışarıda bırakılarak ölçüldü (2012–2025). Yüksek: yıllık hata %15 ve altı, yılda ortalama 300 ve üzeri tespit. Düşük: hata %30 üzeri ya da yılda 100 altı tespit.'
     : "Ham seri: tespit sayısına göre. 200 ve üzeri yüksek, 50–199 orta, 50'nin altı düşük. Ham MODIS ve VIIRS sayıları birbiriyle doğrudan karşılaştırılamaz.";
   const sel = { year: state.year, month: state.month };
@@ -712,7 +839,7 @@ function renderPanel() {
   const span = like ? `aynı dönemin (${w ? MON3[state.win[0]] : '1 Oca'}–${LD} ${MON3[LM]})` : w ? `${w} döneminin` : 'yıllık toplamın';
   const sumText = med
     ? `${from}–${to} yıllarında ${span} orta değeri <b>${fmt(med)}</b>. ${state.year}${like ? ' şimdiye kadar' : ''} bunun <b>${dec(ratio)} katı</b>.`
-    : 'Bu il için karşılaştırma yapacak kadar tespit yok.';
+    : `Bu ${multi() ? 'alan' : 'il'} için karşılaştırma yapacak kadar tespit yok.`;
 
   let view = '';
   if (state.tab === 'calendar') {
@@ -753,11 +880,11 @@ function renderPanel() {
     <div class="kpis">
       <div class="kpi"><span>En yoğun ay</span><b>${peak >= 0 ? MONTHS[peak] : '—'}</b><small>${peak >= 0 ? fmt(row[peak]) + ' tespit' : ''}</small></div>
       <div class="kpi"><span>Orta değer</span><b>${fmt(med)}</b><small>${from}–${to}</small></div>
-      <div class="kpi conf" title="${confTitle}"><span>${regional() && merged ? 'Bölge doğrulaması' : 'Güvenilirlik'}</span><b>${regional() && merged && !val ? 'Ölçülmedi' : ['Düşük', 'Orta', 'Yüksek'][level - 1]}</b><small>${regional() && merged ? (val ? `Yıllık hata %${dec(val.annual_wape * 100)}<br>Aylık hata %${dec(val.monthly_wape * 100)}` : 'Hata yüzdesi verilmez') : `<span class="dots">${[1, 2, 3].map((i) => `<i class="${i <= level ? 'on' : ''}"></i>`).join('')}</span>${val?.annual_wape != null ? `hata %${Math.round(val.annual_wape * 100)}` : merged ? '' : 'sayıya göre'}`}</small></div>
+      <div class="kpi conf" title="${confTitle}"><span>${multi() && merged ? `${{ region: 'Bölge', country: 'Ülke', draw: 'Alan' }[state.scope]} doğrulaması` : 'Güvenilirlik'}</span><b>${multi() && merged && !val ? 'Ölçülmedi' : ['Düşük', 'Orta', 'Yüksek'][level - 1]}</b><small>${multi() && merged ? (val ? `Yıllık hata %${dec(val.annual_wape * 100)}<br>Aylık hata %${dec(val.monthly_wape * 100)}` : 'Hata yüzdesi verilmez') : `<span class="dots">${[1, 2, 3].map((i) => `<i class="${i <= level ? 'on' : ''}"></i>`).join('')}</span>${val?.annual_wape != null ? `hata %${Math.round(val.annual_wape * 100)}` : merged ? '' : 'sayıya göre'}`}</small></div>
     </div>
-    ${regional() ? '' : caution(val)}
+    ${state.scope === 'province' ? caution(val) : state.scope === 'draw' ? drawCaution() : ''}
     ${landCard(name)}
-    ${regional() ? `<details class="region-method"><summary>Veri ve yöntem</summary><p>${membersOf(name).length} il toplamı: ${membersOf(name).join(', ')}.</p><p>${geographic.meta.note}</p><p>${geographic.meta.validation_note}</p></details>` : ''}
+    ${multi() ? `<details class="region-method"${state.scope === 'draw' ? ' open' : ''}><summary>Veri ve yöntem</summary>${methodNote(name)}</details>` : ''}
     <div class="p-foot">
       <details class="dl-menu">
         <summary class="btn"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v10M5.5 8.5 10 13l4.5-4.5M4 16.5h12"/></svg>İndir</summary>
@@ -780,22 +907,24 @@ function save(blob, filename) {
   a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 }
 const csvBlob = (lines) => new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
-const fileTag = () => `${low(state.sel)}_${state.from}-${state.to}${fullWin() ? '' : `_ay${state.win[0] + 1}-${state.win[1] + 1}`}`;
+const fileTag = () => `${low(state.sel).replace(/\s+/g, '-')}_${state.from}-${state.to}${fullWin() ? '' : `_ay${state.win[0] + 1}-${state.win[1] + 1}`}`;
 
 function downloadCsv() {
   const name = state.sel;
-  const lines = csvRows(name, regional() ? name : data.validation?.[name]?.region || '', areaData(name), state.from, state.to,
+  const region = { region: name, country: 'TR', draw: '' }[state.scope] ?? data.validation?.[name]?.region ?? '';
+  const lines = csvRows(name, region, areaData(name), state.from, state.to,
     data.meta.viirs_from, state.win, rdFor(name), isPartial);
   save(csvBlob(lines), `burncal_aylik_${fileTag()}.csv`);
 }
 
 async function downloadHotspots(btn) {
   const name = state.sel, lab = btn.querySelector('small') || btn, label = lab.textContent;
-  const members = regional() ? membersOf(name) : [name];
+  const members = membersOf(name);
   btn.disabled = true; lab.textContent = 'Hazırlanıyor…';
   try {
+    // Çizilen alanda yalnızca alanın içine düşen noktalar (hesap sırasında ayrıldı).
     const byYear = {};
-    for (let y = state.from; y <= state.to; y++) byYear[y] = await loadYear(y);
+    for (let y = state.from; y <= state.to; y++) byYear[y] = state.scope === 'draw' ? drawn.hits[y] : await loadYear(y);
     const lcLabels = [];
     for (const c of lc?.classes || []) lcLabels[c.i] = c.label;
     let lines = [];
@@ -926,6 +1055,8 @@ function bindRest() {
 
   renderAreaSearch();
   for (const button of document.querySelectorAll('[data-scope]')) button.onclick = () => setScope(button.dataset.scope);
+  for (const button of document.querySelectorAll('[data-draw]')) button.onclick = () => startDraw(button.dataset.draw);
+  $('#drawCancel').onclick = () => { drawTool.stop(); $('#drawBar').hidden = true; if (!drawn) setScope('province'); };
   const search = $('#search');
   const pick = () => {
     const names = areaNames();
@@ -984,9 +1115,24 @@ async function main() {
     return r.json();
   })));
   regionGeo = regionGeometry(geo, geographic.regions);
+  const allNames = Object.keys(data.provinces);
+  countryGeo = regionGeometry(geo, { [COUNTRY]: { members: geo.features.map((f) => f.properties.name) } });
+  country = { series: {}, partial: {} };
+  // Türkiye: 81 il serisinin ay ay toplamı (bölge görünümündeki gibi, yeni katsayı yok).
+  for (const key of ['modis', 'viirs', 'merged']) {
+    const out = (country.series[key] = {});
+    for (const n of allNames) for (const [y, row] of Object.entries(data.provinces[n][key] || {})) {
+      const o = (out[y] ||= row.map(() => 0));
+      row.forEach((v, m) => { o[m] = v == null || o[m] == null ? null : o[m] + v; });
+    }
+  }
+  for (const key of ['mtd', 'mtd_modis', 'mtd_viirs', 'ytd']) {
+    if (data.partial?.[key]) country.partial[key] = data.partial.years.map((_, i) => allNames.reduce((s, n) => s + (data.partial[key][n]?.[i] || 0), 0));
+  }
   for (const [name, region] of Object.entries(geographic.regions)) for (const p of region.members) provinceRegion[p] = name;
   ogm = await fetch('data/ogm.json').then((r) => (r.ok ? r.json() : null)).catch(() => null);
   lc = await fetch('data/landcover.json').then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  for (const c of lc?.classes || []) lcGroup[c.i] = c.group;
   indexData();
   setChartWidth(innerWidth > 760 ? 500 : 340);
   $('#dataBadge').textContent = `Son veri: ${throughLabel()}`;

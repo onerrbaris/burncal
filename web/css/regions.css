@@ -24,9 +24,12 @@
 }
 @media (max-width: 760px) {
   .topbar .tools { display: contents; }
-  .area-control { grid-column: 1; grid-row: 3; justify-self: start; height: 36px; }
-  .area-control button { padding: 6px; }
-  .topbar .search { display: flex; grid-column: 2; grid-row: 3; height: 36px; width: min(180px, 42vw); }
+  .area-wrap { grid-column: 1; grid-row: 3; justify-self: start; }
+  .area-control button svg { display: none; }
+  .area-control { height: 36px; }
+  .draw-bar { top: 44px; width: min(320px, calc(100vw - 20px)); }
+  .area-control button { padding: 6px 7px; font-size: 11.5px; }
+  .topbar .search { display: flex; grid-column: 2; grid-row: 3; height: 36px; width: min(180px, 34vw); }
   .tools > .pop { grid-column: 2; grid-row: 1; justify-self: end; }
   .tools > .pop:nth-last-child(2) { margin-right: 48px; }
   .rank.edge-drawer { top: 156px; }
@@ -36,3 +39,18 @@
   .panel.edge-drawer > .drawer-toggle { left: 0; top: 48px; }
   .panel.edge-drawer.drawer-closed > .drawer-toggle { left: -30px; }
 }
+
+/* Çiz ve Ülke: alan biriminin iki ucu. Çizim aracı, alan düğmelerinin altında açılır. */
+.area-wrap { position: relative; flex: none; }
+.area-control button svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.6;
+  stroke-linecap: round; stroke-linejoin: round; vertical-align: -2px; margin-right: 4px; }
+.draw-bar { position: absolute; left: 0; top: 56px; width: 320px; padding: 8px; z-index: 9;
+  background: var(--surface-2); box-shadow: 0 14px 40px rgba(0, 0, 0, 0.55); }
+.draw-modes { display: flex; gap: 3px; }
+.draw-modes button { flex: 1; border: 0; background: none; color: var(--ink-2); padding: 7px 8px; border-radius: 7px; font-size: 12px; }
+.draw-modes button:hover { color: var(--ink); }
+.draw-modes button[aria-pressed='true'] { background: var(--accent-dim); color: var(--accent-2); }
+.draw-modes .draw-x { flex: none; width: 30px; font-size: 16px; line-height: 1; }
+#drawHint { margin: 6px 4px 2px; font-size: 11.5px; line-height: 1.5; color: var(--ink-2); }
+#drawHint:empty { display: none; }
+.maplibregl-canvas-container.drawing, .maplibregl-canvas-container.drawing .maplibregl-canvas { cursor: crosshair !important; touch-action: none; }

@@ -3,6 +3,7 @@
 Repo: https://github.com/onerrbaris/burncal (private). Yeni oturum: önce `docs/HANDOFF.md`. Bulgular: `docs/REPORT.md`. `ARCHITECTURE.md` taslaktır.
 
 ## Next step
+Çiz ve Ülke eklendi (`web/js/draw.js`). Mobil genişlikte (≤760 px) dört alan düğmesi + arama yerleşimini ve dokunmatik çizimi tarayıcıda kontrol et; masaüstünde denendi.
 Yedi bölgenin LOYO doğrulaması tamamlandı (`docs/GEOGRAPHIC_VALIDATION.md`). Yöntem/üyelik değişirse `.venv/Scripts/python.exe scripts/validate_geographic_regions.py` → `python scripts/build_geographic_regions.py`. Bölge toplamları atlas veri üretiminde otomatik yenilenir.
 Küçük yıl kontrolünü masaüstü/mobilde görsel olarak kontrol et; renk ölçeği artık isteğe bağlı açılır.
 Kenar oklarını tarayıcıda görsel olarak kontrol et: liste solda kapalı; il özeti sola, grafik paneli sağa kayar. Deniz ilk uydu görünümünde.
@@ -41,6 +42,7 @@ Sunum (7 slayt) ve teslim formu. Veri güncellemek için: `python scripts/fetch_
 - Deploy için Render + Vercel hesapları
 
 ## Done
+- 15 Kas: Alan birimine "Çiz" (en sol) ve "Ülke" (en sağ) eklendi. Çiz: serbest el, daire, çokgen; nokta dosyaları Çiz'e basınca arka planda iner, hesap tarayıcıda (~10–200 ms). Ham MODIS/VIIRS alandaki noktaların sayımı; birleşmiş seri yeni çarpan olmadan, her ilin birleşmiş aylık değerinin alana düşen tespit payıyla toplamı (Terra-tek ve kesinti düzeltmeleri korunur). Türkiye kutusu çizimi 81 il toplamını 801 hücre + süren ay kıyasında birebir verdi; il sınırı çizimleri farklı çıkar çünkü haritadaki sınırlar sadeleştirilmiş, noktaların il ataması geoBoundaries. Güven "Ölçülmedi"; az tespit / <2500 km² uyarısı; arazi payı ve tespit CSV'si yalnızca alandaki noktalardan. Ülke: 81 il toplamı. Tarayıcıda üç şekil, beş sekme, İller/Bölgeler'e dönüş denendi; konsol temiz.
 - 15 Kas: Yılları oynat düğmesi, zamanlayıcısı ve boşluk kısayolu kaldırıldı; yıl kaydırıcısı ve elle yıl seçimi korundu, yardım metni güncellendi.
 - 15 Kas: Bölge kartının uzun teknik açıklaması arazi türü bölümünün altındaki kapalı "Veri ve yöntem" notuna taşındı; "Ateşler nerede yanıyor?" doğrudan doğrulama kartından sonra görünür.
 - 15 Kas: Doğrulama kartı tam genişliğe alındı, yıllık/aylık yüzdeler kesilmeden okunuyor. OSM orman katmanı kaldırıldı; renk katmanı "Tespit yoğunluğu" oldu ve il/bölge geçişinde tercihi korunuyor. İller/Bölgeler seçimi üst aramanın soluna taşındı, ayrı bölge listesi kaldırıldı. Tarayıcıda arama, iki yönde açık/kapalı tercih ve konsol kontrolü geçti.
