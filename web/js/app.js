@@ -32,19 +32,21 @@ const EMPTY = { type: 'FeatureCollection', features: [] };
 const regional = () => state.scope === 'region';
 const multi = () => state.scope !== 'province';     // birden çok ilin serisinden kurulan alan
 const scopeLabel = () => SCOPE_LABEL[state.scope];
-// Ülke görünümünde harita illeri boyar (Türkiye seçili kalır); ile tıklamak il görünümüne geçirir.
-const mapNames = () => (state.scope === 'country' ? Object.keys(data.provinces) : areaNames());
-const mapData = (name) => (state.scope === 'country' ? data.provinces[name] : areaData(name));
+// Ülke görünümünde harita yedi coğrafi bölgeyi boyar (Türkiye seçili kalır); bölgeye tıklamak
+// bölge görünümüne geçirir.
+const regionMap = () => state.scope === 'region' || state.scope === 'country';
+const mapNames = () => (state.scope === 'country' ? Object.keys(geographic.regions) : areaNames());
+const mapData = (name) => (state.scope === 'country' ? geographic.regions[name]?.series : areaData(name));
 function mapTotal(name, year = state.year) {
   if (state.scope !== 'country') return total(name, year);
-  const row = data.provinces[name]?.[state.sensor]?.[year];
+  const row = geographic.regions[name]?.series?.[state.sensor]?.[year];
   return row ? sum(row.filter((_, m) => inWin(m))) : null;
 }
 function pickArea(name) {
-  if (state.scope === 'country' && name !== COUNTRY) setScope('province');
+  if (state.scope === 'country' && name !== COUNTRY) setScope(geographic.regions[name] ? 'region' : 'province');
   select(name);
 }
-const activeGeo = () => ({ province: geo, region: regionGeo, country: geo, draw: drawn?.geo || EMPTY })[state.scope];
+const activeGeo = () => ({ province: geo, region: regionGeo, country: regionGeo, draw: drawn?.geo || EMPTY })[state.scope];
 function areaData(name) {
   if (state.scope === 'region') return geographic.regions[name]?.series;
   if (state.scope === 'country') return name === COUNTRY ? country.series : null;
@@ -138,8 +140,8 @@ function indexData() {
 function renderAreaSearch() {
   const names = mapNames().sort((a, b) => a.localeCompare(b, 'tr'));
   $('#provList').innerHTML = names.map((n) => `<option value="${n}">`).join('');
-  $('#search').placeholder = regional() ? 'Bölge ara' : 'İl ara';
-  $('#search').setAttribute('aria-label', regional() ? 'Bölge ara' : 'İl ara');
+  $('#search').placeholder = regionMap() ? 'Bölge ara' : 'İl ara';
+  $('#search').setAttribute('aria-label', regionMap() ? 'Bölge ara' : 'İl ara');
   $('#search').value = '';
   // Ülke ve çizim görünümünde aranacak bir ad yok.
   $('.topbar .search').hidden = state.scope === 'draw';
@@ -609,17 +611,17 @@ function setYear(y) {
 
 function renderLegend() {
   const lv = legendVals, n = lv.length;
-  $('#legend').innerHTML = n > 1 ? `<b>${regional() ? 'Bölge' : 'İl'} renkleri: ${fullWin() ? 'yıllık' : winLabel()} tespit</b><div class="bar" style="background:linear-gradient(90deg,${RAMP.join(',')})"></div>
+  $('#legend').innerHTML = n > 1 ? `<b>${regionMap() ? 'Bölge' : 'İl'} renkleri: ${fullWin() ? 'yıllık' : winLabel()} tespit</b><div class="bar" style="background:linear-gradient(90deg,${RAMP.join(',')})"></div>
     <div class="ends"><span>az</span><span>${fmt(lv[n >> 1])}</span><span>çok</span></div>
     <div class="dotnote"><i></i><span>Tek tek tespitler, yakınlaşınca</span></div>` : '';
 }
 
 function renderRank() {
   const rows = mapNames().map((n) => [n, mapTotal(n)]).filter((r) => r[1] != null)
-    .sort((a, b) => b[1] - a[1]).slice(0, regional() ? 7 : 6);
+    .sort((a, b) => b[1] - a[1]).slice(0, regionMap() ? 7 : 6);
   $('#rank').hidden = !rows.length || state.scope === 'draw';
   if (!rows.length || state.scope === 'draw') return;
-  $('#rankTitle').textContent = `En çok tespit${regional() ? ' · bölgeler' : ''} · ${state.year}${fullWin() ? '' : ' · ' + winLabel()}`;
+  $('#rankTitle').textContent = `En çok tespit${regionMap() ? ' · bölgeler' : ''} · ${state.year}${fullWin() ? '' : ' · ' + winLabel()}`;
   $('#rankList').innerHTML = rows.map(([n, t], i) =>
     `<li><button data-name="${n}" class="${n === state.sel ? 'on' : ''}"><i>${i + 1}</i><span>${n}</span><em>${fmt(t)}</em>
      <u style="width:calc((100% - 34px) * ${rows[0][1] ? t / rows[0][1] : 0})"></u></button></li>`).join('');

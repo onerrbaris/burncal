@@ -42,6 +42,7 @@ Sunum (7 slayt) ve teslim formu. Veri güncellemek için: `python scripts/fetch_
 - Deploy için Render + Vercel hesapları
 
 ## Done
+- 15 Kas: Ülke görünümünde (açılış) harita illeri değil yedi coğrafi bölgeyi boyar; sıralama, arama ve renk açıklaması bölgelere göre. Bölgeye tıklamak/aramak Bölgeler görünümüne geçirir. Tarayıcıda denendi, konsol temiz.
 - 15 Kas: Sağ panel iki ayrı kart oldu: "1 Ay ayrıntısı" (tek ayın okuması) ve turuncu üst çizgili "2 Grafikler" (yıl/ay aralığı + sekmeler + grafik). Aralık notu, aralığın harita, sol özet, ay kıyası ve indirmeleri de etkilediğini söyler. Tarayıcıda kontrol edildi.
 - 15 Kas: "Detaylı inceleme" bütün alan birimlerine yayıldı: il, bölge, ülke ve çizilen alanda her yeni seçimde grafik paneli kapalı başlar; yıl/ay/sekme değişimi panel durumunu bozmaz. Kamera sağ panele yer bırakmaz. Tarayıcıda dört birim denendi, konsol temiz.
 - 15 Kas: Açılış Ülke görünümü: Türkiye toplamı solda, harita illeri yoğunluğa göre boyar (ile tıklamak/sıralama/arama il görünümüne geçirir); kamera tüm Türkiye görünecek kadar uzakta. Grafik paneli açılışta kapalı, kenarda "Detaylı inceleme" tutamacı. Sağ panelde sıra: Ay ayrıntısı → yıl/ay aralığı → sekmeler. Sol özetin × düğmesi kaydırınca yerinde kalır; yeni seçimde paneller başa sarar. Varsayılan katmanlar: tespit yoğunluğu, ateş noktaları, 3B arazi. Çiz'deki daire elips oldu: ilk basılan nokta kutunun köşesi, Shift ile tam daire. Tarayıcıda denendi, konsol temiz.
