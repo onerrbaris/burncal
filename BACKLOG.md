@@ -3,6 +3,7 @@
 Repo: https://github.com/onerrbaris/burncal (private). Yeni oturum: önce `docs/HANDOFF.md`. Bulgular: `docs/REPORT.md`. `ARCHITECTURE.md` taslaktır.
 
 ## Next step
+Takvimde belirgin düşük aylar mavi (`web/js/charts.js` LOW_MIN=20, eşik p25). Türkiye görünümünde karelerin ~%26'sı mavi; yoğun bulunursa eşiği %10'a çekme kararı kullanıcıda. Görsel kontrol yapılmadı (ekran görüntüsü alınamadı).
 Çiz ve Ülke eklendi (`web/js/draw.js`). Mobil genişlikte (≤760 px) dört alan düğmesi + arama yerleşimini ve dokunmatik çizimi tarayıcıda kontrol et; masaüstünde denendi.
 Yedi bölgenin LOYO doğrulaması tamamlandı (`docs/GEOGRAPHIC_VALIDATION.md`). Yöntem/üyelik değişirse `.venv/Scripts/python.exe scripts/validate_geographic_regions.py` → `python scripts/build_geographic_regions.py`. Bölge toplamları atlas veri üretiminde otomatik yenilenir.
 Küçük yıl kontrolünü masaüstü/mobilde görsel olarak kontrol et; renk ölçeği artık isteğe bağlı açılır.
@@ -42,6 +43,8 @@ Sunum (7 slayt) ve teslim formu. Veri güncellemek için: `python scripts/fetch_
 - Deploy için Render + Vercel hesapları
 
 ## Done
+
+- Takvimde belirgin düşük aylar mavi dolguyla gösteriliyor (sezon içi, bitmiş ay, yılların %25'inden azını geçen, tipik değer ≥20); açıklamaya eklendi.
 
 - Harita renkleri yeniden seçili yılın tespit sırasına göre dağıtılıyor; 3B arazi renk yenilemesi korunuyor.
 
