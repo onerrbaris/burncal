@@ -3,7 +3,7 @@ import { t as msg, lang, locale, displayText, percent } from './i18n.js?v=202611
 import { regionGeometry } from './regions.js?v=20261115a';
 import { buildStyle, LAYER_GROUPS, RAMP, waterName } from './mapstyle.js?v=20261115-low-blue';
 import { MONTHS, MON3, LEVELS, fmt, quantile, inRange, reading, sentence, peaks, sourceOf, csvRows, hotspotRows,
-  calendar, calendarKey, compare, stepChart, setChartWidth, vsTypical, rampColor } from './charts.js?v=20261115-low-blue';
+  calendar, calendarKey, compare, stepChart, setChartWidth, vsTypical, rampColor } from './charts.js?v=20261115-low-blue2';
 import { DrawTool, drawnArea } from './draw.js?v=20261115-low-blue';
 
 const $ = (s) => document.querySelector(s);

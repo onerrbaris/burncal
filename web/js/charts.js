@@ -42,7 +42,7 @@ const MIN_REF = 3;  // karşılaştırma için en az bu kadar başka yıl
 // Takvimde "düşük" ay mavi boyanır; ama yalnızca tipik değer (medyan) bu sayı ve üstündeyse.
 // Medyanı küçük aylarda düşüklük gürültüdür (il ölçeğinde aylık hata ~%38).
 export const LOW_MIN = 20;
-export const LOW_FILL = '#4a8fe0';
+export const LOW_FILL = '#1f6bff';
 
 export function inRange(years, from, to) {
   const out = {};
