@@ -382,11 +382,12 @@ async function loadPoints() {
 
 // Renk, ilin o yılki sıralamasına göre verilir (çeyreklik ölçek): birkaç çok yüksek il
 // diğerlerini tek renge sıkıştırmasın.
-let legendVals = [];
+let legendVals = [], legendNames = [];
 function paintMap() {
   const tot = {};
   for (const f of activeGeo().features) { const n = f.properties.name; tot[n] = mapTotal(n); }
-  legendVals = Object.values(tot).filter((t) => t != null).sort((a, b) => a - b);
+  const ranked = Object.entries(tot).filter(([, t]) => t != null).sort((a, b) => a[1] - b[1]);
+  legendVals = ranked.map(([, t]) => t); legendNames = ranked.map(([n]) => n);
   const last = Math.max(1, legendVals.length - 1);
   for (const f of activeGeo().features) {
     const name = f.properties.name, t = tot[name];
@@ -609,11 +610,35 @@ function setYear(y) {
   renderPanel(); renderRank();
 }
 
+// Renk ölçeği: her rengin hangi tespit aralığına karşılık geldiği (katman menüsünde, arazi türü gibi).
+// Renk, alanın o yılki sıralamasından gelir; her renk satırı o renge en yakın alanların aralığını gösterir.
 function renderLegend() {
-  const lv = legendVals, n = lv.length;
-  $('#legend').innerHTML = n > 1 ? `<b>${regionMap() ? 'Bölge' : 'İl'} renkleri: ${fullWin() ? 'yıllık' : winLabel()} yangın tespiti</b><div class="bar" style="background:linear-gradient(90deg,${RAMP.join(',')})"></div>
-    <div class="ends"><span>az</span><span>${fmt(lv[n >> 1])}</span><span>çok</span></div>
-    <div class="dotnote"><i></i><span>Yakınlaşınca tek tek tespitler görünür</span></div>` : '';
+  const el = $('#legend'), on = $('#layersMenu [data-layer=fill]')?.checked;
+  const lv = legendVals, n = lv.length, k = RAMP.length - 1;
+  el.hidden = !on || n < 2;
+  if (el.hidden) return;
+  // Haritadaki renk: sıradaki yerin (0–1) RAMP üzerinde doğrusal karışımı (mapstyle prov-fill ile aynı).
+  const mix = (v) => {
+    const x = v * k, i = Math.min(k - 1, Math.floor(x)), f = x - i;
+    const h = (c, o) => parseInt(c.slice(o, o + 2), 16);
+    return `rgb(${[1, 3, 5].map((o) => Math.round(h(RAMP[i], o) + (h(RAMP[i + 1], o) - h(RAMP[i], o)) * f)).join(',')})`;
+  };
+  let rows;
+  if (regionMap()) {
+    // Az sayıda bölge: her biri haritadaki tam rengiyle ayrı satırda.
+    rows = lv.map((t, i) => [t, i]).reverse().map(([t, i]) =>
+      `<li><i style="background:${mix(i / (n - 1))}"></i><span>${fmt(t)}</span><small>${legendNames[i]}</small></li>`).join('');
+  } else {
+    const buckets = RAMP.map(() => []);
+    lv.forEach((t, i) => buckets[Math.round((i / (n - 1)) * k)].push(t));
+    rows = buckets.map((b, i) => [b, i]).filter(([b]) => b.length).reverse().map(([b, i], j, all) => {
+      const range = b[0] === b.at(-1) ? fmt(b[0]) : `${fmt(b[0])}–${fmt(b.at(-1))}`;
+      const tag = j === 0 ? 'en çok' : j === all.length - 1 ? 'en az' : `${b.length} il`;
+      return `<li><i style="background:${RAMP[i]}"></i><span>${range}</span><small>${tag}</small></li>`;
+    }).join('');
+  }
+  el.innerHTML = `<li class="lg-title">${regionMap() ? 'Bölge' : 'İl'} başına ${fullWin() ? 'yıllık' : winLabel()} yangın tespiti · ${state.year}</li>${rows}
+    <li class="lg-dot"><i></i><span>Yakınlaşınca tek tek yangın noktaları</span></li>`;
 }
 
 function renderRank() {
@@ -1113,10 +1138,11 @@ function bindRest() {
       $('#lcLegend').hidden = !on;
       // İki renk düzeni üst üste okunmaz: arazi türü açılınca il renkleri kapanır.
       const fill = lm.querySelector('[data-layer=fill]');
-      if (on && fill.checked) { fill.checked = false; for (const id of LAYER_GROUPS.fill) map.setLayoutProperty(id, 'visibility', 'none'); }
+      if (on && fill.checked) { fill.checked = false; for (const id of LAYER_GROUPS.fill) map.setLayoutProperty(id, 'visibility', 'none'); renderLegend(); }
       return;
     }
     for (const id of LAYER_GROUPS[g]) map.setLayoutProperty(id, 'visibility', on ? 'visible' : 'none');
+    if (g === 'fill') renderLegend();
     if (g === 'points' && !on) closePointPopup();
     if (g === 'points' && on) updatePoints();
   });
