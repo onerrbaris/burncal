@@ -1,4 +1,4 @@
-import { lang } from './i18n.js?v=20261115-cal-read2';
+import { lang } from './i18n.js?v=20261115-perf-merge';
 // Harita stili: uydu tabanı + 3B arazi + yakınlaştıkça açılan vektör detay + il katmanları.
 // Karo kaynakları anahtarsızdır; değiştirmek için yalnızca SOURCES bloğunu düzenleyin.
 
@@ -102,25 +102,6 @@ export function buildStyle(provinces, labels) {
             12, 0.08],
         },
       },
-      { // Tek tek uydu tespitleri (seçili yıl); yalnızca yakınlaşınca görünür.
-        // Ateş noktalarının altındaki parıltı: kırmızı yoğunluk zemininde de noktalar öne çıksın.
-        id: 'pts-glow', type: 'circle', source: 'pts', minzoom: 5.8,
-        paint: {
-          'circle-radius': ['interpolate', ['exponential', 2], ['zoom'], 5.8, 4.5, 8, 8, 10, 11, 12, 18],
-          'circle-color': '#ff7a1a', 'circle-blur': 1,
-          'circle-opacity': ['interpolate', ['linear'], ['zoom'], 5.8, 0, 6.2, 0.45, 12, 0.3],
-        },
-      },
-      {
-        id: 'pts', type: 'circle', source: 'pts', minzoom: 5.8,
-        paint: {
-          'circle-radius': ['interpolate', ['exponential', 2], ['zoom'], 5.8, 2.2, 8, 3.8, 10, 4.4, 12, 7.5],
-          'circle-color': '#ff3b1a', 'circle-stroke-color': '#ffe7c4',
-          'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 5.8, 0.4, 9, 1],
-          'circle-opacity': ['interpolate', ['linear'], ['zoom'], 5.8, 0, 6.2, 1],
-          'circle-stroke-opacity': ['interpolate', ['linear'], ['zoom'], 5.8, 0, 6.2, 0.85],
-        },
-      },
       {
         id: 'prov-hover', type: 'fill', source: 'provinces',
         paint: {
@@ -170,6 +151,27 @@ export function buildStyle(provinces, labels) {
         id: 'sel-line', type: 'line', source: 'provinces', filter: ['==', ['get', 'name'], ''],
         layout: { 'line-join': 'round' },
         paint: { 'line-color': '#ffd2ad', 'line-width': 2.2 },
+      },
+      // Nokta katmanları araziye giydirilmez; dolgu ve çizgi katmanlarının arasında dururlarsa 3B arazi
+      // her karede iki kez dokuya çizilir. Bu yüzden hepsinin üstünde, yazıların altında dururlar.
+      { // Tek tek uydu tespitleri (seçili yıl); yalnızca yakınlaşınca görünür.
+        // Ateş noktalarının altındaki parıltı: kırmızı yoğunluk zemininde de noktalar öne çıksın.
+        id: 'pts-glow', type: 'circle', source: 'pts', minzoom: 5.8,
+        paint: {
+          'circle-radius': ['interpolate', ['exponential', 2], ['zoom'], 5.8, 4.5, 8, 8, 10, 11, 12, 18],
+          'circle-color': '#ff7a1a', 'circle-blur': 1,
+          'circle-opacity': ['interpolate', ['linear'], ['zoom'], 5.8, 0, 6.2, 0.45, 12, 0.3],
+        },
+      },
+      {
+        id: 'pts', type: 'circle', source: 'pts', minzoom: 5.8,
+        paint: {
+          'circle-radius': ['interpolate', ['exponential', 2], ['zoom'], 5.8, 2.2, 8, 3.8, 10, 4.4, 12, 7.5],
+          'circle-color': '#ff3b1a', 'circle-stroke-color': '#ffe7c4',
+          'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 5.8, 0.4, 9, 1],
+          'circle-opacity': ['interpolate', ['linear'], ['zoom'], 5.8, 0, 6.2, 1],
+          'circle-stroke-opacity': ['interpolate', ['linear'], ['zoom'], 5.8, 0, 6.2, 0.85],
+        },
       },
       {
         id: 'water-name', type: 'symbol', source: 'omt', 'source-layer': 'water_name',

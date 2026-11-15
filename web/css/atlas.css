@@ -18,7 +18,7 @@
   --extreme: #ff6b4a;
   --warn: #f2c14e;
   --font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --panel-w: 540px;
+  --panel-w: 460px;
   --side-w: 370px;
   --r: 12px;
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);

@@ -1,10 +1,10 @@
-import { t as msg, lang, locale, displayText, percent } from './i18n.js?v=20261115-cal-read2';
+import { t as msg, lang, locale, displayText, percent } from './i18n.js?v=20261115-perf-merge';
 /* global maplibregl */
 import { regionGeometry } from './regions.js?v=20261115a';
-import { buildStyle, LAYER_GROUPS, RAMP, waterName } from './mapstyle.js?v=20261115-cal-read2';
+import { buildStyle, LAYER_GROUPS, RAMP, waterName } from './mapstyle.js?v=20261115-perf-merge';
 import { MONTHS, MON3, LEVELS, fmt, quantile, inRange, reading, sentence, peaks, sourceOf, csvRows, hotspotRows,
-  calendar, calendarKey, compare, stepChart, setChartWidth, vsTypical, rampColor } from './charts.js?v=20261115-cal-read2';
-import { DrawTool, drawnArea } from './draw.js?v=20261115-cal-read2';
+  calendar, calendarKey, compare, stepChart, setChartWidth, vsTypical, rampColor } from './charts.js?v=20261115-perf-merge';
+import { DrawTool, drawnArea } from './draw.js?v=20261115-perf-merge';
 
 const $ = (s) => document.querySelector(s);
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -446,11 +446,11 @@ function initMap() {
       paint: { 'fill-color': '#ff8a3d', 'fill-opacity': 0.12 } }, 'sel-glow');
     map.addSource('draft', { type: 'geojson', data: EMPTY });
     map.addLayer({ id: 'draft-fill', type: 'fill', source: 'draft', filter: ['==', ['get', 'k'], 'a'],
-      paint: { 'fill-color': '#ff8a3d', 'fill-opacity': 0.16 } });
+      paint: { 'fill-color': '#ff8a3d', 'fill-opacity': 0.16 } }, 'pts-glow');
     map.addLayer({ id: 'draft-line', type: 'line', source: 'draft', filter: ['==', ['get', 'k'], 'l'],
-      layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#ffd2ad', 'line-width': 2.4 } });
+      layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#ffd2ad', 'line-width': 2.4 } }, 'pts-glow');
     map.addLayer({ id: 'draft-pt', type: 'circle', source: 'draft', filter: ['==', ['get', 'k'], 'v'],
-      paint: { 'circle-radius': 4.5, 'circle-color': '#ff8a3d', 'circle-stroke-color': '#fff', 'circle-stroke-width': 1.5 } });
+      paint: { 'circle-radius': 4.5, 'circle-color': '#ff8a3d', 'circle-stroke-color': '#fff', 'circle-stroke-width': 1.5 } }, 'water-name');
     drawTool = new DrawTool(map, { onDone: finishDraw, onStatus: drawHint });
     ready = true;
     for (const button of document.querySelectorAll('[data-scope]')) button.disabled = false;
@@ -541,7 +541,7 @@ async function addLandcover() {
       const id = `lc-${t.tile}`;
       map.addSource(id, { type: 'image', url: t.file, coordinates: t.coordinates });
       map.addLayer({ id, type: 'raster', source: id, layout: { visibility: on ? 'visible' : 'none' },
-        paint: { 'raster-opacity': 0.72, 'raster-resampling': 'nearest', 'raster-fade-duration': 0 } }, 'pts-glow');
+        paint: { 'raster-opacity': 0.72, 'raster-resampling': 'nearest', 'raster-fade-duration': 0 } }, 'prov-hover');
       lcLayers.push(id);
     }
     landLegend = idx.legend;

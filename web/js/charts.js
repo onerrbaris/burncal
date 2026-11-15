@@ -1,8 +1,8 @@
-import { t as msg, displayText, locale, ordinal } from './i18n.js?v=20261115-cal-read2';
+import { t as msg, displayText, locale, ordinal } from './i18n.js?v=20261115-perf-merge';
 // Panel grafikleri: elle yazılmış SVG. Tek ölçek, tek renk tonu (kor), nötr mürekkep.
 // Bu dosyadaki istatistik işlevleri (inRange, reading, sentence, peaks, csvRows, hotspotRows) saf işlevlerdir;
 // tarayıcı dışında Node ile de sınanabilir.
-import { RAMP } from './mapstyle.js?v=20261115-cal-read2';
+import { RAMP } from './mapstyle.js?v=20261115-perf-merge';
 
 // Ay dizileri canlı dışa aktarımdır; dil değişiminde mevcut seçim aynı ay indeksinde kalır.
 export let MONTHS, MON3;

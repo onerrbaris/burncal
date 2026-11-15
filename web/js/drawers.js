@@ -1,4 +1,4 @@
-import { t, displayText } from './i18n.js?v=20261115-cal-read2';
+import { t, displayText } from './i18n.js?v=20261115-perf-merge';
 // Kenar panelleri: seçim ve içerik korunur, yalnızca panel haritanın dışına kayar.
 const drawers = [];
 function drawer(id, label, direction, collapsed = false) {
@@ -42,13 +42,13 @@ drawer('rank', 'En çok tespit listesini', 'left', true);
 drawer('side', 'İl özetini', 'left');
 drawer('panel', 'Grafikleri', 'right', true);
 
-// Her yeni seçimde (il, bölge, ülke, çizilen alan) özet açılır, grafik paneli kapalı başlar ve
-// "Yangın takvimini aç" ile açılır. Yıl, ay ya da sekme değişimi panelin durumuna dokunmaz.
+// Her yeni seçimde (il, bölge, ülke, çizilen alan) özet açılır. Grafik paneli kapalı başlar,
+// "Yangın takvimini aç" ile açılır ve kullanıcı kapatana kadar sonraki seçimlerde de açık kalır.
 let selected = '';
 const panel = document.getElementById('panel');
 new MutationObserver(() => {
   const name = panel.hidden ? '' : panel.dataset.sel || '';
-  if (name && name !== selected) for (const d of drawers) if (d.id !== 'rank') d.set(d.id === 'panel');
+  if (name && name !== selected) drawers.find((d) => d.id === 'side').set(false);
   selected = name;
 }).observe(panel, { attributes: true, attributeFilter: ['hidden', 'data-sel'], childList: true, subtree: true });
 
