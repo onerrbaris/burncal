@@ -135,7 +135,7 @@ body.has-panel .rank { display: none; }
 .charts-head h2 { font-size: 20px; }
 
 /* ── Sağ: grafik paneli ────────────────────────────────── */
-.panel { position: fixed; z-index: 6; top: 76px; right: 14px; bottom: 104px; width: var(--panel-w);
+.panel { position: fixed; z-index: 6; top: 76px; right: 14px; bottom: 80px; width: var(--panel-w);
   display: flex; flex-direction: column; animation: slide-in 0.45s var(--ease); background: var(--surface);
   overflow: visible; }
 @keyframes slide-in { from { transform: translateX(28px); opacity: 0; } }
