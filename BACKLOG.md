@@ -42,6 +42,8 @@ Sunum (7 slayt) ve teslim formu. Veri güncellemek için: `python scripts/fetch_
 - Deploy için Render + Vercel hesapları
 
 ## Done
+
+- İl renk ölçeğinde sağdaki sıra ve il sayısı etiketleri kaldırıldı.
 - 15 Kas: "Tespit yoğunluğu" katmanı "Renk ölçeği" oldu; açıklaması alttaki "Ölçek" düğmesinden (kaldırıldı, `web/js/timeline.js` silindi) katman menüsüne taşındı, arazi türü açıklamasıyla aynı biçimde. Bölge/ülke görünümünde her bölge haritadaki tam rengi ve tespit sayısıyla; il görünümünde 6 renk aralığı (en çok / N il / en az). Katman kapanınca açıklama gizlenir. Tarayıcıda kontrol edildi, konsol temiz.
 - 15 Kas: "Uyumlaştırılmış seri" adı "Birleşik seri" oldu (sekme: Birleşik · MODIS + VIIRS). Kaynak notundaki "çarpan" da "katsayı" oldu; `web/data/atlas.json` elle yamandı, `scripts/build_atlas_json.py` aynı metni üretir.
 - 15 Kas: "Ateş" ifadeleri "yangın" oldu: katman "Yangın noktaları", sıralama/renk açıklaması "yangın tespiti", arazi kartı "Yangınlar hangi arazide?". Arayüzde "ateş" kalmadı (tarayıcıda kontrol edildi).

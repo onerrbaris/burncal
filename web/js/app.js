@@ -631,10 +631,9 @@ function renderLegend() {
   } else {
     const buckets = RAMP.map(() => []);
     lv.forEach((t, i) => buckets[Math.round((i / (n - 1)) * k)].push(t));
-    rows = buckets.map((b, i) => [b, i]).filter(([b]) => b.length).reverse().map(([b, i], j, all) => {
+    rows = buckets.map((b, i) => [b, i]).filter(([b]) => b.length).reverse().map(([b, i]) => {
       const range = b[0] === b.at(-1) ? fmt(b[0]) : `${fmt(b[0])}–${fmt(b.at(-1))}`;
-      const tag = j === 0 ? 'en çok' : j === all.length - 1 ? 'en az' : `${b.length} il`;
-      return `<li><i style="background:${RAMP[i]}"></i><span>${range}</span><small>${tag}</small></li>`;
+      return `<li><i style="background:${RAMP[i]}"></i><span>${range}</span></li>`;
     }).join('');
   }
   el.innerHTML = `<li class="lg-title">${regionMap() ? 'Bölge' : 'İl'} başına ${fullWin() ? 'yıllık' : winLabel()} yangın tespiti · ${state.year}</li>${rows}
