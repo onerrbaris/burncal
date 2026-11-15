@@ -595,13 +595,17 @@ function readCard(name, val) {
 // "Ateşler nerede yanıyor?": seçili yıllar ve aylardaki tespitlerin arazi türüne göre payı (ESA WorldCover 2021).
 const LC_COLORS = ['#ecba52', '#2e7d4f', '#a8a85a', '#7d8792'];
 function landCard(name) {
-  const p = lc?.provinces?.[name];
-  if (!p) return '';
+  if (!lc?.provinces) return '';
   const g = [0, 0, 0, 0];
-  for (let y = state.from; y <= state.to; y++) {
-    const r = p[y];
-    if (!r) continue;
-    for (let m = state.win[0]; m <= state.win[1]; m++) for (let k = 0; k < 4; k++) g[k] += r[m * 4 + k];
+  // Bölge payları il yüzdelerinin ortalaması değil, tespit sayılarının toplamıdır.
+  for (const member of regional() ? membersOf(name) : [name]) {
+    const p = lc.provinces[member];
+    if (!p) continue;
+    for (let y = state.from; y <= state.to; y++) {
+      const r = p[y];
+      if (!r) continue;
+      for (let m = state.win[0]; m <= state.win[1]; m++) for (let k = 0; k < 4; k++) g[k] += r[m * 4 + k];
+    }
   }
   const tot = g[0] + g[1] + g[2] + g[3];
   if (tot < 20) return '';

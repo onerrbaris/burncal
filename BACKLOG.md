@@ -41,6 +41,7 @@ Sunum (7 slayt) ve teslim formu. Veri güncellemek için: `python scripts/fetch_
 - Deploy için Render + Vercel hesapları
 
 ## Done
+- 15 Kas: Bölge özetine arazi türü yüzdeleri eklendi. Bölgedeki illerin seçili yıl/ay aralığındaki tespitleri sınıf bazında toplanır; il yüzdelerinin ortalaması alınmaz. Şehir kartının görünümü ve 20 tespit eşiği korunur.
 - 15 Kas: Yıl/ay aralığı filtreleri ve Ay ayrıntısı kartı sol özetten sağ grafik paneline, sekmelerin üstüne taşındı; il ve bölge görünümünde aynı kontroller kullanılır. Tarayıcıda Akdeniz ve Adana için yıl aralığı/ay değişimi denendi; sol panelde bu kontroller yok, sağdaki kart/grafikler güncelleniyor; yeni konsol hatası yok.
 - 15 Kas: Atlas'a İller / 7 bölge seçimi eklendi. Marmara, Ege, Akdeniz, İç Anadolu, Karadeniz, Doğu Anadolu, Güneydoğu Anadolu haritadan/menüden seçilir; renk, takvim, kıyas, sıralama, CSV ve süren ay kıyası il serilerinin toplamını kullanır. 81 il tek kez kapsanır; 804 ay/sensör toplamı ve indirilen 75 aylık CSV doğrulandı. Tarayıcıda yedi seçim, Akdeniz–2021, sensörler, sekmeler, ay filtresi ve il görünümüne dönüş denendi; konsol temiz.
 - 15 Kas: Arazi türü (ESA WorldCover 2021, 10 m, 19 parça, Türkiye tamamı): her noktanın sınıfı (nokta dosyaları artık 6'lı, "stride":6), il×yıl×ay×4 grup sayımı (web/data/landcover.json), ~270 m renkli katman (web/data/landcover/). Kontroller: Antalya/Muğla Tem–Ağu 2021 %77–80 ağaçlık; Adana 2025 %81, Şanlıurfa Haz 2025 %94 tarım; 20 m katmanla 290/300 uyum. Sırayla: build_points → build_landcover.
