@@ -44,7 +44,7 @@ Sunum (7 slayt) ve teslim formu. Veri güncellemek için: `python scripts/fetch_
 - Deploy için Render + Vercel hesapları
 
 ## Done
-- İngilizce final sunumu kısa bir teşekkür ve atlas bağlantısıyla kapanıyor.
+- İngilizce final sunumu, yangın izleme araçlarıyla karşılaştırma ve yerel yangın takviminin katkısıyla kapanıyor.
 - İngilizce final sunumunun tekrarları sadeleştirildi. Kapanış Antalya örneğiyle atlası kullanmaya davet ediyor (PDF ve PowerPoint).
 
 - Antalya Temmuz 2021 örneği için tek slaytlık Türkçe PowerPoint ve yöntem, doğrulama, kullanım ile sonraki adımları anlatan yedi slaytlık İngilizce sunum hazırlandı.
