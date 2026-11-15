@@ -1,4 +1,5 @@
 /* global maplibregl */
+import { regionGeometry } from './regions.js?v=20261115a';
 import { buildStyle, LAYER_GROUPS, RAMP } from './mapstyle.js?v=20261115h';
 import { MONTHS, MON3, LEVELS, fmt, quantile, inRange, reading, sentence, peaks, sourceOf, csvRows, hotspotRows,
   calendar, calendarKey, compare, stepChart, setChartWidth } from './charts.js?v=20261115h';
@@ -20,14 +21,23 @@ const SENSORS = [
 const TABS = [['calendar', 'Takvim'], ['compare', 'Karşılaştır'], ['peaks', 'En yoğun'], ['step', 'Uydu uyumu'], ['ogm', 'OGM kaydı']];
 
 // month: okunan ay (0–11); from/to: dönem yılları; win: sezon penceresi [ilk ay, son ay]; custom: dönemi kullanıcı mı seçti.
-const state = { sensor: 'merged', year: null, month: 11, from: null, to: null, win: [0, 11], custom: false, sel: null, tab: 'calendar', playing: false };
+const state = { scope: 'province', sensor: 'merged', year: null, month: 11, from: null, to: null, win: [0, 11], custom: false, sel: null, tab: 'calendar', playing: false };
+let geographic, regionGeo;
+const provinceRegion = {};
+const regional = () => state.scope === 'region';
+const activeGeo = () => regional() ? regionGeo : geo;
+const areaData = (name) => regional() ? geographic.regions[name]?.series : data.provinces[name];
+const areaNames = () => regional() ? Object.keys(geographic.regions) : Object.keys(data.provinces);
+const areaName = (name) => regional() ? provinceRegion[name] || name : name;
+const membersOf = (name) => geographic.regions[name]?.members || [name];
+const partialValues = (key, name) => regional() ? geographic.partial[key]?.[name] : data.partial[key]?.[name];
 let data, geo, ogm, lc, map, timer, ready = false, hovered = null, orbitOK = false, orbitRaf = 0;
 let RANGE, LY, LM, LD, PARTIAL, READ_M;   // etkin serinin yıl aralığı; son veri yılı, ayı (0–11), günü; son yıl bitmemiş mi
 const bboxes = {}, provIdx = {}, ranges = {};
 
 // ── Veri ────────────────────────────────────────────────
 const sum = (a) => a.reduce((x, y) => x + (y ?? 0), 0);
-const series = (name, sensor = state.sensor) => data.provinces[name]?.[sensor] || null;
+const series = (name, sensor = state.sensor) => areaData(name)?.[sensor] || null;
 const sensorOf = () => SENSORS.find((s) => s.key === state.sensor);
 const mtdKey = () => (state.sensor === 'merged' ? 'mtd' : `mtd_${state.sensor}`);
 const fullWin = () => state.win[0] === 0 && state.win[1] === 11;
@@ -50,7 +60,7 @@ function likeTotal(name, y) {
   for (let m = state.win[0]; m <= Math.min(state.win[1], LM - 1); m++) t += row[m] ?? 0;
   if (inWin(LM)) {
     const i = data.partial.years.indexOf(y);
-    t += y === LY ? row[LM] ?? 0 : data.partial[mtdKey()]?.[name]?.[i] ?? 0;
+    t += y === LY ? row[LM] ?? 0 : partialValues(mtdKey(), name)?.[i] ?? 0;
   }
   return t;
 }
@@ -59,9 +69,9 @@ function likeTotal(name, y) {
 const cmpCache = {};
 function cmpYears(name) {
   if (!PARTIAL) return series(name);
-  const ck = state.sensor + name;
+  const ck = state.scope + state.sensor + name;
   if (cmpCache[ck]) return cmpCache[ck];
-  const out = {}, mtd = data.partial[mtdKey()]?.[name] || [];
+  const out = {}, mtd = partialValues(mtdKey(), name) || [];
   for (const [y, row] of Object.entries(series(name) || {})) {
     const i = data.partial.years.indexOf(+y), r = row.slice();
     if (+y !== LY && i >= 0) r[LM] = mtd[i];
@@ -87,9 +97,41 @@ function indexData() {
   state.month = READ_M;
 }
 
-function geometry() {
+function renderAreaSearch() {
+  const names = areaNames().sort((a, b) => a.localeCompare(b, 'tr'));
+  $('#provList').innerHTML = names.map((n) => `<option value="${n}">`).join('');
+  $('#search').placeholder = regional() ? 'Bölge ara' : 'İl ara';
+  $('#search').setAttribute('aria-label', regional() ? 'Bölge ara' : 'İl ara');
+  $('#search').value = '';
+}
+function setScope(scope) {
+  if (scope === state.scope || !ready) return;
+  stopPlay(); closePointPopup(); hideTip(); stopOrbit();
+  const previous = state.sel;
+  if (hovered) map.setFeatureState({ source: 'provinces', id: hovered }, { hover: false });
+  hovered = null;
+  map.getCanvas().style.cursor = '';
+  state.scope = scope;
+  state.sel = null;
+  for (const button of document.querySelectorAll('[data-scope]')) button.setAttribute('aria-pressed', String(button.dataset.scope === scope));
+  $('#regionPick').hidden = !regional();
+  $('#regionPick').value = '';
+  $('#layersMenu [data-layer=fill]').nextElementSibling.nextSibling.textContent = regional() ? 'Bölge renkleri' : 'İl renkleri';
+  map.removeFeatureState({ source: 'provinces' });
+  map.getSource('provinces').setData(activeGeo());
+  map.getSource('provLabels').setData(geometry(activeGeo(), false));
+  renderAreaSearch();
+  // Bölgeyi seçmek il renklerini açmakla aynı kullanıcı tercihidir; diğer katmanlar değişmez.
+  const fill = $('#layersMenu [data-layer=fill]');
+  fill.checked = true;
+  fill.dispatchEvent(new Event('change', { bubbles: true }));
+  select(regional() && previous ? areaName(previous) : null, false);
+  renderLegend();
+}
+
+function geometry(collection = geo, index = true) {
   const labels = [];
-  geo.features.forEach((f, idx) => {
+  collection.features.forEach((f, idx) => {
     const polys = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates;
     let b = [180, 90, -180, -90], best = null, bestArea = -1;
     for (const poly of polys) {
@@ -104,9 +146,9 @@ function geometry() {
     }
     const name = f.properties.name;
     bboxes[name] = [[b[0], b[1]], [b[2], b[3]]];
-    provIdx[name] = idx;
+    if (index) provIdx[name] = idx;
     labels.push({ type: 'Feature', geometry: { type: 'Point', coordinates: best },
-      properties: { name, label: up(name), hasData: !!data.provinces[name] } });
+      properties: { name, label: up(name), hasData: !!areaData(name) } });
   });
   return { type: 'FeatureCollection', features: labels };
 }
@@ -248,10 +290,10 @@ async function loadPoints() {
 let legendVals = [];
 function paintMap() {
   const tot = {};
-  for (const f of geo.features) { const n = f.properties.name; tot[n] = total(n); }
+  for (const f of activeGeo().features) { const n = f.properties.name; tot[n] = total(n); }
   legendVals = Object.values(tot).filter((t) => t != null).sort((a, b) => a - b);
   const last = Math.max(1, legendVals.length - 1);
-  for (const f of geo.features) {
+  for (const f of activeGeo().features) {
     const name = f.properties.name, t = tot[name];
     let v = -1;
     if (t != null) { let lo = 0; while (lo < legendVals.length && legendVals[lo] < t) lo++; v = lo / last; }
@@ -287,6 +329,7 @@ function initMap() {
   map.on('load', () => {
     addLandcover();
     ready = true; paintMap();
+    for (const button of document.querySelectorAll('[data-scope]')) button.disabled = false;
     document.body.classList.remove('booting');
     $('#intro').classList.add('out');
     setTimeout(() => $('#intro').remove(), 2400);
@@ -377,6 +420,8 @@ async function addLandcover() {
 
 // ── Seçim ───────────────────────────────────────────────
 function select(name, fly = true) {
+  if (name) name = areaName(name);
+  if ($('#regionPick')) $('#regionPick').value = regional() && name ? name : '';
   stopOrbit();
   state.sel = name;
   document.body.classList.toggle('has-panel', !!name);
@@ -461,17 +506,17 @@ function togglePlay() {
 
 function renderLegend() {
   const lv = legendVals, n = lv.length;
-  $('#legend').innerHTML = n ? `<b>İl renkleri: ${fullWin() ? 'yıllık' : winLabel()} tespit</b><div class="bar" style="background:linear-gradient(90deg,${RAMP.join(',')})"></div>
+  $('#legend').innerHTML = n ? `<b>${regional() ? 'Bölge' : 'İl'} renkleri: ${fullWin() ? 'yıllık' : winLabel()} tespit</b><div class="bar" style="background:linear-gradient(90deg,${RAMP.join(',')})"></div>
     <div class="ends"><span>az</span><span>${fmt(lv[n >> 1])}</span><span>çok</span></div>
     <div class="dotnote"><i></i><span>Tek tek tespitler, yakınlaşınca</span></div>` : '';
 }
 
 function renderRank() {
-  const rows = Object.keys(data.provinces).map((n) => [n, total(n)]).filter((r) => r[1] != null)
-    .sort((a, b) => b[1] - a[1]).slice(0, 6);
+  const rows = areaNames().map((n) => [n, total(n)]).filter((r) => r[1] != null)
+    .sort((a, b) => b[1] - a[1]).slice(0, regional() ? 7 : 6);
   $('#rank').hidden = !rows.length;
   if (!rows.length) return;
-  $('#rankTitle').textContent = `En çok tespit · ${state.year}${fullWin() ? '' : ' · ' + winLabel()}`;
+  $('#rankTitle').textContent = `En çok tespit${regional() ? ' · bölgeler' : ''} · ${state.year}${fullWin() ? '' : ' · ' + winLabel()}`;
   $('#rankList').innerHTML = rows.map(([n, t], i) =>
     `<li><button data-name="${n}" class="${n === state.sel ? 'on' : ''}"><i>${i + 1}</i><span>${n}</span><em>${fmt(t)}</em>
      <u style="width:calc((100% - 34px) * ${rows[0][1] ? t / rows[0][1] : 0})"></u></button></li>`).join('');
@@ -597,7 +642,7 @@ function stepView(p, val) {
     birleşmiş seride ×${dec(val.step_harmonized, 2)}. MODIS tek başına ×${dec(val.step_modis, 2)} gösteriyor; birleşmiş seri buna yakın olmalı.</p>` : '';
   const lastFull = PARTIAL ? LY - 1 : LY;
   return `<h4>Ham seri ve birleşmiş seri</h4>
-    <p>Yıllık toplam. Ham seri ${vy}'ye kadar MODIS, sonra VIIRS sayar; VIIRS daha küçük ateşleri de gördüğü için ${vy}'de yapay bir sıçrama oluşur.
+    <p>${regional() ? 'İl serilerinin bölge toplamı; yeni bir bölge katsayısı hesaplanmadı. ' : ''}Yıllık toplam. Ham seri ${vy}'ye kadar MODIS, sonra VIIRS sayar; VIIRS daha küçük ateşleri de gördüğü için ${vy}'de yapay bir sıçrama oluşur.
     Birleşmiş seri ${vy} öncesini MODIS × bölgesel aylık çarpanla VIIRS ölçeğine taşır.${PARTIAL ? ` ${LY} bitmediği için çizilmedi.` : ''}</p>
     <div class="key"><span><i class="raw"></i>Ham (MODIS → VIIRS)</span><span><i class="harm"></i>Birleşmiş</span>
       <span><i class="dot o"></i>MODIS × çarpan</span><span><i class="dot"></i>VIIRS gözlemi</span></div>
@@ -609,7 +654,7 @@ function ogmView(name) {
   if (!ogm) return '<p>OGM verisi yüklenemedi.</p>';
   const lastFull = PARTIAL ? LY - 1 : LY;
   const ys = Object.keys(ogm.national).map(Number).filter((y) => y >= ranges.merged[0] && y <= lastFull).sort((a, b) => a - b);
-  const sat = ys.map((y) => sum(Object.keys(data.provinces).map((n) => sum(series(n, 'merged')?.[y] || []))));
+  const sat = ys.map((y) => sum(Object.values(data.provinces).map((p) => sum(p.merged?.[y] || []))));
   const fires = ys.map((y) => ogm.national[y].fires), ha = ys.map((y) => ogm.national[y].ha);
   // Spearman sıra korelasyonu: hangi yıllar yüksek, iki kaynak aynı sırayı veriyor mu?
   const rank = (a) => { const o = a.map((v, i) => [v, i]).sort((x, y) => x[0] - y[0]), r = []; o.forEach(([, i], k) => { r[i] = k; }); return r; };
@@ -636,7 +681,7 @@ function ogmView(name) {
   const local = obm
     ? `<h4 class="gap">${name} Orman Bölge Müdürlüğü · 2025</h4><p class="say">OGM: <b>${fmt(obm[1].fires)}</b> orman yangını, ${fmt(obm[1].ha)} ha yanan alan. Uydu, ${name} ilinde 2025'te ${p25 ? fmt(sum(p25)) : '—'} tespit görüyor.</p>
        <p class="fine">Bölge müdürlüğü genellikle birkaç ili kapsar; il sınırıyla birebir karşılaştırılamaz. İl bazında yıllık OGM verisi yalnızca 2025 için bulundu.</p>`
-    : `<p class="fine">${name} adına bir orman bölge müdürlüğü yok; 2025 bölge tablosunda bu il başka bir müdürlüğe bağlı.</p>`;
+    : `<p class="fine">${regional() ? 'Coğrafi bölge ile Orman Bölge Müdürlüğü sınırları aynı değildir; bu görünümde Türkiye toplamı gösterilir.' : `${name} adına bir orman bölge müdürlüğü yok; 2025 bölge tablosunda bu il başka bir müdürlüğe bağlı.`}</p>`;
   return `<h4>Türkiye: uydu tespitleri ve OGM'nin bildirdiği orman yangınları</h4>
     <p>Çizgi: uydu (birleşmiş, 81 il toplamı, sol eksen). Sütun: OGM'nin müdahale ettiği orman yangını sayısı (sağ eksen).</p>
     <div class="key"><span><i class="harm"></i>Uydu tespiti</span><span><i class="b"></i>OGM yangın sayısı</span></div>
@@ -653,7 +698,7 @@ function renderPanel() {
   panel.hidden = false; side.hidden = false;
   const name = state.sel, years = series(name);
   if (!years || !years[state.year]) {
-    sideBody.innerHTML = head('İl', name) + '<div class="empty"><h4>Bu il için bu yılda veri yok</h4><p>Alttaki çubuktan başka bir yıl seçin.</p></div>';
+    sideBody.innerHTML = head(regional() ? 'Bölge' : 'İl', name) + '<div class="empty"><h4>Bu alan için bu yılda veri yok</h4><p>Alttaki çubuktan başka bir yıl seçin.</p></div>';
     body.innerHTML = '';
     return;
   }
@@ -667,7 +712,7 @@ function renderPanel() {
   const med = quantile(refYears.map((y) => (like ? likeTotal(name, y) : total(name, y))), 0.5);
   const ratio = med > 0 ? n / med : 0;
   const level = val ? { low: 1, medium: 2, high: 3 }[val.confidence] || 1 : n >= 200 ? 3 : n >= 50 ? 2 : 1;
-  const confTitle = val
+  const confTitle = regional() ? geographic.meta.validation_note : val
     ? 'Bir yıl dışarıda bırakılarak ölçüldü (2012–2025). Yüksek: yıllık hata %15 ve altı, yılda ortalama 300 ve üzeri tespit. Düşük: hata %30 üzeri ya da yılda 100 altı tespit.'
     : "Ham seri: tespit sayısına göre. 200 ve üzeri yüksek, 50–199 orta, 50'nin altı düşük. Ham MODIS ve VIIRS sayıları birbiriyle doğrudan karşılaştırılamaz.";
   const sel = { year: state.year, month: state.month };
@@ -694,18 +739,23 @@ function renderPanel() {
   } else if (state.tab === 'peaks') {
     view = peaksView(name, years);
   } else if (state.tab === 'step') {
-    view = stepView(data.provinces[name], vAll);
+    view = stepView(areaData(name), vAll);
   } else {
     view = ogmView(name);
   }
 
   const sel_ = `${from}–${to}${w ? ' · ' + w : ''}`;
-  // Sağ panel: sekmeler ve geniş grafikler.
+  // Sağ panel: seçimler üstte, seçili sekmenin grafiği altta.
   body.innerHTML = `<div class="p-head charts-head"><div><span class="eyebrow">${sen.label}${merged ? ' seri' : ' · ham veri'} · ${sel_}</span>
       <h2>${name} grafikleri</h2></div></div>
+    <section class="chart-controls" aria-label="Grafik seçimleri">
+      ${rangeRow()}
+      <h3 class="section-title">Ay ayrıntısı</h3>
+      ${readCard(name, vAll)}
+    </section>
     <div class="tabs" role="tablist">${TABS.map(([k, l]) => `<button role="tab" data-tab="${k}" aria-selected="${k === state.tab}">${l}</button>`).join('')}</div>
     <div class="view" role="tabpanel">${view}</div>`;
-  // Sol panel: özet, filtreler, ay ayrıntısı, indirme.
+  // Sol panel: genel özet, güven, arazi türü ve indirme.
   sideBody.innerHTML = head(`${sen.label}${merged ? ' seri' : ' · ham veri'} · ${periodLabel()}`, name) + `
     <section class="summary" aria-label="Özet">
       <div class="sum-top"><b>${fmt(n)}</b><span>uydu tespiti</span>${status ? `<span class="status ${status[0]}">${status[1]}</span>` : ''}</div>
@@ -714,13 +764,10 @@ function renderPanel() {
     <div class="kpis">
       <div class="kpi"><span>En yoğun ay</span><b>${peak >= 0 ? MONTHS[peak] : '—'}</b><small>${peak >= 0 ? fmt(row[peak]) + ' tespit' : ''}</small></div>
       <div class="kpi"><span>Orta değer</span><b>${fmt(med)}</b><small>${from}–${to}</small></div>
-      <div class="kpi conf" title="${confTitle}"><span>Güvenilirlik</span><b>${['Düşük', 'Orta', 'Yüksek'][level - 1]}</b><small><span class="dots">${[1, 2, 3].map((i) => `<i class="${i <= level ? 'on' : ''}"></i>`).join('')}</span>${val?.annual_wape != null ? `hata %${Math.round(val.annual_wape * 100)}` : merged ? '' : 'sayıya göre'}</small></div>
+      <div class="kpi conf" title="${confTitle}"><span>${regional() ? 'Bölge doğrulaması' : 'Güvenilirlik'}</span><b>${regional() ? 'Ölçülmedi' : ['Düşük', 'Orta', 'Yüksek'][level - 1]}</b><small>${regional() ? 'Hata yüzdesi verilmez' : `<span class="dots">${[1, 2, 3].map((i) => `<i class="${i <= level ? 'on' : ''}"></i>`).join('')}</span>${val?.annual_wape != null ? `hata %${Math.round(val.annual_wape * 100)}` : merged ? '' : 'sayıya göre'}`}</small></div>
     </div>
-    ${caution(val)}
+    ${regional() ? `<p class="region-note">${membersOf(name).length} il toplamı: ${membersOf(name).join(', ')}. ${geographic.meta.note} ${geographic.meta.validation_note}</p>` : caution(val)}
     ${landCard(name)}
-    ${rangeRow()}
-    <h3 class="section-title">Ay ayrıntısı</h3>
-    ${readCard(name, vAll)}
     <div class="p-foot">
       <details class="dl-menu">
         <summary class="btn"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v10M5.5 8.5 10 13l4.5-4.5M4 16.5h12"/></svg>İndir</summary>
@@ -747,20 +794,25 @@ const fileTag = () => `${low(state.sel)}_${state.from}-${state.to}${fullWin() ? 
 
 function downloadCsv() {
   const name = state.sel;
-  const lines = csvRows(name, data.validation?.[name]?.region || '', data.provinces[name], state.from, state.to,
+  const lines = csvRows(name, regional() ? name : data.validation?.[name]?.region || '', areaData(name), state.from, state.to,
     data.meta.viirs_from, state.win, rdFor(name), isPartial);
   save(csvBlob(lines), `burncal_aylik_${fileTag()}.csv`);
 }
 
 async function downloadHotspots(btn) {
   const name = state.sel, lab = btn.querySelector('small') || btn, label = lab.textContent;
+  const members = regional() ? membersOf(name) : [name];
   btn.disabled = true; lab.textContent = 'Hazırlanıyor…';
   try {
     const byYear = {};
     for (let y = state.from; y <= state.to; y++) byYear[y] = await loadYear(y);
     const lcLabels = [];
     for (const c of lc?.classes || []) lcLabels[c.i] = c.label;
-    const lines = hotspotRows(byYear, provIdx[name], name, state.from, state.to, state.win, data.meta.nrt_from || {}, lcLabels);
+    let lines = [];
+    for (const member of members) {
+      const rows = hotspotRows(byYear, provIdx[member], member, state.from, state.to, state.win, data.meta.nrt_from || {}, lcLabels);
+      lines.push(...(lines.length ? rows.slice(1) : rows));
+    }
     save(csvBlob(lines), `burncal_tespitler_${fileTag()}.csv`);
     lab.textContent = `${fmt(lines.length - 1)} tespit indirildi`;
     setTimeout(() => { lab.textContent = label; }, 2500);
@@ -884,10 +936,12 @@ function bindRest() {
   $('#north').onclick = () => { stopOrbit(); map.easeTo({ bearing: 0, pitch: 0 }); };
   $('#home').onclick = () => select(null);
 
-  const names = geo.features.map((f) => f.properties.name).sort((a, b) => a.localeCompare(b, 'tr'));
-  $('#provList').innerHTML = names.map((n) => `<option value="${n}">`).join('');
+  renderAreaSearch();
+  for (const button of document.querySelectorAll('[data-scope]')) button.onclick = () => setScope(button.dataset.scope);
+  $('#regionPick').onchange = (e) => { if (ready && regional() && e.target.value) select(e.target.value); };
   const search = $('#search');
   const pick = () => {
+    const names = areaNames();
     const q = low(search.value.trim());
     if (!q) return;
     const hit = names.find((n) => low(n) === q) || names.find((n) => low(n).startsWith(q));
@@ -939,7 +993,13 @@ function bindRest() {
 // ── Başlat ──────────────────────────────────────────────
 async function main() {
   document.body.classList.add('booting');
-  [data, geo] = await Promise.all(['data/atlas.json', 'data/tr-provinces.json'].map((u) => fetch(u).then((r) => r.json())));
+  [data, geo, geographic] = await Promise.all(['data/atlas.json', 'data/tr-provinces.json', 'data/geographic-regions.json'].map((u) => fetch(u).then((r) => {
+    if (!r.ok) throw new Error(`Veri yüklenemedi: ${u}`);
+    return r.json();
+  })));
+  regionGeo = regionGeometry(geo, geographic.regions);
+  for (const [name, region] of Object.entries(geographic.regions)) for (const p of region.members) provinceRegion[p] = name;
+  $('#regionPick').innerHTML += Object.keys(geographic.regions).map((n) => `<option value="${n}">${n}</option>`).join('');
   ogm = await fetch('data/ogm.json').then((r) => (r.ok ? r.json() : null)).catch(() => null);
   lc = await fetch('data/landcover.json').then((r) => (r.ok ? r.json() : null)).catch(() => null);
   indexData();

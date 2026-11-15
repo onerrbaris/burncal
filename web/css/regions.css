@@ -1,0 +1,23 @@
+/* İl ve bölge seçimi, harita üzerinde küçük ve her zaman erişilebilir bir kontrol. */
+.area-control { position: fixed; z-index: 7; top: 76px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 5px; padding: 5px; }
+.area-control button { border: 0; background: none; color: var(--ink-2); padding: 7px 10px; border-radius: 7px; font-size: 12px; }
+.area-control button[aria-pressed='true'] { background: var(--accent-dim); color: var(--accent-2); }
+.area-control select { max-width: 180px; background: var(--surface-3); color: var(--ink); border: 1px solid var(--line);
+  border-radius: 7px; padding: 6px; font: inherit; font-size: 12px; }
+.region-note { margin: 0 20px 12px; font-size: 11px; color: var(--ink-3); line-height: 1.5; }
+/* Grafik seçimleri aynı panelde, sekmelerden önce okunur. */
+.chart-controls .filters { margin-top: 8px; padding: 9px 11px; gap: 6px; }
+.chart-controls .section-title { margin-top: 12px; }
+.chart-controls .read { padding: 10px 12px; }
+.chart-controls .read .fine { margin-top: 6px; }
+@media (max-width: 760px) {
+  .area-control { top: 108px; max-width: calc(100vw - 76px); }
+  .area-control button { padding: 6px; }
+  .area-control select { max-width: 140px; }
+  .panel.edge-drawer { top: 154px; }
+  .side.edge-drawer > .drawer-toggle { right: 0; top: 48px; }
+  .side.edge-drawer.drawer-closed > .drawer-toggle { right: -30px; }
+  .panel.edge-drawer > .drawer-toggle { left: 0; top: 48px; }
+  .panel.edge-drawer.drawer-closed > .drawer-toggle { left: -30px; }
+}

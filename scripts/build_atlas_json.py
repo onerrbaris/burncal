@@ -13,6 +13,10 @@ import csv
 import json
 import sys
 from pathlib import Path
+try:
+    from .build_geographic_regions import build as build_geographic_regions
+except ImportError:
+    from build_geographic_regions import build as build_geographic_regions
 
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "frontend"   # il serileri burada uretiliyor
@@ -106,6 +110,11 @@ def main():
                            **{k: {ALIAS.get(n, n): v for n, v in part[k].items()}
                               for k in ("mtd", "ytd", "mtd_modis", "mtd_viirs") if k in part}}
     OUT.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    # İl serileri yenilenince yedi bölgenin toplamları da aynı veriden yenilenir.
+    geo = json.loads((FE / "data" / "tr-provinces.json").read_text(encoding="utf-8"))
+    regional = build_geographic_regions(data, geo)
+    (FE / "data" / "geographic-regions.json").write_text(
+        json.dumps(regional, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     print(f"yazildi: {OUT} ({OUT.stat().st_size} bayt, {len(provinces)} il, {len(regions)} bolge)\n{sensors}")
 
 

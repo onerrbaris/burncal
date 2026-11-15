@@ -54,6 +54,18 @@ Yığın: Python 3.12 (pandas, shapely), Node (Vite, React, TS, MapLibre GL). Ve
 
 ## Sözleşme (statik dosyalar)
 
+### Atlas (`web/`): yedi coğrafi bölge görünümü
+
+`scripts/build_atlas_json.py`, il verilerinin yanında `web/data/geographic-regions.json` üretir.
+`scripts/build_geographic_regions.py` tek başına da çalıştırılabilir. Yedi bölgenin her biri
+`members` (il adları), `series` (merged/modis/viirs → yıl → 12 ay) ve `validation: null` taşır;
+`partial` aynı üyelerin süren ay kıyaslarının toplamıdır. Eksik aylar sıfır yapılmaz.
+İller bütün olarak gruplanır: bu, coğrafi sınırların il bazında yaklaşımıdır; İBBS-2 katsayı
+bölgeleriyle karıştırılmaz. İl uyumlaştırılmış serileri toplanır; yeni katsayı veya hata yüzdesi
+türetilmez. Bölge doğrulaması tamamlanana kadar arayüz "Ölçülmedi" gösterir.
+Harita alan birimi bağımsızdır; üç sensör sekmesinde de il/bölge seçilebilir.
+Yıl/ay aralığı ve ay ayrıntısı sağ grafik panelinde, sekmelerin üstündedir.
+
 Alan adları ön yüz işi başladıktan sonra dondurulur; değişiklik `BACKLOG.md` → Decisions'a yazılır. Örnek dosyalar `shared/mock/` altında.
 
 `index.json`

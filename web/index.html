@@ -11,6 +11,7 @@
 <link rel="stylesheet" href="css/atlas.css?v=20261115h">
 <link rel="stylesheet" href="css/drawers.css?v=20261115a">
 <link rel="stylesheet" href="css/timeline.css?v=20261115a">
+<link rel="stylesheet" href="css/regions.css?v=20261115a">
 </head>
 <body>
 <div id="map" aria-label="Türkiye yanma haritası"></div>
@@ -72,7 +73,13 @@
   </div>
 </header>
 
-<aside class="rank glass" id="rank" aria-label="En çok tespit edilen iller">
+<div class="area-control glass" role="group" aria-label="Harita alan birimi">
+  <button type="button" data-scope="province" aria-pressed="true" disabled>İller</button>
+  <button type="button" data-scope="region" aria-pressed="false" disabled>7 bölge</button>
+  <select id="regionPick" aria-label="Coğrafi bölge seç" hidden><option value="">Bölge seç</option></select>
+</div>
+
+<aside class="rank glass" id="rank" aria-label="En çok tespit edilen alanlar">
   <h3><span id="rankTitle">En çok tespit</span><button id="rankToggle" class="mini" aria-expanded="true" title="Daralt">–</button></h3>
   <ol id="rankList"></ol>
   <p class="rank-hint">Ayrıntı için haritada bir ile tıklayın.</p>
@@ -120,7 +127,7 @@
 </div>
 
 <script src="vendor/maplibre-gl.js"></script>
-<script type="module" src="js/app.js?v=20261115h"></script>
+<script type="module" src="js/app.js?v=20261115-regions-controls"></script>
 <script type="module" src="js/drawers.js?v=20261115a"></script>
 <script type="module" src="js/timeline.js?v=20261115a"></script>
 </body>

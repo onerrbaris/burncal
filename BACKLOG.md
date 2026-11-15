@@ -3,6 +3,7 @@
 Repo: https://github.com/onerrbaris/burncal (private). Yeni oturum: önce `docs/HANDOFF.md`. Bulgular: `docs/REPORT.md`. `ARCHITECTURE.md` taslaktır.
 
 ## Next step
+Yedi bölge için il bazındaki tahmin/gözlem çiftlerini toplayarak bağımsız doğrulama yap; şu anda hata yüzdesi gösterilmiyor. Bölge toplamları atlas veri üretiminde otomatik yenilenir.
 Küçük yıl kontrolünü masaüstü/mobilde görsel olarak kontrol et; renk ölçeği artık isteğe bağlı açılır.
 Kenar oklarını tarayıcıda görsel olarak kontrol et: liste solda kapalı; il özeti sola, grafik paneli sağa kayar. Deniz ilk uydu görünümünde.
 Mat mavi su yüzeylerini deniz kıyıları ve göllerde tarayıcıda görsel olarak kontrol et.
@@ -40,6 +41,8 @@ Sunum (7 slayt) ve teslim formu. Veri güncellemek için: `python scripts/fetch_
 - Deploy için Render + Vercel hesapları
 
 ## Done
+- 15 Kas: Yıl/ay aralığı filtreleri ve Ay ayrıntısı kartı sol özetten sağ grafik paneline, sekmelerin üstüne taşındı; il ve bölge görünümünde aynı kontroller kullanılır. Tarayıcıda Akdeniz ve Adana için yıl aralığı/ay değişimi denendi; sol panelde bu kontroller yok, sağdaki kart/grafikler güncelleniyor; yeni konsol hatası yok.
+- 15 Kas: Atlas'a İller / 7 bölge seçimi eklendi. Marmara, Ege, Akdeniz, İç Anadolu, Karadeniz, Doğu Anadolu, Güneydoğu Anadolu haritadan/menüden seçilir; renk, takvim, kıyas, sıralama, CSV ve süren ay kıyası il serilerinin toplamını kullanır. 81 il tek kez kapsanır; 804 ay/sensör toplamı ve indirilen 75 aylık CSV doğrulandı. Tarayıcıda yedi seçim, Akdeniz–2021, sensörler, sekmeler, ay filtresi ve il görünümüne dönüş denendi; konsol temiz.
 - 15 Kas: Arazi türü (ESA WorldCover 2021, 10 m, 19 parça, Türkiye tamamı): her noktanın sınıfı (nokta dosyaları artık 6'lı, "stride":6), il×yıl×ay×4 grup sayımı (web/data/landcover.json), ~270 m renkli katman (web/data/landcover/). Kontroller: Antalya/Muğla Tem–Ağu 2021 %77–80 ağaçlık; Adana 2025 %81, Şanlıurfa Haz 2025 %94 tarım; 20 m katmanla 290/300 uyum. Sırayla: build_points → build_landcover.
 - 15 Kas: Varsayılan harita katmanları yalnızca 3B arazi açık olacak şekilde düzenlendi; il renkleri, noktalar, orman, yer adları ve yollar kapalı. Stil ve kutucuk durumları eşleştirildi; JS ve stil üretimi doğrulandı.
 - 15 Kas: Yıl çubuğu altta ortalanmış en fazla 480 px genişlikte, yaklaşık 48 px yüksekliğinde kompakt kontrole dönüştürüldü. Oynatma ve kaydırıcı korundu; renk ölçeği açılır menüye taşındı, mobil yerleşim ayarlandı. JS ve HTTP sunumu doğrulandı; görsel kontrol bekliyor.
@@ -67,6 +70,7 @@ Sunum (7 slayt) ve teslim formu. Veri güncellemek için: `python scripts/fetch_
 - Challenge eksikleri kapatıldı (14 Kas gece): tarih aralığı seçimi, "bu ay medyana göre" kartı (yüzdelik + düzey), takvimde anomali işaretleri, yıl/ay sıralaması, ham–uyumlaştırılmış yıllık grafik, zengin CSV, düşük güven uyarısı. Üç sekme artık aynı konum maskesini kullanıyor (`build_atlas_json.py` veriyi `frontend/harmonized.csv`'den alıyor; MODIS sekmesi 2001'de başlıyor). `README.md`, `LICENSE` (MIT), `docs/SOURCES.md` eklendi. Başsız Edge ile denendi; gerçek tarayıcıda elle bakılmadı. Açık kalan: 2026 verisi, İngilizce arayüz, sunum.
 
 ## Decisions
+- 15 Kas: Yedi bölge görünümü coğrafi bölgelerin il gruplarıyla yaklaşımıdır (iller bölünmez); sınır notu ve üye iller panelde gösterilir. Mevcut il uyumlaştırılmış serileri toplanır, yeni bölge çarpanı türetilmez; bağımsız bölge hatası ölçülene kadar güven rozeti "Ölçülmedi" olur.
 - 14 Kas gece – Yayında yalnızca 4 vitrin bölgesi (TR61, TR62, TR63, TR32); demoyu ekip sürer, jüriye bölge seçtirilmez. Betik 26 bölgeyi üretebilir, yayın listesi `SHOWCASE`.
 - 14 Kas gece – Hedef yerel etkinlik; jüri konu uzmanı değil. Öncelik çalışan ürün ve sunum; yöntem araştırması durduruldu.
 - 14 Kas gece – Alan birimi İBBS-2 (26 bölge, tüm Türkiye). Sunucu yok, her şey önceden hesaplanmış statik JSON. Serbest çizilen alan yok. Sözleşme `ARCHITECTURE.md` içinde yeniden yazıldı (8 günlük dönem ve `/api` uçları kalktı).
