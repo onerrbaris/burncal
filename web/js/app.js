@@ -2,7 +2,7 @@
 import { regionGeometry } from './regions.js?v=20261115a';
 import { buildStyle, LAYER_GROUPS, RAMP } from './mapstyle.js?v=20261115-bright-points2';
 import { MONTHS, MON3, LEVELS, fmt, quantile, inRange, reading, sentence, peaks, sourceOf, csvRows, hotspotRows,
-  calendar, calendarKey, compare, stepChart, setChartWidth } from './charts.js?v=20261115-tr2';
+  calendar, calendarKey, compare, stepChart, setChartWidth } from './charts.js?v=20261115-birlesik';
 import { DrawTool, drawnArea } from './draw.js?v=20261115-ellipse';
 
 const $ = (s) => document.querySelector(s);
