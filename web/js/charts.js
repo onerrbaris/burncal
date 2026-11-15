@@ -1,8 +1,8 @@
-import { t as msg, displayText, locale, ordinal } from './i18n.js?v=20261115-cal-classes';
+import { t as msg, displayText, locale, ordinal } from './i18n.js?v=20261115-tri-marks';
 // Panel grafikleri: elle yazılmış SVG. Tek ölçek, tek renk tonu (kor), nötr mürekkep.
 // Bu dosyadaki istatistik işlevleri (inRange, reading, sentence, peaks, csvRows, hotspotRows) saf işlevlerdir;
 // tarayıcı dışında Node ile de sınanabilir.
-import { RAMP } from './mapstyle.js?v=20261115-cal-classes';
+import { RAMP } from './mapstyle.js?v=20261115-tri-marks';
 
 // Ay dizileri canlı dışa aktarımdır; dil değişiminde mevcut seçim aynı ay indeksinde kalır.
 export let MONTHS, MON3;
@@ -32,10 +32,10 @@ export function quantile(arr, q) {
 // Düzey eşikleri: aynı takvim ayının dönemdeki diğer yıllarına göre yüzdelik.
 export const LEVELS = {
   verylow: { label: 'çok düşük', mark: '▼' },
-  low: { label: 'düşük', mark: '▽' },
+  low: { label: 'düşük', mark: '▾' },
   normal: { label: 'normal', mark: '' },
-  high: { label: 'yüksek', mark: '●' },
-  extreme: { label: 'olağanüstü', mark: '◆' },
+  high: { label: 'yüksek', mark: '▴' },
+  extreme: { label: 'olağanüstü', mark: '▲' },
   sparse: { label: 'az tespit', mark: '' },
 };
 const SPARSE = 5;   // bu sayının altındaki değerler, dönemin çoğu da böyleyse, yüzdelikle okunmaz
@@ -46,13 +46,13 @@ export const LOW_MIN = 20;
 // Takvim renk sınıfları: aynı takvim ayının diğer yıllarına göre yüzdelik (düzeylerle aynı sınırlar).
 // Mavi = tipikten az, kırmızı = tipikten fazla; sınıf ne kadar uçtaysa renk o kadar koyu.
 export const CAL_CLASSES = [
-  { max: 5, fill: '#1d4ed8', key: 'cal.c0' },          // çok düşük  ▼
-  { max: 25, fill: '#4f8df5', key: 'cal.c1' },         // düşük      ▽
+  { max: 5, fill: '#1d4ed8', key: 'cal.c0' },          // çok düşük  büyük ▼
+  { max: 25, fill: '#4f8df5', key: 'cal.c1' },         // düşük      küçük ▼
   { max: 45, fill: '#a9c6f7', key: 'cal.c2' },         // biraz düşük
   { max: 55, fill: '#e8e2d4', key: 'cal.c3' },         // tipik
   { max: 75, fill: '#fcc48a', key: 'cal.c4' },         // biraz yüksek
-  { max: 95, fill: '#f26b38', key: 'cal.c5' },         // yüksek     ●
-  { max: Infinity, fill: '#c0151f', key: 'cal.c6' },   // olağanüstü ◆
+  { max: 95, fill: '#f26b38', key: 'cal.c5' },         // yüksek     küçük ▲
+  { max: Infinity, fill: '#c0151f', key: 'cal.c6' },   // olağanüstü büyük ▲
 ];
 export const CAL_SPARSE = '#55595f';
 export function calClass(pct) {
@@ -265,9 +265,9 @@ export function calendar(years, from, to, sel, opt) {
       const tipPart = part ? `<br>${msg("partial.month.days.of.compared", [through, MONTHS[i]])}` : '';
       s += `<rect x="${x}" y="${y0 + 1}" width="${cw - 2}" height="${ch - 2}" rx="2.5" fill="${fill}" class="cell${out ? ' out' : ''}${part ? ' part' : ''}" data-year="${yy}" data-month="${i}" data-tip="${esc(`<b>${MONTHS[i]} ${yy}</b>${msg("detections2", [fmt(v), tipLv, tipPct, tipPart])}`)}"/>`;
       const cx = x + (cw - 2) / 2, cy = y0 + ch / 2;
-      // İşaret, renk sınıfıyla aynı yüzdelikten: ● yüksek, ◆ olağanüstü, küçük ▼ düşük, büyük ▼ çok düşük.
-      if (!out && cls === 5) marks += `<circle cx="${cx}" cy="${cy}" r="2.4" class="flag"/>`;
-      else if (!out && cls === 6) marks += `<path d="M${cx},${cy - 4.2}l4.2,4.2l-4.2,4.2l-4.2,-4.2z" class="flag"/>`;
+      // İşaret, renk sınıfıyla aynı yüzdelikten. Yön = yukarı ▲ fazla, aşağı ▼ az; boyut = ne kadar uç.
+      if (!out && cls === 5) marks += `<path d="M${cx - 2.8},${cy + 2.6}h5.6l-2.8,-4.4z" class="flag"/>`;
+      else if (!out && cls === 6) marks += `<path d="M${cx - 4.4},${cy + 3.8}h8.8l-4.4,-7z" class="flag"/>`;
       else if (!out && cls === 1) marks += `<path d="M${cx - 2.8},${cy - 1.8}h5.6l-2.8,4.4z" class="flag"/>`;
       else if (!out && cls === 0) marks += `<path d="M${cx - 4.4},${cy - 3}h8.8l-4.4,7z" class="flag"/>`;
       if (yy === sel.year && i === sel.month) marks += `<rect x="${x - 1}" y="${y0 - 0.5}" width="${cw}" height="${ch + 1}" rx="3.5" class="cellsel"/>`;
@@ -280,7 +280,7 @@ export function calendar(years, from, to, sel, opt) {
 // Takvim açıklaması: renk + şekil, sıfır ve veri yok ayrımı.
 export function calendarKey() {
   const marks = { 0: '<path d="M1.6,3h8.8l-4.4,7z" class="flag"/>', 1: '<path d="M3.2,4.2h5.6l-2.8,4.4z" class="flag"/>',
-    5: '<circle cx="6" cy="6" r="2.6" class="flag"/>', 6: '<path d="M6,1.6l4.4,4.4l-4.4,4.4l-4.4,-4.4z" class="flag"/>' };
+    5: '<path d="M3.2,8.6h5.6l-2.8,-4.4z" class="flag"/>', 6: '<path d="M1.6,9.8h8.8l-4.4,-7z" class="flag"/>' };
   const cells = CAL_CLASSES.map((c, i) => `<span class="cc"><svg viewBox="0 0 22 14" aria-hidden="true"><rect x="0.5" y="0.5" width="21" height="13" rx="2.5" fill="${c.fill}"/>${marks[i] ? `<g transform="translate(5,1)">${marks[i]}</g>` : ''}</svg><small>${msg(c.key)}</small></span>`).join('');
   return `<div class="key cal-key">
     <p class="cal-lead">${msg("cal.lead")}</p>
