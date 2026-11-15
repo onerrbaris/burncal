@@ -42,6 +42,7 @@ Sunum (7 slayt) ve teslim formu. Veri güncellemek için: `python scripts/fetch_
 - Deploy için Render + Vercel hesapları
 
 ## Done
+- 15 Kas: Ülke görünümünde arama "Ülke ara"; seçenek yalnızca Türkiye ("Diğer ülkeler yakında eklenecek" etiketiyle). Başka bir ülke yazılırsa 6 sn'lik not çıkar. Bölge/il görünümünde arama eskisi gibi. Tarayıcıda denendi.
 
 - İl renk ölçeğinde sağdaki sıra ve il sayısı etiketleri kaldırıldı.
 - 15 Kas: "Tespit yoğunluğu" katmanı "Renk ölçeği" oldu; açıklaması alttaki "Ölçek" düğmesinden (kaldırıldı, `web/js/timeline.js` silindi) katman menüsüne taşındı, arazi türü açıklamasıyla aynı biçimde. Bölge/ülke görünümünde her bölge haritadaki tam rengi ve tespit sayısıyla; il görünümünde 6 renk aralığı (en çok / N il / en az). Katman kapanınca açıklama gizlenir. Tarayıcıda kontrol edildi, konsol temiz.

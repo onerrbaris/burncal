@@ -137,13 +137,19 @@ function indexData() {
   state.month = READ_M;
 }
 
+// Aranabilir adlar: ülke görünümünde yalnızca Türkiye (diğer ülkeler ileride), diğerlerinde haritadaki alanlar.
+const COUNTRY_SOON = 'Diğer ülkeler yakında eklenecek';
+const searchNames = () => (state.scope === 'country' ? [COUNTRY] : mapNames());
 function renderAreaSearch() {
-  const names = mapNames().sort((a, b) => a.localeCompare(b, 'tr'));
-  $('#provList').innerHTML = names.map((n) => `<option value="${n}">`).join('');
-  $('#search').placeholder = regionMap() ? 'Bölge ara' : 'İl ara';
-  $('#search').setAttribute('aria-label', regionMap() ? 'Bölge ara' : 'İl ara');
+  const names = searchNames().sort((a, b) => a.localeCompare(b, 'tr'));
+  const country = state.scope === 'country';
+  $('#provList').innerHTML = names.map((n) => `<option value="${n}"${country ? ` label="${COUNTRY_SOON}"` : ''}>`).join('');
+  const ph = country ? 'Ülke ara' : regionMap() ? 'Bölge ara' : 'İl ara';
+  $('#search').placeholder = ph;
+  $('#search').setAttribute('aria-label', ph);
+  $('#search').title = country ? `Şimdilik yalnızca Türkiye. ${COUNTRY_SOON}.` : '';
   $('#search').value = '';
-  // Ülke ve çizim görünümünde aranacak bir ad yok.
+  // Çizim görünümünde aranacak bir ad yok.
   $('.topbar .search').hidden = state.scope === 'draw';
 }
 function setScope(scope, fly = true) {
@@ -1108,11 +1114,18 @@ function bindRest() {
   $('#drawCancel').onclick = () => { drawTool.stop(); $('#drawBar').hidden = true; if (!drawn) setScope('province'); };
   const search = $('#search');
   const pick = () => {
-    const names = mapNames();
+    const names = searchNames();
     const q = low(search.value.trim());
     if (!q) return;
     const hit = names.find((n) => low(n) === q) || names.find((n) => low(n).startsWith(q));
-    if (hit) { pickArea(hit); search.value = ''; search.blur(); }
+    if (hit) { pickArea(hit); search.value = ''; search.blur(); return; }
+    // Ülke görünümünde Türkiye dışında bir ad yazılırsa kısa bir not gösterilir.
+    if (state.scope === 'country') {
+      const r = search.getBoundingClientRect();
+      showTip(`<b>Şimdilik yalnızca Türkiye</b>${COUNTRY_SOON}.`, r.left - 14, r.bottom - 8);
+      clearTimeout(pick.t); pick.t = setTimeout(hideTip, 6000);
+      search.addEventListener('input', () => { clearTimeout(pick.t); hideTip(); }, { once: true });
+    }
   };
   search.addEventListener('change', pick);
   search.addEventListener('keydown', (e) => { if (e.key === 'Enter') pick(); });
