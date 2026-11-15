@@ -26,22 +26,26 @@ Volkan ve açık deniz kayıtlarını at; sabit kaynakları konum maskesiyle ay�
 
 Akdeniz'de hata (bir yıl dışarıda, WAPE): bölge yıllık %6, aylık %15; ~100 km yıllık %23, aylık %38; ~25 km aylık %58. Düzeltmesiz %70+. Büyük olaylar 25 km'de bile ~%20 içinde.
 
-## 4. Jüri önünde söylenebilecekler ve söylenmemesi gerekenler
+## 4. Sunumda iddiaların sınırları
 
-Söylenebilir (ölçüldü):
+Ölçülmüş, söylenebilir:
 - Uyumlaştırma, Türkiye ölçeğinde iki özdeş MODIS cihazının (Terra→Aqua) kendi aralarındaki uyum kadar iyi: aylık %12'ye karşı %12.
-- Düzeltmesiz MODIS %60 eksik sayıyor; yöntem yanlılığı ~0'a indiriyor.
+- Düzeltmesiz MODIS, VIIRS'e göre %60 eksik sayıyor; yöntem yanlılığı ~0'a indiriyor.
 - İki yön (MODIS→VIIRS, VIIRS→MODIS) aynı doğrulukta.
 - MODIS `type == 0` filtresi 2018'de yapay basamak yaratır; Terra-tek dönem düzeltilmezse −%45 basamak.
+- Yedi bölgenin hatası 2012–2025'te bir yıl dışarıda bırakılarak ölçüldü (ör. Akdeniz yıllık %7,0, aylık %14,5; ayrıntı `docs/GEOGRAPHIC_VALIDATION.md`).
 
-Söylenmemeli / dikkat:
-- "25 km'de hatanın yarısı giderilemez gürültü" **deme.** Bu, MODIS hücre-gün hedefi için ölçülmüş bir Poisson tabanıydı; VIIRS sayım hedefinde taban ~%18. Bunu bir ara yanlış genelledim.
-- "%88 doğruluk" gibi sayılar bizim değil (dışarıdan gelen bir eleştiri metninde geçiyordu). WAPE doğruluk yüzdesi değildir.
-- "Akdeniz = orman yangını" deme; veride baskın olan tarım.
-- 2000–2011 için doğruluk **doğrudan ölçülmedi**; çarpanların o döneme taşındığı varsayım.
-- Sonuçlar kutularla ölçüldü; gerçek il poligonlarıyla değil.
+Sınırlar (bu ifadeler kullanılmaz):
+- Hata oranı doğruluk yüzdesi değildir: "%93 doğru" gibi çeviriler yapılmaz, WAPE olarak söylenir.
+- "25 km'de hatanın yarısı giderilemez gürültü" denmez; o taban MODIS hücre-gün hedefi içindi, VIIRS sayım hedefinde ~%18.
+- "Akdeniz = orman yangını" denmez; tespitlerde baskın olan tarımsal yakma.
+- 2000–2011 doğruluğu doğrudan ölçülemez (o yıllarda VIIRS yok); katsayıların o döneme taşınması varsayımdır.
+- ~100 km alt bölge ölçümleri kutularla yapıldı, il poligonlarıyla değil.
+- Çizilen alan için ayrı doğrulama yok; değerler il serilerinin alana düşen payından gelir.
+- Bölge seçmek her durumda hatayı düşürür denmez; iller arası fazla ve eksik tahminler birbirini dengeleyebilir.
 - Türkiye dışına genelleme yok.
-- Büyük yangın aylarında (2021-08) aylık çarpan fazla tahmin ediyor (+%38); bölge toplamına β=0,88 düzeltmesi bunu azaltıyor ama 2021-07'yi eksik tahmin ettiriyor.
+- Büyük yangın aylarında aylık katsayı fazla tahmin edebiliyor (2021-08: +%38).
+- Uydu tespiti yanan alan değildir: ağaçlık pikseldeki tespit kaç hektar orman yandığını söylemez.
 
 ## 5. Bu makinenin (Barış, Windows 11) tuhaflıkları
 
