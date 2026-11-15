@@ -1,8 +1,8 @@
-import { t as msg, displayText, locale, ordinal } from './i18n.js?v=20261115-soft-cal';
+import { t as msg, displayText, locale, ordinal } from './i18n.js?v=20261115-cal-read';
 // Panel grafikleri: elle yazılmış SVG. Tek ölçek, tek renk tonu (kor), nötr mürekkep.
 // Bu dosyadaki istatistik işlevleri (inRange, reading, sentence, peaks, csvRows, hotspotRows) saf işlevlerdir;
 // tarayıcı dışında Node ile de sınanabilir.
-import { RAMP } from './mapstyle.js?v=20261115-soft-cal';
+import { RAMP } from './mapstyle.js?v=20261115-cal-read';
 
 // Ay dizileri canlı dışa aktarımdır; dil değişiminde mevcut seçim aynı ay indeksinde kalır.
 export let MONTHS, MON3;
@@ -278,7 +278,10 @@ export function calendar(years, from, to, sel, opt) {
       const tipLv = lv && lv !== 'normal' ? ` · ${displayText(LEVELS[lv].label)}` : '';
       const tipPct = rdg?.pct != null ? `<br>${msg("years.exceeded.typical.value", [Math.round(rdg.pct), fmt(rdg.med)])}` : '';
       const tipPart = part ? `<br>${msg("partial.month.days.of.compared", [through, MONTHS[i]])}` : '';
-      s += `<rect x="${x}" y="${y0 + 1}" width="${cw - 2}" height="${ch - 2}" rx="2.5" fill="${fill}" fill-opacity="${op}" class="cell${out ? ' out' : ''}${part ? ' part' : ''}" data-year="${yy}" data-month="${i}" data-tip="${esc(`<b>${MONTHS[i]} ${yy}</b>${msg("detections2", [fmt(v), tipLv, tipPct, tipPart])}`)}"/>`;
+      // Tipik değere oran ve sıra: takvimden çıkmadan okunabilsin (medyan çok küçükse oran verilmez).
+      const tipCmp = rdg?.pct != null && lv !== 'sparse' && rdg.med >= 3
+        ? `<br>${vsTypical(v / rdg.med)} · ${msg("ranks.out.of.years", [rdg.n + 1, rdg.rank])}` : '';
+      s += `<rect x="${x}" y="${y0 + 1}" width="${cw - 2}" height="${ch - 2}" rx="2.5" fill="${fill}" fill-opacity="${op}" class="cell${out ? ' out' : ''}${part ? ' part' : ''}" data-year="${yy}" data-month="${i}" data-tip="${esc(`<b>${MONTHS[i]} ${yy}</b>${msg("detections2", [fmt(v), tipLv, tipPct, tipPart])}${tipCmp}`)}"/>`;
       const cx = x + (cw - 2) / 2, cy = y0 + ch / 2;
       // İşaret, renk sınıfıyla aynı yüzdelikten. Yön = yukarı ▲ fazla, aşağı ▼ az; boyut = ne kadar uç.
       if (!out && cls === 5) marks += `<path d="M${cx - 2.8},${cy + 2.6}h5.6l-2.8,-4.4z" class="flag"/>`;

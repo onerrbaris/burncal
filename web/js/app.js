@@ -1,10 +1,10 @@
-import { t as msg, lang, locale, displayText, percent } from './i18n.js?v=20261115-soft-cal';
+import { t as msg, lang, locale, displayText, percent } from './i18n.js?v=20261115-cal-read';
 /* global maplibregl */
 import { regionGeometry } from './regions.js?v=20261115a';
-import { buildStyle, LAYER_GROUPS, RAMP, waterName } from './mapstyle.js?v=20261115-soft-cal';
+import { buildStyle, LAYER_GROUPS, RAMP, waterName } from './mapstyle.js?v=20261115-cal-read';
 import { MONTHS, MON3, LEVELS, fmt, quantile, inRange, reading, sentence, peaks, sourceOf, csvRows, hotspotRows,
-  calendar, calendarKey, compare, stepChart, setChartWidth, vsTypical, rampColor } from './charts.js?v=20261115-soft-cal';
-import { DrawTool, drawnArea } from './draw.js?v=20261115-soft-cal';
+  calendar, calendarKey, compare, stepChart, setChartWidth, vsTypical, rampColor } from './charts.js?v=20261115-cal-read';
+import { DrawTool, drawnArea } from './draw.js?v=20261115-cal-read';
 
 const $ = (s) => document.querySelector(s);
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -908,7 +908,7 @@ function renderPanel() {
   let view = '';
   if (state.tab === 'calendar') {
     view = `<h4>${msg("fire.calendar", [from, to, w ? ' · ' + w : ''])}</h4><p>${msg("each.row.is.a.year")}</p>
-      ${calendarKey()}${calendar(years, from, to, sel, { win: state.win, rd: rdFor(name), partial: isPartial, through: LD })}`;
+      ${calendarKey()}<div class="cal-read" id="calRead" aria-live="polite"></div>${calendar(years, from, to, sel, { win: state.win, rd: rdFor(name), partial: isPartial, through: LD })}`;
   } else if (state.tab === 'compare') {
     const ref = inRange(like ? cmpYears(name) : years, from, to);
     if (!like && PARTIAL) delete ref[LY];   // bitmemiş yılın boş ayları başka bir yılın medyanını bozmasın
@@ -940,6 +940,7 @@ function renderPanel() {
       <div class="tabs" role="tablist">${TABS.map(([k, l]) => `<button role="tab" data-tab="${k}" aria-selected="${k === state.tab}">${displayText(l)}</button>`).join('')}</div>
       <div class="view" role="tabpanel">${view}</div>
     </section>`;
+  calReadSelected();
   // Sol panel: genel özet, güven, arazi türü ve indirme.
   sideBody.innerHTML = head(`${displayText(sen.label)}${merged ? ` ${msg("series")}` : ` ${msg("raw.data")}`} · ${periodLabel()}`, name) + `
     <section class="summary" aria-label="${msg("summary")}">
@@ -1063,6 +1064,16 @@ function showTip(html, x, y) {
 }
 function hideTip() { $('#tip').hidden = true; }
 
+// Takvimin hemen üstündeki şerit: seçili ayın okuması; fare bir karenin üstündeyken o kareyi gösterir.
+// Böylece ay ayrıntısı için panelin başına kaydırmak gerekmez.
+function calReadSelected() {
+  const box = $('#calRead');
+  if (!box) return;
+  const c = box.parentElement.querySelector(`rect.cell[data-year="${state.year}"][data-month="${state.month}"]`);
+  box.innerHTML = c ? c.dataset.tip : `<b>${msg("cal.read.hint")}</b>`;
+  box.classList.remove('preview');
+}
+
 // Ay penceresi ya da dönem değişince harita, sıralama ve panel birlikte yenilenir.
 function refreshAll(focusId) {
   if (ready) paintMap();
@@ -1117,10 +1128,15 @@ function bindPanel(panel) {
     document.getElementById(id)?.focus();
   });
   panel.addEventListener('pointermove', (e) => {
-    const t = e.target.closest('[data-tip]');
+    const t = e.target.closest('[data-tip]'), box = $('#calRead');
+    // Takvim karesi: okuma şeritte gösterilir, ayrıca yüzen ipucu açılmaz.
+    if (box && t?.matches('rect.cell') && panel.contains(box)) {
+      hideTip(); box.innerHTML = t.dataset.tip; box.classList.add('preview'); return;
+    }
+    if (box?.classList.contains('preview')) calReadSelected();
     t ? showTip(t.dataset.tip, e.clientX, e.clientY) : hideTip();
   });
-  panel.addEventListener('pointerleave', hideTip);
+  panel.addEventListener('pointerleave', () => { hideTip(); if ($('#calRead')?.classList.contains('preview')) calReadSelected(); });
 }
 function bindRest() {
 
