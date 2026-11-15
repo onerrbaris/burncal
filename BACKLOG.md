@@ -43,6 +43,8 @@ Sunum (7 slayt) ve teslim formu. Veri güncellemek için: `python scripts/fetch_
 
 ## Done
 
+- Ay ayrıntısında ayın yanına, yıl çubuğuyla eşzamanlı çalışan bir yıl giriş alanı eklendi.
+
 - Sağ panel düğmesi Türkçede “Yangın takvimini aç”, İngilizcede “Open fire calendar” olarak güncellendi.
 
 - 15 Kas: Aylık CSV artık seçili seriden (Birleşik / MODIS ham / VIIRS ham): `value`, `median`, `percentile`, `level` aynı seriden; yeni `selected_series` sütunu, ham seride `source` = `modis_raw`/`viirs_raw`. Eskiden `value` hep birleşik seriydi, medyan seçili seriden geliyordu. Ham tespit indirmesi "MODIS + VIIRS ham tespitleri (CSV)" oldu. Antalya 2001–2025 Temmuz'la üç seri node'da denendi (MODIS 2021-07: 789 / medyan 7).

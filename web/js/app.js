@@ -724,7 +724,9 @@ function readCard(name, val) {
   const label = part ? `1–${LD} ${MONTHS[m]} ${y}` : null;
   return `<section class="read${r.level ? ' lv-' + r.level : ''}" aria-label="${msg("selected.month.compared.with.the")}">
       <div class="read-top">
-        <select id="mSel" aria-label="${msg("select.month")}">${months}</select><b>${y}</b>
+        <select id="mSel" aria-label="${msg("select.month")}">${months}</select>
+        <input id="detailYear" type="number" inputmode="numeric" aria-label="${msg('slider.year')}"
+          min="${RANGE[0]}" max="${RANGE[1]}" step="1" required value="${y}">
         ${latest ? `<span class="pill">${part ? msg("month.in.progress") : READ_M === LM ? msg("latest.observation") : msg("last.complete.month")}</span>` : `<button class="link" id="latest">${msg("back.to.latest.month")}</button>`}
         ${lv ? `<span class="lvl" title="${msg("compared.with.the.same.month")}">${lv.mark ? lv.mark + ' ' : ''}${displayText(lv.label)}</span>` : ''}
       </div>
@@ -1074,6 +1076,18 @@ function bind() {
   bindRest();
 }
 function bindPanel(panel) {
+  panel.addEventListener('input', ({ target }) => {
+    if (target.id !== 'detailYear' || !target.validity.valid || target.valueAsNumber === state.year) return;
+    setYear(target.valueAsNumber);
+    $('#detailYear')?.focus({ preventScroll: true });
+  });
+  panel.addEventListener('keydown', (e) => {
+    if (e.target.id !== 'detailYear' || e.key !== 'Enter') return;
+    if (e.target.reportValidity()) e.target.blur();
+  });
+  panel.addEventListener('focusout', ({ target }) => {
+    if (target.id === 'detailYear' && !target.validity.valid) target.value = state.year;
+  });
   panel.addEventListener('click', (e) => {
     const t = e.target.closest('button, .cell, [data-year], [data-month]');
     if (!t) return;
