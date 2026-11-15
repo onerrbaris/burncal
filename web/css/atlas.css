@@ -258,9 +258,16 @@ body.has-panel .rank { display: none; }
 .key i.dot.o { background: var(--surface); border: 2px solid var(--accent); }
 .cal-key { margin-bottom: 8px; display: block; }
 /* Takvim üstündeki okuma şeridi: kaydırırken üstte kalır. */
-.cal-read { position: sticky; top: 0; z-index: 2; margin: 0 0 8px; padding: 8px 11px; min-height: 58px; border-radius: 9px;
-  background: var(--surface-2); border: 1px solid var(--surface-3); border-left: 3px solid var(--accent-2); font-size: 12px; line-height: 1.45; color: var(--ink-2); }
-.cal-read b { display: block; color: var(--ink); font-weight: 600; font-size: 13px; margin-bottom: 1px; }
+.cal-read { position: sticky; top: 0; z-index: 2; box-sizing: border-box; height: 96px; overflow: hidden; margin: 0 0 8px; padding: 8px 11px;
+  border-radius: 9px; background: var(--surface-2); border: 1px solid var(--surface-3); border-left: 3px solid var(--accent-2);
+  font-size: 12px; line-height: 1.45; color: var(--ink-2); display: flex; flex-direction: column; gap: 2px; }
+.cal-read .cr-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; height: 20px; flex: none; }
+.cal-read .cr-top b { color: var(--ink); font-weight: 600; font-size: 13px; white-space: nowrap; }
+.cal-read .cr-top .lvl { font-size: 11px; padding: 1px 7px; border-radius: 99px; border: 1px solid currentColor; white-space: nowrap; color: var(--ink-2); }
+.cal-read .lvl.lv-high, .cal-read .lvl.lv-extreme { color: var(--high); }
+.cal-read .lvl.lv-low, .cal-read .lvl.lv-verylow { color: var(--low); }
+.cal-read .cr-say { margin: 0; color: var(--ink); height: 35px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.cal-read .cr-nums { margin: auto 0 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11.5px; }
 .cal-read.preview { border-left-color: var(--ink-2); }
 .cal-key .cal-lead { margin: 0 0 6px; line-height: 1.35; }
 .cal-key .cal-grad i { display: block; width: 100%; height: 10px; border-radius: 3px; }

@@ -1,10 +1,10 @@
-import { t as msg, lang, locale, displayText, percent } from './i18n.js?v=20261115-cal-read';
+import { t as msg, lang, locale, displayText, percent } from './i18n.js?v=20261115-cal-read2';
 /* global maplibregl */
 import { regionGeometry } from './regions.js?v=20261115a';
-import { buildStyle, LAYER_GROUPS, RAMP, waterName } from './mapstyle.js?v=20261115-cal-read';
+import { buildStyle, LAYER_GROUPS, RAMP, waterName } from './mapstyle.js?v=20261115-cal-read2';
 import { MONTHS, MON3, LEVELS, fmt, quantile, inRange, reading, sentence, peaks, sourceOf, csvRows, hotspotRows,
-  calendar, calendarKey, compare, stepChart, setChartWidth, vsTypical, rampColor } from './charts.js?v=20261115-cal-read';
-import { DrawTool, drawnArea } from './draw.js?v=20261115-cal-read';
+  calendar, calendarKey, compare, stepChart, setChartWidth, vsTypical, rampColor } from './charts.js?v=20261115-cal-read2';
+import { DrawTool, drawnArea } from './draw.js?v=20261115-cal-read2';
 
 const $ = (s) => document.querySelector(s);
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -928,13 +928,13 @@ function renderPanel() {
   // Sağ panel: seçimler üstte, seçili sekmenin grafiği altta.
   body.innerHTML = `<div class="p-head charts-head"><div><span class="eyebrow">${displayText(sen.label)}${merged ? ` ${msg("series")}` : ` ${msg("raw.data")}`} · ${sel_}</span>
       <h2>${msg("charts", [displayName(name)])}</h2></div></div>
-    <section class="pblock month-block" aria-label="${msg("month.detail")}">
+    ${state.tab === 'calendar' ? '' : `<section class="pblock month-block" aria-label="${msg("month.detail")}">
       <header class="pblock-head"><span class="pblock-num" aria-hidden="true">1</span><div><h3>${msg("month.detail")}</h3>
         <p>${msg("compare.the.selected.month.with")}</p></div></header>
       ${readCard(name, vAll)}
-    </section>
+    </section>`}
     <section class="pblock charts-block" aria-label="${msg("charts2")}">
-      <header class="pblock-head"><span class="pblock-num" aria-hidden="true">2</span><div><h3>${msg("charts2")}</h3>
+      <header class="pblock-head"><span class="pblock-num" aria-hidden="true">${state.tab === 'calendar' ? 1 : 2}</span><div><h3>${msg("charts2")}</h3>
         <p>${msg("select.a.year.and.month")}</p></div></header>
       ${rangeRow()}
       <div class="tabs" role="tablist">${TABS.map(([k, l]) => `<button role="tab" data-tab="${k}" aria-selected="${k === state.tab}">${displayText(l)}</button>`).join('')}</div>
@@ -1070,7 +1070,7 @@ function calReadSelected() {
   const box = $('#calRead');
   if (!box) return;
   const c = box.parentElement.querySelector(`rect.cell[data-year="${state.year}"][data-month="${state.month}"]`);
-  box.innerHTML = c ? c.dataset.tip : `<b>${msg("cal.read.hint")}</b>`;
+  box.innerHTML = c ? c.dataset.read : `<div class="cr-top"><b>${msg("cal.read.hint")}</b></div>`;
   box.classList.remove('preview');
 }
 
@@ -1128,10 +1128,10 @@ function bindPanel(panel) {
     document.getElementById(id)?.focus();
   });
   panel.addEventListener('pointermove', (e) => {
-    const t = e.target.closest('[data-tip]'), box = $('#calRead');
+    const t = e.target.closest('[data-tip]'), box = $('#calRead'), cell = e.target.closest('rect.cell[data-read]');
     // Takvim karesi: okuma şeritte gösterilir, ayrıca yüzen ipucu açılmaz.
-    if (box && t?.matches('rect.cell') && panel.contains(box)) {
-      hideTip(); box.innerHTML = t.dataset.tip; box.classList.add('preview'); return;
+    if (box && cell && panel.contains(box)) {
+      hideTip(); box.innerHTML = cell.dataset.read; box.classList.add('preview'); return;
     }
     if (box?.classList.contains('preview')) calReadSelected();
     t ? showTip(t.dataset.tip, e.clientX, e.clientY) : hideTip();

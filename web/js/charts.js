@@ -1,8 +1,8 @@
-import { t as msg, displayText, locale, ordinal } from './i18n.js?v=20261115-cal-read';
+import { t as msg, displayText, locale, ordinal } from './i18n.js?v=20261115-cal-read2';
 // Panel grafikleri: elle yazılmış SVG. Tek ölçek, tek renk tonu (kor), nötr mürekkep.
 // Bu dosyadaki istatistik işlevleri (inRange, reading, sentence, peaks, csvRows, hotspotRows) saf işlevlerdir;
 // tarayıcı dışında Node ile de sınanabilir.
-import { RAMP } from './mapstyle.js?v=20261115-cal-read';
+import { RAMP } from './mapstyle.js?v=20261115-cal-read2';
 
 // Ay dizileri canlı dışa aktarımdır; dil değişiminde mevcut seçim aynı ay indeksinde kalır.
 export let MONTHS, MON3;
@@ -99,7 +99,7 @@ export function reading(years, y, m, from, to) {
   // gürültü olduğu için yüksek/düşük denmez (il ölçeğinde aylık hata ~%38).
   const small = !sparse && v < LOW_MIN && med < LOW_MIN;
   const level = sparse || small ? 'sparse' : pct < 5 ? 'verylow' : pct < 25 ? 'low' : pct <= 75 ? 'normal' : pct <= 95 ? 'high' : 'extreme';
-  return { ...base, pct: sparse ? null : pct, level, rank: 1 + ref.filter((x) => x > v).length, below, eq };
+  return { ...base, pct: sparse ? null : pct, level, small, rank: 1 + ref.filter((x) => x > v).length, below, eq };
 }
 
 // Tipik değere (medyan) göre kısa ifade: 2 kat ve üstü "X katı", altı "%X yüksek/düşük",
@@ -112,10 +112,12 @@ export function vsTypical(q) {
 
 // Tek cümlelik Türkçe okuma, ör. "Ağustos 2021: 25 yılın en yükseği, tipik değerin 14 katı."
 // `label` verilirse ay adı yerine o kullanılır (ör. "1–13 Kasım 2026").
-export function sentence(r, label) {
+// bare: başlıksız (takvim şeridinde başlık ayrı yazılır).
+export function sentence(r, label, bare = false) {
   if (!r) return '';
-  const M = MONTHS[r.m], head = `${label || `${M} ${r.y}`}: `;
+  const M = MONTHS[r.m], head = bare ? '' : `${label || `${M} ${r.y}`}: `;
   if (r.short) return msg("detections.select.at.least.years", [head, fmt(r.v), MIN_REF + 1]);
+  if (r.small) return msg("few.detections.both.below", [head, fmt(r.v), fmt(r.med), LOW_MIN]);
   if (r.level === 'sparse') return msg("detections.too.few.detections.in", [head, fmt(r.v), M]);
   let place;
   const per = `${r.from}–${r.to}`;
@@ -275,13 +277,16 @@ export function calendar(years, from, to, sel, opt) {
       const op = pc != null || v === 0 ? 1 : 0.35;
       // İşaret düzeyden (ay kartıyla aynı): küçük aylarda işaret yok.
       const cls = small || pc == null ? null : calClass(pc);
-      const tipLv = lv && lv !== 'normal' ? ` · ${displayText(LEVELS[lv].label)}` : '';
-      const tipPct = rdg?.pct != null ? `<br>${msg("years.exceeded.typical.value", [Math.round(rdg.pct), fmt(rdg.med)])}` : '';
-      const tipPart = part ? `<br>${msg("partial.month.days.of.compared", [through, MONTHS[i]])}` : '';
-      // Tipik değere oran ve sıra: takvimden çıkmadan okunabilsin (medyan çok küçükse oran verilmez).
-      const tipCmp = rdg?.pct != null && lv !== 'sparse' && rdg.med >= 3
-        ? `<br>${vsTypical(v / rdg.med)} · ${msg("ranks.out.of.years", [rdg.n + 1, rdg.rank])}` : '';
-      s += `<rect x="${x}" y="${y0 + 1}" width="${cw - 2}" height="${ch - 2}" rx="2.5" fill="${fill}" fill-opacity="${op}" class="cell${out ? ' out' : ''}${part ? ' part' : ''}" data-year="${yy}" data-month="${i}" data-tip="${esc(`<b>${MONTHS[i]} ${yy}</b>${msg("detections2", [fmt(v), tipLv, tipPct, tipPart])}${tipCmp}`)}"/>`;
+      // Şerit içeriği (takvimin üstü): her kare için aynı üç satır, böylece şerit boyu oynamaz.
+      const title = part ? `1–${through} ${MONTHS[i]} ${yy}` : `${MONTHS[i]} ${yy}`;
+      const L = lv && lv !== 'normal' ? LEVELS[lv] : null;
+      const badge = L ? `<span class="lvl lv-${lv}">${L.mark ? L.mark + ' ' : ''}${displayText(L.label)}</span>` : '';
+      let say = rdg ? sentence(rdg, title, true) : msg("no.data");
+      say = say.charAt(0).toLocaleUpperCase(locale()) + say.slice(1);
+      const nums = rdg?.pct != null ? `${msg("detections2", [fmt(v), '', '', ''])} · ${msg("years.exceeded.typical.value", [Math.round(rdg.pct), fmt(rdg.med)])}`
+        : msg("detections2", [fmt(v), '', '', '']);
+      const read = `<div class="cr-top"><b>${title}</b>${badge}</div><p class="cr-say">${say}</p><p class="cr-nums">${nums}</p>`;
+      s += `<rect x="${x}" y="${y0 + 1}" width="${cw - 2}" height="${ch - 2}" rx="2.5" fill="${fill}" fill-opacity="${op}" class="cell${out ? ' out' : ''}${part ? ' part' : ''}" data-year="${yy}" data-month="${i}" data-read="${esc(read)}"/>`;
       const cx = x + (cw - 2) / 2, cy = y0 + ch / 2;
       // İşaret, renk sınıfıyla aynı yüzdelikten. Yön = yukarı ▲ fazla, aşağı ▼ az; boyut = ne kadar uç.
       if (!out && cls === 5) marks += `<path d="M${cx - 2.8},${cy + 2.6}h5.6l-2.8,-4.4z" class="flag"/>`;
