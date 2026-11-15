@@ -3,7 +3,7 @@ import { t as msg, lang, locale, displayText, percent } from './i18n.js?v=202611
 import { regionGeometry } from './regions.js?v=20261115a';
 import { buildStyle, LAYER_GROUPS, RAMP, waterName } from './mapstyle.js?v=20261115-map-year';
 import { MONTHS, MON3, LEVELS, fmt, quantile, inRange, reading, sentence, peaks, sourceOf, csvRows, hotspotRows,
-  calendar, calendarKey, compare, stepChart, setChartWidth, vsTypical } from './charts.js?v=20261115-map-year';
+  calendar, calendarKey, compare, stepChart, setChartWidth, vsTypical, rampColor } from './charts.js?v=20261115-map-year';
 import { DrawTool, drawnArea } from './draw.js?v=20261115-map-year';
 
 const $ = (s) => document.querySelector(s);
@@ -40,9 +40,10 @@ const regionMap = () => state.scope === 'region' || state.scope === 'country';
 const mapNames = () => (state.scope === 'country' ? Object.keys(geographic.regions) : areaNames());
 const mapData = (name) => (state.scope === 'country' ? geographic.regions[name]?.series : areaData(name));
 function mapTotal(name, year = state.year) {
-  if (state.scope !== 'country') return total(name, year);
-  const row = geographic.regions[name]?.series?.[state.sensor]?.[year];
-  return row ? sum(row.filter((_, m) => inWin(m))) : null;
+  const row = mapData(name)?.[state.sensor]?.[year];
+  if (!row) return null;
+  const months = row.slice(state.win[0], state.win[1] + 1);
+  return months.some((v) => v != null) ? sum(months) : null;
 }
 function pickArea(name) {
   if (state.scope === 'country' && name !== COUNTRY) setScope(geographic.regions[name] ? 'region' : 'province');
@@ -390,21 +391,34 @@ async function loadPoints() {
   } catch (e) { ptKey = ''; }
 }
 
-// Renk, ilin o yılki sıralamasına göre verilir (çeyreklik ölçek): birkaç çok yüksek il
-// diğerlerini tek renge sıkıştırmasın.
-let legendVals = [], legendNames = [];
-function paintMap() {
-  const tot = {};
-  for (const f of activeGeo().features) { const n = f.properties.name; tot[n] = mapTotal(n); }
-  const ranked = Object.entries(tot).filter(([, t]) => t != null).sort((a, b) => a[1] - b[1]);
-  legendVals = ranked.map(([, t]) => t); legendNames = ranked.map(([n]) => n);
-  const last = Math.max(1, legendVals.length - 1);
-  for (const f of activeGeo().features) {
-    const name = f.properties.name, t = tot[name];
-    let v = -1;
-    if (t != null) { let lo = 0; while (lo < legendVals.length && legendVals[lo] < t) lo++; v = lo / last; }
-    map.setFeatureState({ source: 'provinces', id: name }, { v, sel: name === state.sel });
+// Aynı alan türü, sensör ve ay penceresinde bütün yıllar ortak ölçek kullanır.
+let scaleGeo, scaleKey, scaleMax;
+function mapScaleMax(collection) {
+  const key = [state.sensor, ...state.win].join(':');
+  if (collection !== scaleGeo || key !== scaleKey) {
+    scaleMax = 1;
+    for (const { properties: { name } } of collection.features) {
+      for (const year of Object.keys(mapData(name)?.[state.sensor] || {})) {
+        scaleMax = Math.max(scaleMax, mapTotal(name, year) ?? 0);
+      }
+    }
+    scaleGeo = collection;
+    scaleKey = key;
   }
+  return scaleMax;
+}
+let legendAreas = [];
+function paintMap() {
+  const collection = activeGeo(), max = mapScaleMax(collection);
+  legendAreas = [];
+  for (const { properties: { name } } of collection.features) {
+    const total = mapTotal(name);
+    // Karekök, düşük tespit sayılarını da açık tonlarda ayırt edilebilir kılar.
+    const v = total == null ? -1 : Math.sqrt(total / max);
+    map.setFeatureState({ source: 'provinces', id: name }, { v, sel: name === state.sel });
+    if (total != null) legendAreas.push({ name, total, v });
+  }
+  legendAreas.sort((a, b) => b.total - a.total);
   renderLegend();
   updatePoints();
 }
@@ -628,30 +642,21 @@ function setYear(y) {
 }
 
 // Renk ölçeği: her rengin hangi tespit aralığına karşılık geldiği (katman menüsünde, arazi türü gibi).
-// Renk, alanın o yılki sıralamasından gelir; her renk satırı o renge en yakın alanların aralığını gösterir.
+// Açıklama ve harita aynı normalize edilmiş tespit değerini kullanır.
 function renderLegend() {
   const el = $('#legend'), on = $('#layersMenu [data-layer=fill]')?.checked;
-  const lv = legendVals, n = lv.length, k = RAMP.length - 1;
-  el.hidden = !on || n < 2;
+  el.hidden = !on || !legendAreas.length || state.scope === 'draw';
   if (el.hidden) return;
-  // Haritadaki renk: sıradaki yerin (0–1) RAMP üzerinde doğrusal karışımı (mapstyle prov-fill ile aynı).
-  const mix = (v) => {
-    const x = v * k, i = Math.min(k - 1, Math.floor(x)), f = x - i;
-    const h = (c, o) => parseInt(c.slice(o, o + 2), 16);
-    return `rgb(${[1, 3, 5].map((o) => Math.round(h(RAMP[i], o) + (h(RAMP[i + 1], o) - h(RAMP[i], o)) * f)).join(',')})`;
-  };
   let rows;
   if (regionMap()) {
-    // Az sayıda bölge: her biri haritadaki tam rengiyle ayrı satırda.
-    rows = lv.map((t, i) => [t, i]).reverse().map(([t, i]) =>
-      `<li><i style="background:${mix(i / (n - 1))}"></i><span>${fmt(t)}</span><small>${displayName(legendNames[i])}</small></li>`).join('');
+    rows = legendAreas.map(({ name, total, v }) =>
+      `<li><i style="background:${rampColor(v)}"></i><span>${fmt(total)}</span><small>${displayName(name)}</small></li>`).join('');
   } else {
-    const buckets = RAMP.map(() => []);
-    lv.forEach((t, i) => buckets[Math.round((i / (n - 1)) * k)].push(t));
-    rows = buckets.map((b, i) => [b, i]).filter(([b]) => b.length).reverse().map(([b, i]) => {
-      const range = b[0] === b.at(-1) ? fmt(b[0]) : `${fmt(b[0])}–${fmt(b.at(-1))}`;
-      return `<li><i style="background:${RAMP[i]}"></i><span>${range}</span></li>`;
-    }).join('');
+    // Renk geçişlerinin referans değerleri: il ölçeği yıl değişince sabit kalır.
+    rows = RAMP.map((color, i) => {
+      const value = scaleMax * (i / (RAMP.length - 1)) ** 2;
+      return `<li><i style="background:${color}"></i><span>${fmt(value)}</span></li>`;
+    }).reverse().join('');
   }
   el.innerHTML = `<li class="lg-title">${msg("fire.detections.per", [regionMap() ? msg("region") : msg("province"), fullWin() ? msg("annual") : winLabel(), state.year])}</li>${rows}
     <li class="lg-dot"><i></i><span>${msg("zoom.in.to.see.individual")}</span></li>`;
