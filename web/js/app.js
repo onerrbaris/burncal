@@ -21,7 +21,7 @@ const SENSORS = [
 const TABS = [['calendar', 'Takvim'], ['compare', 'Karşılaştır'], ['peaks', 'En yoğun'], ['step', 'Uydu uyumu'], ['ogm', 'OGM kaydı']];
 
 // month: okunan ay (0–11); from/to: dönem yılları; win: sezon penceresi [ilk ay, son ay]; custom: dönemi kullanıcı mı seçti.
-const state = { scope: 'province', sensor: 'merged', year: null, month: 11, from: null, to: null, win: [0, 11], custom: false, sel: null, tab: 'calendar', playing: false };
+const state = { scope: 'province', sensor: 'merged', year: null, month: 11, from: null, to: null, win: [0, 11], custom: false, sel: null, tab: 'calendar' };
 let geographic, regionGeo;
 const provinceRegion = {};
 const regional = () => state.scope === 'region';
@@ -31,7 +31,7 @@ const areaNames = () => regional() ? Object.keys(geographic.regions) : Object.ke
 const areaName = (name) => regional() ? provinceRegion[name] || name : name;
 const membersOf = (name) => geographic.regions[name]?.members || [name];
 const partialValues = (key, name) => regional() ? geographic.partial[key]?.[name] : data.partial[key]?.[name];
-let data, geo, ogm, lc, map, timer, ready = false, hovered = null, orbitOK = false, orbitRaf = 0;
+let data, geo, ogm, lc, map, ready = false, hovered = null, orbitOK = false, orbitRaf = 0;
 let RANGE, LY, LM, LD, PARTIAL, READ_M;   // etkin serinin yıl aralığı; son veri yılı, ayı (0–11), günü; son yıl bitmemiş mi
 const bboxes = {}, provIdx = {}, ranges = {};
 
@@ -106,7 +106,7 @@ function renderAreaSearch() {
 }
 function setScope(scope) {
   if (scope === state.scope || !ready) return;
-  stopPlay(); closePointPopup(); hideTip(); stopOrbit();
+  closePointPopup(); hideTip(); stopOrbit();
   const previous = state.sel;
   if (hovered) map.setFeatureState({ source: 'provinces', id: hovered }, { hover: false });
   hovered = null;
@@ -229,7 +229,7 @@ function openPointPopup(hit) {
     const link = document.createElement('a');
     link.href = '#panel'; link.className = 'link'; link.textContent = 'Bu ayı takvimde aç';
     link.onclick = (e) => {
-      e.preventDefault(); stopPlay(); closePointPopup();
+      e.preventDefault(); closePointPopup();
       state.month = m; state.tab = 'calendar';
       state.from = Math.min(state.from, y); state.to = Math.max(state.to, y);
       setYear(y); select(name);
@@ -487,14 +487,6 @@ function setYear(y) {
   if (PARTIAL && state.year === LY && state.month > LM) state.month = LM;
   if (ready) paintMap();
   renderPanel(); renderRank();
-}
-function stopPlay() { state.playing = false; clearInterval(timer); $('#play').classList.remove('on'); }
-function togglePlay() {
-  if (state.playing) return stopPlay();
-  state.playing = true; $('#play').classList.add('on');
-  const [lo, hi] = RANGE;
-  if (state.year >= hi) setYear(lo);
-  timer = setInterval(() => (state.year >= hi ? stopPlay() : setYear(state.year + 1)), 1100);
 }
 
 function renderLegend() {
@@ -897,12 +889,11 @@ function bindPanel(panel) {
     else if (t.id === 'csv') downloadCsv();
     else if (t.id === 'hcsv') downloadHotspots(t);
     else if (t.id === 'png' || t.id === 'svg') downloadChart(t.id);
-    else if (t.id === 'latest') { stopPlay(); state.month = READ_M; setYear(Math.min(LY, RANGE[1])); }
+    else if (t.id === 'latest') { state.month = READ_M; setYear(Math.min(LY, RANGE[1])); }
     else if (t.id === 'rAll') { state.custom = false; clampRange(); refreshAll('rFrom'); }
     else if (t.id === 'wSeason') { state.win = [5, 9]; refreshAll('wFrom'); }
     else if (t.id === 'wAll') { state.win = [0, 11]; refreshAll('wFrom'); }
     else if (t.dataset.year || t.dataset.month) {
-      stopPlay();
       if (t.dataset.month) state.month = +t.dataset.month;
       if (t.dataset.year) setYear(t.dataset.year); else renderPanel();
     }
@@ -928,8 +919,7 @@ function bindRest() {
     const closed = $('#rank').classList.toggle('closed');
     e.target.textContent = closed ? '+' : '–'; e.target.setAttribute('aria-expanded', !closed);
   };
-  $('#year').addEventListener('input', (e) => { stopPlay(); setYear(e.target.value); });
-  $('#play').onclick = togglePlay;
+  $('#year').addEventListener('input', (e) => { setYear(e.target.value); });
   $('#zoomIn').onclick = () => map.zoomIn(); $('#zoomOut').onclick = () => map.zoomOut();
   $('#north').onclick = () => { stopOrbit(); map.easeTo({ bearing: 0, pitch: 0 }); };
   $('#home').onclick = () => select(null);
@@ -975,13 +965,12 @@ function bindRest() {
     if (g === 'points' && on) updatePoints();
   });
 
-  // Klavye kısayolları: Esc kapat, boşluk oynat, H Türkiye görünümü, +/− yakınlaş.
+  // Klavye kısayolları: Esc kapat, H Türkiye görünümü, +/− yakınlaş.
   addEventListener('keydown', (e) => {
     const k = e.key.toLowerCase();
     if (k === 'escape') { e.target.blur?.(); if (state.sel) select(null); return; }
     if (e.target.closest('input, select, [role=tablist]') || e.ctrlKey || e.metaKey || e.altKey) return;
-    if (k === ' ' && !e.target.closest('button')) { e.preventDefault(); togglePlay(); }
-    else if (k === 'h') select(null);
+    if (k === 'h') select(null);
     else if (k === '+' || k === '=') map.zoomIn();
     else if (k === '-') map.zoomOut();
   });

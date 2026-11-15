@@ -4,8 +4,6 @@
   width: min(480px, calc(100vw - 220px)); min-height: 48px; flex: none;
   gap: 10px; padding: 7px 10px; border-radius: 12px; }
 body.has-panel .dock .timeline { margin-right: 0; }
-.timeline .play { width: 32px; height: 32px; }
-.timeline .play svg { width: 15px; height: 15px; }
 .timeline .yearbox { min-width: 48px; }
 .timeline .yearbox > span { font-size: 9px; }
 .timeline #yearOut { font-size: 21px; }

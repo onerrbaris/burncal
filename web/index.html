@@ -8,9 +8,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="vendor/maplibre-gl.css">
-<link rel="stylesheet" href="css/atlas.css?v=20261115h">
+<link rel="stylesheet" href="css/atlas.css?v=20261115-manual-year">
 <link rel="stylesheet" href="css/drawers.css?v=20261115a">
-<link rel="stylesheet" href="css/timeline.css?v=20261115a">
+<link rel="stylesheet" href="css/timeline.css?v=20261115-manual-year">
 <link rel="stylesheet" href="css/regions.css?v=20261115-method-note">
 </head>
 <body>
@@ -51,7 +51,7 @@
         <ol>
           <li><b>Bir il seçin.</b> Haritada ile tıklayın ya da arama kutusuna adını yazın.</li>
           <li><b>Takvime bakın.</b> Her kare bir ay. Renk koyulaştıkça uydunun gördüğü ateş sayısı artar. <span class="sym">●</span> olağandan yüksek, <span class="sym">◆</span> olağanüstü aylar.</li>
-          <li><b>Yılı değiştirin.</b> Alttaki çubuğu kaydırın ya da ▶ ile yılları oynatın.</li>
+          <li><b>Yılı değiştirin.</b> Alttaki çubuktan incelemek istediğiniz yılı seçin.</li>
           <li><b>Yakınlaşın.</b> Kırmızı noktalar tek tek uydu tespitleridir; tıklayınca tarihi görünür.</li>
         </ol>
         <p><b>Uyumlaştırılmış seri</b> eski (MODIS, 2000–) ve yeni (VIIRS, 2012–) uyduları tek ölçeğe getirir; böylece 25 yıl birbiriyle karşılaştırılabilir. Ham MODIS ve VIIRS sekmeleri kaynağı doğrudan incelemek içindir.</p>
@@ -101,9 +101,6 @@
   </div>
 
   <div class="timeline glass">
-    <button id="play" class="play" aria-label="Yılları oynat" title="Yılları oynat (boşluk)">
-      <svg viewBox="0 0 20 20" aria-hidden="true"><path class="i-play" d="M6 4l10 6-10 6z"/><path class="i-pause" d="M5 4h4v12H5zM11 4h4v12h-4z"/></svg>
-    </button>
     <div class="yearbox"><span>Yıl</span><output id="yearOut" for="year">—</output></div>
     <div class="track">
       <input type="range" id="year" step="1" aria-label="Yıl">
@@ -124,7 +121,7 @@
 </div>
 
 <script src="vendor/maplibre-gl.js"></script>
-<script type="module" src="js/app.js?v=20261115-method-note"></script>
+<script type="module" src="js/app.js?v=20261115-manual-year"></script>
 <script type="module" src="js/drawers.js?v=20261115a"></script>
 <script type="module" src="js/timeline.js?v=20261115a"></script>
 </body>
