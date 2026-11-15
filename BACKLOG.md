@@ -45,7 +45,7 @@ Sunum (7 slayt) ve teslim formu. Veri güncellemek için: `python scripts/fetch_
 
 ## Done
 
-- Antalya Temmuz 2021 örneği için tek slaytlık Türkçe PowerPoint hazırlandı.
+- Antalya Temmuz 2021 örneği için tek slaytlık Türkçe PowerPoint ve yöntem, doğrulama, kullanım ile sonraki adımları anlatan yedi slaytlık İngilizce sunum hazırlandı.
 
 - Takvimde belirgin düşük aylar mavi dolguyla gösteriliyor (sezon içi, bitmiş ay, yılların %25'inden azını geçen, tipik değer ≥20); açıklamaya eklendi.
 
