@@ -20,6 +20,12 @@ body.has-panel.right-drawer-closed .timeline { margin-right: 0; }
   .panel.edge-drawer { left: 10px; }
   .side.drawer-closed { transform: translateX(-100%); }
   .panel.drawer-closed { transform: translateX(100%); }
+  /* Telefonda takvim/grafik paneli açıkken alttaki özet kartı gizlenir, panel ekranın tamamını alır.
+     Panel kapatılınca özet kartı geri gelir. */
+  body.has-panel:not(.right-drawer-closed) .side.edge-drawer { display: none; }
+  body.has-panel:not(.right-drawer-closed) .panel { bottom: 84px; }
+  /* Kapatma oku panelin sol kenarına biniyor: başlık ondan sonra başlasın. */
+  .panel.edge-drawer .p-head { padding-left: 34px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .edge-drawer { transition-duration: 0.01ms; }
