@@ -184,8 +184,8 @@ export function buildStyle(provinces, labels) {
       },
     ],
   };
-  // Açılışta yalnızca 3B arazi açık; yardımcı katmanları kullanıcı seçer.
-  const optional = new Set(Object.values(LAYER_GROUPS).flat());
+  // Açılışta tespit yoğunluğu, ateş noktaları ve 3B arazi açık; yer adları ve yollar kapalı.
+  const optional = new Set([...LAYER_GROUPS.labels, ...LAYER_GROUPS.roads]);
   for (const layer of style.layers) {
     if (optional.has(layer.id)) layer.layout = { ...layer.layout, visibility: 'none' };
   }

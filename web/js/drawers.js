@@ -20,7 +20,10 @@ function drawer(id, label, direction, collapsed = false) {
   const set = (closed) => {
     panel.classList.toggle('drawer-closed', closed);
     content.inert = closed;
-    button.textContent = direction === 'left' ? (closed ? '›' : '‹') : (closed ? '‹' : '›');
+    if (direction === 'left') button.textContent = closed ? '›' : '‹';
+    // Kapalı grafik paneli kenarda etiketli tutamaç olarak durur.
+    else button.innerHTML = closed ? '<span aria-hidden="true">‹</span><b>Detaylı inceleme</b>' : '›';
+    button.classList.toggle('labeled', direction === 'right' && closed);
     button.setAttribute('aria-expanded', String(!closed));
     const title = `${label} ${closed ? 'aç' : 'gizle'}`;
     button.setAttribute('aria-label', title); button.title = title;
@@ -36,13 +39,15 @@ function drawer(id, label, direction, collapsed = false) {
 }
 drawer('rank', 'En çok tespit listesini', 'left', true);
 drawer('side', 'İl özetini', 'left');
-drawer('panel', 'İl grafiklerini', 'right');
+drawer('panel', 'Grafikleri', 'right', true);
 
 // Yeni il seçilince iki panel de açılır; yıl/sekme değişimi gizleme tercihini bozmaz.
-let selected = '';
+let selected = '', first = true;
 const panel = document.getElementById('panel');
 new MutationObserver(() => {
   const name = panel.hidden ? '' : panel.querySelector('h2')?.textContent || '';
-  if (name && name !== selected) drawers.filter((d) => d.id !== 'rank').forEach((d) => d.set(false));
+  // Açılıştaki ilk seçimde (Türkiye) yalnızca özet açılır; sonraki seçimlerde iki panel de.
+  if (name && name !== selected) drawers.filter((d) => d.id !== 'rank' && (!first || d.id === 'side')).forEach((d) => d.set(false));
+  if (name) first = false;
   selected = name;
 }).observe(panel, { attributes: true, attributeFilter: ['hidden'], childList: true, subtree: true });

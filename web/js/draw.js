@@ -10,18 +10,6 @@ export function haversine([lo1, la1], [lo2, la2]) {
   return 2 * R * Math.asin(Math.min(1, Math.sqrt(a)));
 }
 
-// Merkez ve yarıçaptan (km) yer yüzeyinde gerçek daire.
-export function circleRing([lo, la], km, n = 96) {
-  const d = km / R, p1 = rad(la), l1 = rad(lo), ring = [];
-  for (let i = 0; i <= n; i++) {
-    const b = (2 * Math.PI * i) / n;
-    const p2 = Math.asin(Math.sin(p1) * Math.cos(d) + Math.cos(p1) * Math.sin(d) * Math.cos(b));
-    const l2 = l1 + Math.atan2(Math.sin(b) * Math.sin(d) * Math.cos(p1), Math.cos(d) - Math.sin(p1) * Math.sin(p2));
-    ring.push([deg(l2), deg(p2)]);
-  }
-  return ring;
-}
-
 // Küresel çokgen alanı (km²). Kendini kesen serbest çizimde yaklaşık değerdir.
 export function areaKm2(ring) {
   let s = 0;
@@ -39,7 +27,7 @@ const close = (ring) => {
 
 const MODES = {
   free: 'Basılı tutup alanın çevresini çizin, bırakınca alan kapanır.',
-  circle: 'Merkeze basın ve sürükleyin; bırakınca daire kapanır.',
+  circle: 'Şeklin bir ucuna basın ve çapraz sürükleyin; bırakınca elips kapanır. Tam daire için Shift’e basılı tutun.',
   poly: 'Köşeleri tek tek tıklayın. Bitirmek için ilk noktaya tıklayın, çift tıklayın ya da Enter’a basın.',
 };
 
@@ -86,7 +74,7 @@ export class DrawTool {
     const q = this.pos(e);
     this.downAt = q.p;
     if (this.mode === 'free') { this.pts = [q]; this.drag = true; }
-    else if (this.mode === 'circle') { this.center = q; this.edge = q; this.drag = true; }
+    else if (this.mode === 'circle') { this.center = q; this.edge = q; this.shift = e.shiftKey; this.drag = true; }
     e.target.setPointerCapture?.(e.pointerId);
   }
   move(e) {
@@ -96,8 +84,10 @@ export class DrawTool {
       const l = this.pts.at(-1).p;
       if ((q.p[0] - l[0]) ** 2 + (q.p[1] - l[1]) ** 2 >= 16) { this.pts.push(q); this.render(); }
     } else if (this.mode === 'circle' && this.drag) {
-      this.edge = q; this.render();
-      this.onStatus(`Yarıçap ${haversine(this.center.ll, q.ll).toLocaleString('tr-TR', { maximumFractionDigits: 1 })} km`);
+      this.edge = q; this.shift = e.shiftKey; this.render();
+      const { w, h } = this.ellipseSize();
+      const km = (v) => v.toLocaleString('tr-TR', { maximumFractionDigits: 1 });
+      this.onStatus(`Genişlik ${km(w)} km · yükseklik ${km(h)} km`);
     } else if (this.mode === 'poly' && this.pts.length) { this.hover = q; this.render(); }
   }
   up(e) {
@@ -112,9 +102,10 @@ export class DrawTool {
     }
     if (this.mode === 'circle' && this.drag) {
       this.drag = false;
-      const km = haversine(this.center.ll, q.ll);
-      if (km < 1) { this.reset(); this.render(); return this.onStatus('Daire çok küçük. ' + MODES.circle); }
-      return this.finish(circleRing(this.center.ll, km), { center: this.center.ll, km });
+      this.edge = q; this.shift = e.shiftKey;
+      const ring = this.ellipseRing(), { w, h } = this.ellipseSize();
+      if (!ring || w < 1 || h < 1) { this.reset(); this.render(); return this.onStatus('Şekil çok küçük. ' + MODES.circle); }
+      return this.finish(ring, { w, h });
     }
     if (this.mode === 'poly') {
       const d = this.downAt;
@@ -125,6 +116,28 @@ export class DrawTool {
       this.pts.push(q); this.render();
       this.onStatus(this.pts.length < 3 ? MODES.poly : `${this.pts.length} köşe. Bitirmek için ilk noktaya tıklayın, çift tıklayın ya da Enter’a basın.`);
     }
+  }
+  // İlk basılan nokta ile imleç, elipsin çevrelendiği kutunun karşılıklı köşeleridir (ekran düzleminde).
+  ellipseBox() {
+    const [x0, y0] = this.center.p, [x1, y1] = this.edge.p;
+    let rx = Math.abs(x1 - x0) / 2, ry = Math.abs(y1 - y0) / 2;
+    if (this.shift) rx = ry = Math.max(rx, ry);
+    const sx = x1 >= x0 ? 1 : -1, sy = y1 >= y0 ? 1 : -1;
+    return { cx: x0 + sx * rx, cy: y0 + sy * ry, rx, ry };
+  }
+  ellipseRing(n = 96) {
+    const { cx, cy, rx, ry } = this.ellipseBox();
+    if (rx < 3 || ry < 3) return null;
+    const ring = [];
+    for (let i = 0; i <= n; i++) {
+      const a = (2 * Math.PI * i) / n, ll = this.map.unproject([cx + rx * Math.cos(a), cy + ry * Math.sin(a)]);
+      ring.push([ll.lng, ll.lat]);
+    }
+    return ring;
+  }
+  ellipseSize() {
+    const { cx, cy, rx, ry } = this.ellipseBox(), u = (x, y) => { const l = this.map.unproject([x, y]); return [l.lng, l.lat]; };
+    return { w: haversine(u(cx - rx, cy), u(cx + rx, cy)), h: haversine(u(cx, cy - ry), u(cx, cy + ry)) };
   }
   finishPoly() {
     if (this.pts.length < 3) return this.onStatus('Çokgen için en az 3 köşe gerekir.');
@@ -147,9 +160,7 @@ export class DrawTool {
     const f = [];
     let line = [];
     if (this.mode === 'circle' && this.center && this.edge) {
-      const km = haversine(this.center.ll, this.edge.ll);
-      if (km > 0) line = circleRing(this.center.ll, km);
-      f.push({ type: 'Feature', properties: { k: 'v' }, geometry: { type: 'Point', coordinates: this.center.ll } });
+      line = this.ellipseRing() || [];
     } else {
       line = this.pts.map((v) => v.ll);
       if (this.mode === 'poly') {

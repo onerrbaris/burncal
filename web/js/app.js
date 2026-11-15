@@ -3,7 +3,7 @@ import { regionGeometry } from './regions.js?v=20261115a';
 import { buildStyle, LAYER_GROUPS, RAMP } from './mapstyle.js?v=20261115-clean-controls';
 import { MONTHS, MON3, LEVELS, fmt, quantile, inRange, reading, sentence, peaks, sourceOf, csvRows, hotspotRows,
   calendar, calendarKey, compare, stepChart, setChartWidth } from './charts.js?v=20261115h';
-import { DrawTool, drawnArea } from './draw.js?v=20261115-draw';
+import { DrawTool, drawnArea } from './draw.js?v=20261115-ellipse';
 
 const $ = (s) => document.querySelector(s);
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -23,7 +23,7 @@ const TABS = [['calendar', 'Takvim'], ['compare', 'Karşılaştır'], ['peaks', 
 
 // month: okunan ay (0–11); from/to: dönem yılları; win: sezon penceresi [ilk ay, son ay]; custom: dönemi kullanıcı mı seçti.
 const state = { scope: 'province', sensor: 'merged', year: null, month: 11, from: null, to: null, win: [0, 11], custom: false, sel: null, tab: 'calendar' };
-let geographic, regionGeo, countryGeo, country, drawn = null, drawTool, lcGroup = [];
+let geographic, regionGeo, country, drawn = null, drawTool, lcGroup = [];
 const provinceRegion = {};
 // Alan birimleri: il, coğrafi bölge, Türkiye (81 il toplamı) ve kullanıcının çizdiği alan.
 const COUNTRY = 'Türkiye', DRAWN = 'Çizilen alan';
@@ -31,9 +31,20 @@ const SCOPE_LABEL = { province: 'İl', region: 'Bölge', country: 'Ülke', draw:
 const EMPTY = { type: 'FeatureCollection', features: [] };
 const regional = () => state.scope === 'region';
 const multi = () => state.scope !== 'province';     // birden çok ilin serisinden kurulan alan
-const single = () => state.scope === 'country' || state.scope === 'draw';   // haritada tek alan
 const scopeLabel = () => SCOPE_LABEL[state.scope];
-const activeGeo = () => ({ province: geo, region: regionGeo, country: countryGeo, draw: drawn?.geo || EMPTY })[state.scope];
+// Ülke görünümünde harita illeri boyar (Türkiye seçili kalır); ile tıklamak il görünümüne geçirir.
+const mapNames = () => (state.scope === 'country' ? Object.keys(data.provinces) : areaNames());
+const mapData = (name) => (state.scope === 'country' ? data.provinces[name] : areaData(name));
+function mapTotal(name, year = state.year) {
+  if (state.scope !== 'country') return total(name, year);
+  const row = data.provinces[name]?.[state.sensor]?.[year];
+  return row ? sum(row.filter((_, m) => inWin(m))) : null;
+}
+function pickArea(name) {
+  if (state.scope === 'country' && name !== COUNTRY) setScope('province');
+  select(name);
+}
+const activeGeo = () => ({ province: geo, region: regionGeo, country: geo, draw: drawn?.geo || EMPTY })[state.scope];
 function areaData(name) {
   if (state.scope === 'region') return geographic.regions[name]?.series;
   if (state.scope === 'country') return name === COUNTRY ? country.series : null;
@@ -125,15 +136,15 @@ function indexData() {
 }
 
 function renderAreaSearch() {
-  const names = areaNames().sort((a, b) => a.localeCompare(b, 'tr'));
+  const names = mapNames().sort((a, b) => a.localeCompare(b, 'tr'));
   $('#provList').innerHTML = names.map((n) => `<option value="${n}">`).join('');
   $('#search').placeholder = regional() ? 'Bölge ara' : 'İl ara';
   $('#search').setAttribute('aria-label', regional() ? 'Bölge ara' : 'İl ara');
   $('#search').value = '';
   // Ülke ve çizim görünümünde aranacak bir ad yok.
-  $('.topbar .search').hidden = single();
+  $('.topbar .search').hidden = state.scope === 'draw';
 }
-function setScope(scope) {
+function setScope(scope, fly = true) {
   if (!ready) return;
   if (scope === state.scope) { if (scope === 'draw') startDraw(); return; }
   closePointPopup(); hideTip(); stopOrbit();
@@ -148,7 +159,7 @@ function setScope(scope) {
   setAreaGeo();
   renderAreaSearch();
   // İl/bölge geçişinde yoğunluk katmanının açık/kapalı tercihi korunur.
-  if (scope === 'country') select(COUNTRY);
+  if (scope === 'country') select(COUNTRY, fly);
   else if (scope === 'draw') { select(drawn ? DRAWN : null, false); startDraw(); }
   else select(regional() && previous ? areaName(previous) : null, false);
   renderLegend();
@@ -185,7 +196,7 @@ function startDraw(mode) {
   drawTool.start(mode || $('[data-draw][aria-pressed=true]')?.dataset.draw || 'free');
   loadAllYears().catch(() => {});
 }
-const SHAPE = { free: 'Serbest çizim', circle: 'Daire', poly: 'Çokgen' };
+const SHAPE = { free: 'Serbest çizim', circle: 'Elips', poly: 'Çokgen' };
 async function finishDraw(shape) {
   drawTool.stop();
   drawHint('Veriler yükleniyor…');
@@ -228,7 +239,7 @@ function geometry(collection = geo, index = true) {
     bboxes[name] = [[b[0], b[1]], [b[2], b[3]]];
     if (index) provIdx[name] = idx;
     labels.push({ type: 'Feature', geometry: { type: 'Point', coordinates: best },
-      properties: { name, label: up(name), hasData: !!areaData(name) } });
+      properties: { name, label: up(name), hasData: !!mapData(name) } });
   });
   return { type: 'FeatureCollection', features: labels };
 }
@@ -236,7 +247,8 @@ function geometry(collection = geo, index = true) {
 // ── Harita ──────────────────────────────────────────────
 function pads() {
   if (innerWidth <= 760) return { top: 120, bottom: state.sel ? innerHeight * 0.6 + 100 : 110, left: 20, right: 20 };
-  return { top: 100, bottom: 130, left: state.sel ? 390 : 260, right: state.sel ? 570 : 40 };
+  const right = state.sel && !document.body.classList.contains('right-drawer-closed') ? 570 : 60;
+  return { top: 100, bottom: 130, left: state.sel ? 390 : 260, right };
 }
 
 // Sınırları görünür alana sığdıran kamera (Mercator hesabı; eğim ve küre görünümünden bağımsız).
@@ -252,6 +264,7 @@ function fit(bounds, pad) {
 
 function goHome(duration = 2600) {
   const cam = fit(TR_BOUNDS, pads());
+  cam.zoom -= 0.3;   // Türkiye kıyıları ve komşu denizler de görünsün
   move({ ...cam, pitch: 38, bearing: 0, padding: pads() }, duration);
 }
 
@@ -318,7 +331,7 @@ function openPointPopup(hit) {
       e.preventDefault(); closePointPopup();
       state.month = m; state.tab = 'calendar';
       state.from = Math.min(state.from, y); state.to = Math.max(state.to, y);
-      setYear(y); select(name);
+      setYear(y); pickArea(name);
     };
     body.append(link);
   }
@@ -370,7 +383,7 @@ async function loadPoints() {
 let legendVals = [];
 function paintMap() {
   const tot = {};
-  for (const f of activeGeo().features) { const n = f.properties.name; tot[n] = total(n); }
+  for (const f of activeGeo().features) { const n = f.properties.name; tot[n] = mapTotal(n); }
   legendVals = Object.values(tot).filter((t) => t != null).sort((a, b) => a - b);
   const last = Math.max(1, legendVals.length - 1);
   for (const f of activeGeo().features) {
@@ -419,8 +432,10 @@ function initMap() {
     map.addLayer({ id: 'draft-pt', type: 'circle', source: 'draft', filter: ['==', ['get', 'k'], 'v'],
       paint: { 'circle-radius': 4.5, 'circle-color': '#ff8a3d', 'circle-stroke-color': '#fff', 'circle-stroke-width': 1.5 } });
     drawTool = new DrawTool(map, { onDone: finishDraw, onStatus: drawHint });
-    ready = true; paintMap();
+    ready = true;
     for (const button of document.querySelectorAll('[data-scope]')) button.disabled = false;
+    // Açılış: Türkiye toplamı; grafik paneli kapalı, "Detaylı inceleme" ile açılır.
+    setScope('country', false);
     document.body.classList.remove('booting');
     $('#intro').classList.add('out');
     setTimeout(() => $('#intro').remove(), 2400);
@@ -436,7 +451,7 @@ function initMap() {
       map.setFeatureState({ source: 'provinces', id: name }, { hover: true });
       map.getCanvas().style.cursor = 'pointer';
     }
-    const t = total(name);
+    const t = mapTotal(name);
     showTip(`<b>${name}</b>${t == null ? 'Veri yok' : `${fmt(t)} tespit · ${periodLabel()}`}`, e.originalEvent.clientX, e.originalEvent.clientY);
   });
   map.on('mouseleave', 'prov-hover', () => {
@@ -450,7 +465,7 @@ function initMap() {
     if (hit) return openPointPopup(hit);
     closePointPopup();
     const f = map.queryRenderedFeatures(e.point, { layers: ['prov-hover'] })[0];
-    if (f) select(f.properties.name);
+    if (f) pickArea(f.properties.name);
   });
   map.on('mousemove', (e) => {
     ptMouse = e.point;
@@ -515,12 +530,15 @@ async function addLandcover() {
 function select(name, fly = true) {
   if (name) name = areaName(name);
   stopOrbit();
+  const changed = name !== state.sel;
   state.sel = name;
   document.body.classList.toggle('has-panel', !!name);
   // Türkiye seçiliyken 81 ilin iç sınırları parlatılmaz; ülke sınırı altlıkta zaten çizili.
   const f = ['==', ['get', 'name'], state.scope === 'country' ? '' : name || ''];
   map.setFilter('sel-glow', f); map.setFilter('sel-line', f);
   paintMap(); renderPanel(); renderRank();
+  // Yeni seçim panellerin başından okunur (panel görünür olduktan sonra; gizliyken sıfırlama tutmaz).
+  if (changed && name) for (const id of ['#sideBody', '#panelBody']) $(id).scrollTop = 0;
   if (!fly) return;
   if (!name || state.scope === 'country') return goHome(2200);
   const cam = fit(bboxes[name], pads());
@@ -597,10 +615,10 @@ function renderLegend() {
 }
 
 function renderRank() {
-  const rows = areaNames().map((n) => [n, total(n)]).filter((r) => r[1] != null)
+  const rows = mapNames().map((n) => [n, mapTotal(n)]).filter((r) => r[1] != null)
     .sort((a, b) => b[1] - a[1]).slice(0, regional() ? 7 : 6);
-  $('#rank').hidden = !rows.length || single();
-  if (!rows.length || single()) return;
+  $('#rank').hidden = !rows.length || state.scope === 'draw';
+  if (!rows.length || state.scope === 'draw') return;
   $('#rankTitle').textContent = `En çok tespit${regional() ? ' · bölgeler' : ''} · ${state.year}${fullWin() ? '' : ' · ' + winLabel()}`;
   $('#rankList').innerHTML = rows.map(([n, t], i) =>
     `<li><button data-name="${n}" class="${n === state.sel ? 'on' : ''}"><i>${i + 1}</i><span>${n}</span><em>${fmt(t)}</em>
@@ -727,7 +745,7 @@ function methodNote(name) {
   if (!drawn) return '';
   const tot = sum(drawn.byProv.map(([, v]) => v));
   const provs = drawn.byProv.slice(0, 6).map(([n, v]) => `${n} %${Math.max(1, Math.round((100 * v) / (tot || 1)))}`).join(', ');
-  return `<p>${drawn.label}${drawn.km ? `, yarıçap ${dec(drawn.km)} km` : ''} · ${fmt(drawn.km2)} km².${tot ? ` Tespitlerin illere dağılımı: ${provs}${drawn.byProv.length > 6 ? ` ve ${drawn.byProv.length - 6} il daha` : ''}.` : ''}</p>
+  return `<p>${drawn.label}${drawn.w ? `, ${dec(drawn.w)} × ${dec(drawn.h)} km` : ''} · ${fmt(drawn.km2)} km².${tot ? ` Tespitlerin illere dağılımı: ${provs}${drawn.byProv.length > 6 ? ` ve ${drawn.byProv.length - 6} il daha` : ''}.` : ''}</p>
     <p>Ham MODIS ve VIIRS sayıları alanın içine düşen uydu tespitlerinin sayımıdır. Uyumlaştırılmış seri için yeni katsayı hesaplanmadı: her ilin uyumlaştırılmış aylık değeri, o ilin o ayki tespitlerinden alana düşen pay kadar alınıp toplandı. Böylece il serilerindeki 2002 öncesi tek uydu ve uydu kesintisi düzeltmeleri korunur.</p>
     <p>Hata bu alan için ölçülmedi. Ölçülen değerler (Akdeniz, bir yıl dışarıda bırakılarak): ~100 km ölçekte yıllık %23, aylık %38; ~25 km ölçekte aylık %58.</p>`;
 }
@@ -864,11 +882,11 @@ function renderPanel() {
   // Sağ panel: seçimler üstte, seçili sekmenin grafiği altta.
   body.innerHTML = `<div class="p-head charts-head"><div><span class="eyebrow">${sen.label}${merged ? ' seri' : ' · ham veri'} · ${sel_}</span>
       <h2>${name} grafikleri</h2></div></div>
-    <section class="chart-controls" aria-label="Grafik seçimleri">
-      ${rangeRow()}
+    <section class="chart-controls" aria-label="Ay ayrıntısı">
       <h3 class="section-title">Ay ayrıntısı</h3>
       ${readCard(name, vAll)}
     </section>
+    <section class="chart-controls" aria-label="Grafik seçimleri">${rangeRow()}</section>
     <div class="tabs" role="tablist">${TABS.map(([k, l]) => `<button role="tab" data-tab="${k}" aria-selected="${k === state.tab}">${l}</button>`).join('')}</div>
     <div class="view" role="tabpanel">${view}</div>`;
   // Sol panel: genel özet, güven, arazi türü ve indirme.
@@ -1043,7 +1061,7 @@ function bindPanel(panel) {
 }
 function bindRest() {
 
-  $('#rankList').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) select(b.dataset.name); });
+  $('#rankList').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) pickArea(b.dataset.name); });
   $('#rankToggle').onclick = (e) => {
     const closed = $('#rank').classList.toggle('closed');
     e.target.textContent = closed ? '+' : '–'; e.target.setAttribute('aria-expanded', !closed);
@@ -1059,11 +1077,11 @@ function bindRest() {
   $('#drawCancel').onclick = () => { drawTool.stop(); $('#drawBar').hidden = true; if (!drawn) setScope('province'); };
   const search = $('#search');
   const pick = () => {
-    const names = areaNames();
+    const names = mapNames();
     const q = low(search.value.trim());
     if (!q) return;
     const hit = names.find((n) => low(n) === q) || names.find((n) => low(n).startsWith(q));
-    if (hit) { select(hit); search.value = ''; search.blur(); }
+    if (hit) { pickArea(hit); search.value = ''; search.blur(); }
   };
   search.addEventListener('change', pick);
   search.addEventListener('keydown', (e) => { if (e.key === 'Enter') pick(); });
@@ -1116,7 +1134,6 @@ async function main() {
   })));
   regionGeo = regionGeometry(geo, geographic.regions);
   const allNames = Object.keys(data.provinces);
-  countryGeo = regionGeometry(geo, { [COUNTRY]: { members: geo.features.map((f) => f.properties.name) } });
   country = { series: {}, partial: {} };
   // Türkiye: 81 il serisinin ay ay toplamı (bölge görünümündeki gibi, yeni katsayı yok).
   for (const key of ['modis', 'viirs', 'merged']) {

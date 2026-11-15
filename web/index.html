@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="vendor/maplibre-gl.css">
-<link rel="stylesheet" href="css/atlas.css?v=20261115-manual-year">
-<link rel="stylesheet" href="css/drawers.css?v=20261115a">
+<link rel="stylesheet" href="css/atlas.css?v=20261115-open">
+<link rel="stylesheet" href="css/drawers.css?v=20261115-open">
 <link rel="stylesheet" href="css/timeline.css?v=20261115-manual-year">
 <link rel="stylesheet" href="css/regions.css?v=20261115-draw">
 </head>
@@ -44,7 +44,7 @@
       <div class="draw-bar glass" id="drawBar" role="group" aria-label="Çizim aracı" hidden>
         <div class="draw-modes">
           <button type="button" data-draw="free" aria-pressed="true">Serbest</button>
-          <button type="button" data-draw="circle" aria-pressed="false">Daire</button>
+          <button type="button" data-draw="circle" aria-pressed="false" title="Elips; Shift ile tam daire">Elips</button>
           <button type="button" data-draw="poly" aria-pressed="false">Çokgen</button>
           <button type="button" id="drawCancel" class="draw-x" aria-label="Çizimi kapat" title="Kapat">×</button>
         </div>
@@ -63,7 +63,7 @@
       <div class="menu help glass" id="helpMenu" hidden>
         <h3>Nasıl kullanılır?</h3>
         <ol>
-          <li><b>Bir il seçin.</b> Haritada ile tıklayın ya da arama kutusuna adını yazın. <b>Bölgeler</b> coğrafi bölgeleri, <b>Ülke</b> Türkiye toplamını gösterir; <b>Çiz</b> ile haritada kendi alanınızı (serbest, daire ya da çokgen) çizebilirsiniz.</li>
+          <li><b>Bir il seçin.</b> Haritada ile tıklayın ya da arama kutusuna adını yazın. <b>Bölgeler</b> coğrafi bölgeleri, <b>Ülke</b> Türkiye toplamını gösterir; <b>Çiz</b> ile haritada kendi alanınızı (serbest, elips ya da çokgen) çizebilirsiniz.</li>
           <li><b>Takvime bakın.</b> Her kare bir ay. Renk koyulaştıkça uydunun gördüğü ateş sayısı artar. <span class="sym">●</span> olağandan yüksek, <span class="sym">◆</span> olağanüstü aylar.</li>
           <li><b>Yılı değiştirin.</b> Alttaki çubuktan incelemek istediğiniz yılı seçin.</li>
           <li><b>Yakınlaşın.</b> Kırmızı noktalar tek tek uydu tespitleridir; tıklayınca tarihi görünür.</li>
@@ -78,8 +78,8 @@
       </button>
       <div class="menu glass" id="layersMenu" hidden>
         <h3>Harita katmanları</h3>
-        <label><input type="checkbox" data-layer="fill"><span></span>Tespit yoğunluğu</label>
-        <label><input type="checkbox" data-layer="points"><span></span>Ateş noktaları</label>
+        <label><input type="checkbox" data-layer="fill" checked><span></span>Tespit yoğunluğu</label>
+        <label><input type="checkbox" data-layer="points" checked><span></span>Ateş noktaları</label>
         <label id="lcRow" hidden><input type="checkbox" data-layer="landcover"><span></span>Arazi türü</label>
         <ul class="lc-legend" id="lcLegend" hidden></ul>
         <label><input type="checkbox" data-layer="labels"><span></span>Yer adları</label>
@@ -135,8 +135,8 @@
 </div>
 
 <script src="vendor/maplibre-gl.js"></script>
-<script type="module" src="js/app.js?v=20261115-draw"></script>
-<script type="module" src="js/drawers.js?v=20261115a"></script>
+<script type="module" src="js/app.js?v=20261115-open3"></script>
+<script type="module" src="js/drawers.js?v=20261115-open"></script>
 <script type="module" src="js/timeline.js?v=20261115a"></script>
 </body>
 </html>
