@@ -663,7 +663,7 @@ function rangeRow() {
       ${season ? '' : '<button class="link" id="wSeason" title="Haziran–Ekim">Yangın sezonu</button>'}
       ${fullWin() ? '' : '<button class="link" id="wAll">Bütün yıl</button>'}
     </div>
-    <p class="range-note">Harita, sayılar, grafikler ve indirilen dosyalar bu seçime göre hesaplanır.</p></div>`;
+    <p class="range-note">Bu aralık aşağıdaki grafikleri belirler; harita, sol özet, ay ayrıntısındaki kıyas ve indirilen dosyalar da aynı aralığı kullanır.</p></div>`;
 }
 
 // "Bu ay tarihsel medyana göre nerede?" kartı: seçili ay (varsayılan: son veri ayı).
@@ -882,13 +882,18 @@ function renderPanel() {
   // Sağ panel: seçimler üstte, seçili sekmenin grafiği altta.
   body.innerHTML = `<div class="p-head charts-head"><div><span class="eyebrow">${sen.label}${merged ? ' seri' : ' · ham veri'} · ${sel_}</span>
       <h2>${name} grafikleri</h2></div></div>
-    <section class="chart-controls" aria-label="Ay ayrıntısı">
-      <h3 class="section-title">Ay ayrıntısı</h3>
+    <section class="pblock month-block" aria-label="Ay ayrıntısı">
+      <header class="pblock-head"><span class="pblock-num" aria-hidden="true">1</span><div><h3>Ay ayrıntısı</h3>
+        <p>Tek bir ay: geçmiş yılların aynı ayına göre nerede?</p></div></header>
       ${readCard(name, vAll)}
     </section>
-    <section class="chart-controls" aria-label="Grafik seçimleri">${rangeRow()}</section>
-    <div class="tabs" role="tablist">${TABS.map(([k, l]) => `<button role="tab" data-tab="${k}" aria-selected="${k === state.tab}">${l}</button>`).join('')}</div>
-    <div class="view" role="tabpanel">${view}</div>`;
+    <section class="pblock charts-block" aria-label="Grafikler">
+      <header class="pblock-head"><span class="pblock-num" aria-hidden="true">2</span><div><h3>Grafikler</h3>
+        <p>Önce yıl ve ay aralığını seçin, sonra grafiği.</p></div></header>
+      ${rangeRow()}
+      <div class="tabs" role="tablist">${TABS.map(([k, l]) => `<button role="tab" data-tab="${k}" aria-selected="${k === state.tab}">${l}</button>`).join('')}</div>
+      <div class="view" role="tabpanel">${view}</div>
+    </section>`;
   // Sol panel: genel özet, güven, arazi türü ve indirme.
   sideBody.innerHTML = head(`${sen.label}${merged ? ' seri' : ' · ham veri'} · ${periodLabel()}`, name) + `
     <section class="summary" aria-label="Özet">

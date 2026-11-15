@@ -11,11 +11,6 @@
 .region-method summary { cursor: pointer; color: var(--ink-2); padding: 4px 0; }
 .region-method summary:hover { color: var(--ink); }
 .region-method p { margin: 8px 0 0; }
-/* Grafik seçimleri aynı panelde, sekmelerden önce okunur. */
-.chart-controls .filters { margin-top: 8px; padding: 9px 11px; gap: 6px; }
-.chart-controls .section-title { margin-top: 12px; }
-.chart-controls .read { padding: 10px 12px; }
-.chart-controls .read .fine { margin-top: 6px; }
 @media (min-width: 761px) and (max-width: 1280px) {
   .topbar { grid-template-columns: 1fr auto; }
   .topbar .seg { grid-column: 1 / -1; grid-row: 2; justify-self: center; }
@@ -54,3 +49,22 @@
 #drawHint { margin: 6px 4px 2px; font-size: 11.5px; line-height: 1.5; color: var(--ink-2); }
 #drawHint:empty { display: none; }
 .maplibregl-canvas-container.drawing, .maplibregl-canvas-container.drawing .maplibregl-canvas { cursor: crosshair !important; touch-action: none; }
+
+/* Sağ panel iki ayrı kart: 1) tek ayın okuması, 2) aralık seçimi + sekmeli grafikler. */
+.pblock { margin: 14px 14px 0; border-radius: 14px; border: 1px solid var(--line-2); }
+.pblock-head { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px 10px; }
+.pblock-head h3 { margin: 0; font-size: 13px; font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase; color: var(--ink); }
+.pblock-head p { margin: 2px 0 0; font-size: 11.5px; color: var(--ink-3); }
+.pblock-num { flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
+  font-size: 11.5px; font-weight: 700; color: var(--ink-2); background: rgba(255, 255, 255, 0.07); }
+.month-block { padding-bottom: 12px; background: rgba(255, 255, 255, 0.015); }
+.month-block .read { margin: 0 12px; padding: 10px 12px; }
+.month-block .read .fine { margin-top: 6px; }
+.charts-block { margin-top: 22px; margin-bottom: 16px; border-top: 3px solid var(--accent); background: rgba(255, 138, 61, 0.035); }
+.charts-block .pblock-num { color: #1a1206; background: var(--accent); }
+.charts-block .filters { margin: 0 12px; padding: 9px 11px; gap: 6px; background: rgba(0, 0, 0, 0.18); }
+.charts-block .tabs { margin: 12px 12px 0; }
+.charts-block .view { padding: 14px 14px 16px; }
+@media (max-width: 760px) {
+  .pblock { margin-left: 8px; margin-right: 8px; }
+}
