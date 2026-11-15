@@ -1,0 +1,79 @@
+{
+  "meta": {
+    "years": [
+      2012,
+      2025
+    ],
+    "n_years": 14,
+    "method": "leave-one-year-out",
+    "province_validation_sha256": "835c6f555faacb596bbde838c41ff8452f32ffd31b06c72e1925c29009d5e634",
+    "membership_sha256": "1745dc2cae84ec99af700dfe990b191f18e8c4a2f1efba1903bc503d9f54cb98",
+    "note": "2012–2025: her yıl eğitimden çıkarılır; il tahminleri ve VIIRS gözlemleri bölge içinde toplanır, WAPE toplamlar üzerinden hesaplanır. Yalnızca üç uydunun da çalıştığı günler kullanılır. Güven düzeyi yıllık hataya göre verilir; aylık hata ayrıca gösterilir.",
+    "limit": "Uyumlaştırılmış tespit sayısının VIIRS ile uyumunu ölçer; yanan alan veya gerçek yangın sayısının hatası değildir. 2012 öncesi doğrudan doğrulama yoktur."
+  },
+  "regions": {
+    "Marmara": {
+      "annual_wape": 0.10000624933873105,
+      "monthly_wape": 0.22117942128878018,
+      "bias": -0.010145299565582633,
+      "confidence": "high",
+      "mean_annual": 2095,
+      "n_years": 14,
+      "observed_detections": 27949
+    },
+    "Ege": {
+      "annual_wape": 0.09912278478126693,
+      "monthly_wape": 0.24128000605515118,
+      "bias": -0.02190894431126522,
+      "confidence": "high",
+      "mean_annual": 2276,
+      "n_years": 14,
+      "observed_detections": 30800
+    },
+    "Akdeniz": {
+      "annual_wape": 0.07003442815779726,
+      "monthly_wape": 0.144624678041322,
+      "bias": 0.010568223287986678,
+      "confidence": "high",
+      "mean_annual": 6005,
+      "n_years": 14,
+      "observed_detections": 81185
+    },
+    "İç Anadolu": {
+      "annual_wape": 0.1452112451799076,
+      "monthly_wape": 0.21177331920505182,
+      "bias": 0.0031200950755325696,
+      "confidence": "high",
+      "mean_annual": 5223,
+      "n_years": 14,
+      "observed_detections": 70437
+    },
+    "Karadeniz": {
+      "annual_wape": 0.13512014227966967,
+      "monthly_wape": 0.2830291130024829,
+      "bias": -0.0010327952830302412,
+      "confidence": "high",
+      "mean_annual": 1067,
+      "n_years": 14,
+      "observed_detections": 14388
+    },
+    "Doğu Anadolu": {
+      "annual_wape": 0.08564545643422561,
+      "monthly_wape": 0.1891238098068664,
+      "bias": -0.014693737964552644,
+      "confidence": "high",
+      "mean_annual": 1590,
+      "n_years": 14,
+      "observed_detections": 21558
+    },
+    "Güneydoğu Anadolu": {
+      "annual_wape": 0.08629625853437498,
+      "monthly_wape": 0.15112223441670813,
+      "bias": 0.0071665911916047875,
+      "confidence": "high",
+      "mean_annual": 12754,
+      "n_years": 14,
+      "observed_detections": 170857
+    }
+  }
+}

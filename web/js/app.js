@@ -706,7 +706,7 @@ function renderPanel() {
     body.innerHTML = '';
     return;
   }
-  const { from, to } = state, vAll = data.validation?.[name];
+  const { from, to } = state, vAll = regional() ? geographic.regions[name]?.validation : data.validation?.[name];
   const merged = state.sensor === 'merged', val = merged ? vAll : null, sen = sensorOf();
   const row = years[state.year], n = total(name);
   const wm = row.map((v, m) => (inWin(m) && v != null ? v : -1)), peak = wm.indexOf(Math.max(...wm));
@@ -716,7 +716,7 @@ function renderPanel() {
   const med = quantile(refYears.map((y) => (like ? likeTotal(name, y) : total(name, y))), 0.5);
   const ratio = med > 0 ? n / med : 0;
   const level = val ? { low: 1, medium: 2, high: 3 }[val.confidence] || 1 : n >= 200 ? 3 : n >= 50 ? 2 : 1;
-  const confTitle = regional() ? geographic.meta.validation_note : val
+  const confTitle = regional() && merged ? geographic.meta.validation_note : val
     ? 'Bir yıl dışarıda bırakılarak ölçüldü (2012–2025). Yüksek: yıllık hata %15 ve altı, yılda ortalama 300 ve üzeri tespit. Düşük: hata %30 üzeri ya da yılda 100 altı tespit.'
     : "Ham seri: tespit sayısına göre. 200 ve üzeri yüksek, 50–199 orta, 50'nin altı düşük. Ham MODIS ve VIIRS sayıları birbiriyle doğrudan karşılaştırılamaz.";
   const sel = { year: state.year, month: state.month };
@@ -768,7 +768,7 @@ function renderPanel() {
     <div class="kpis">
       <div class="kpi"><span>En yoğun ay</span><b>${peak >= 0 ? MONTHS[peak] : '—'}</b><small>${peak >= 0 ? fmt(row[peak]) + ' tespit' : ''}</small></div>
       <div class="kpi"><span>Orta değer</span><b>${fmt(med)}</b><small>${from}–${to}</small></div>
-      <div class="kpi conf" title="${confTitle}"><span>${regional() ? 'Bölge doğrulaması' : 'Güvenilirlik'}</span><b>${regional() ? 'Ölçülmedi' : ['Düşük', 'Orta', 'Yüksek'][level - 1]}</b><small>${regional() ? 'Hata yüzdesi verilmez' : `<span class="dots">${[1, 2, 3].map((i) => `<i class="${i <= level ? 'on' : ''}"></i>`).join('')}</span>${val?.annual_wape != null ? `hata %${Math.round(val.annual_wape * 100)}` : merged ? '' : 'sayıya göre'}`}</small></div>
+      <div class="kpi conf" title="${confTitle}"><span>${regional() && merged ? 'Bölge doğrulaması' : 'Güvenilirlik'}</span><b>${regional() && merged && !val ? 'Ölçülmedi' : ['Düşük', 'Orta', 'Yüksek'][level - 1]}</b><small>${regional() && merged ? (val ? `Yıllık hata %${dec(val.annual_wape * 100)}<br>Aylık hata %${dec(val.monthly_wape * 100)}` : 'Hata yüzdesi verilmez') : `<span class="dots">${[1, 2, 3].map((i) => `<i class="${i <= level ? 'on' : ''}"></i>`).join('')}</span>${val?.annual_wape != null ? `hata %${Math.round(val.annual_wape * 100)}` : merged ? '' : 'sayıya göre'}`}</small></div>
     </div>
     ${regional() ? `<p class="region-note">${membersOf(name).length} il toplamı: ${membersOf(name).join(', ')}. ${geographic.meta.note} ${geographic.meta.validation_note}</p>` : caution(val)}
     ${landCard(name)}

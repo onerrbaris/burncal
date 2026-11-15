@@ -1,9 +1,10 @@
 """Atlasın il serilerinden yedi coğrafi bölge için il grubu toplamlarını üretir.
 
 Coğrafi sınırlar il sınırlarıyla aynı değildir; bu ürün illeri bütün olarak gruplar.
-Yeni katsayı ya da hata yüzdesi hesaplamaz. Yalnızca standart kütüphane kullanır.
+Yeni katsayı hesaplamaz; ayrı doğrulama çıktısını imzası eşleşirse ekler. Yalnızca standart kütüphane kullanır.
 """
 import json
+import hashlib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -25,7 +26,21 @@ def total_rows(rows):
     return [None if any(v is None for v in col) else round(sum(col), 1) for col in zip(*rows)]
 
 
-def build(data, geo):
+def load_validation(data):
+    path = ROOT / 'web/data/geographic-validation.json'
+    if not path.exists():
+        return None
+    doc = json.loads(path.read_text(encoding='utf-8'))
+    signature = hashlib.sha256(json.dumps(data['validation'], sort_keys=True, ensure_ascii=False).encode()).hexdigest()
+    membership = hashlib.sha256(json.dumps(GROUPS, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
+    if doc['meta']['province_validation_sha256'] != signature or doc['meta']['membership_sha256'] != membership:
+        print('Bölge doğrulaması eski: validate_geographic_regions.py yeniden çalıştırılmalı.')
+        return None
+    assert set(doc['regions']) == set(GROUPS)
+    return doc
+
+
+def build(data, geo, validation=None):
     names = [p for members in GROUPS.values() for p in members]
     assert len(names) == len(set(names)) == 81
     assert set(names) == set(data['provinces']) == {f['properties']['name'] for f in geo['features']}
@@ -35,7 +50,8 @@ def build(data, geo):
         for sensor in ('merged', 'modis', 'viirs'):
             years = set.intersection(*(set(data['provinces'][p][sensor]) for p in members))
             series[sensor] = {y: total_rows([data['provinces'][p][sensor][y] for p in members]) for y in sorted(years)}
-        regions[name] = {'members': members, 'series': series, 'validation': None}
+        regions[name] = {'members': members, 'series': series,
+                         'validation': validation['regions'][name] if validation else None}
     partial = {}
     for key in ('mtd', 'ytd', 'mtd_modis', 'mtd_viirs'):
         by_province = data.get('partial', {}).get(key)
@@ -43,7 +59,8 @@ def build(data, geo):
             partial[key] = {name: total_rows([by_province[p] for p in members]) for name, members in GROUPS.items()}
     return {'meta': {'generated': 'scripts/build_geographic_regions.py', 'data_through': data['meta']['data_through'],
                      'note': NOTE, 'membership_source': SOURCE,
-                     'validation_note': 'Bölge toplamı için bağımsız doğrulama yapılmadı; il hata yüzdeleri birleştirilmedi.'},
+                     'validation_note': (validation['meta']['note'] + ' ' + validation['meta']['limit']) if validation else
+                         'Bölge toplamı için doğrulama yapılmadı; il hata yüzdeleri birleştirilmedi.'},
             'regions': regions, 'partial': partial}
 
 
@@ -52,7 +69,7 @@ def main():
     data = json.loads((folder / 'atlas.json').read_text(encoding='utf-8'))
     geo = json.loads((folder / 'tr-provinces.json').read_text(encoding='utf-8'))
     out = folder / 'geographic-regions.json'
-    result = build(data, geo)
+    result = build(data, geo, load_validation(data))
     out.write_text(json.dumps(result, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
     print(f'{len(result["regions"])} bölge, 81 il: {out}')
 

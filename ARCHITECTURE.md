@@ -58,11 +58,15 @@ Yığın: Python 3.12 (pandas, shapely), Node (Vite, React, TS, MapLibre GL). Ve
 
 `scripts/build_atlas_json.py`, il verilerinin yanında `web/data/geographic-regions.json` üretir.
 `scripts/build_geographic_regions.py` tek başına da çalıştırılabilir. Yedi bölgenin her biri
-`members` (il adları), `series` (merged/modis/viirs → yıl → 12 ay) ve `validation: null` taşır;
+`members` (il adları), `series` (merged/modis/viirs → yıl → 12 ay) ve `validation` taşır;
 `partial` aynı üyelerin süren ay kıyaslarının toplamıdır. Eksik aylar sıfır yapılmaz.
 İller bütün olarak gruplanır: bu, coğrafi sınırların il bazında yaklaşımıdır; İBBS-2 katsayı
-bölgeleriyle karıştırılmaz. İl uyumlaştırılmış serileri toplanır; yeni katsayı veya hata yüzdesi
-türetilmez. Bölge doğrulaması tamamlanana kadar arayüz "Ölçülmedi" gösterir.
+bölgeleriyle karıştırılmaz. İl uyumlaştırılmış serileri toplanır; yeni katsayı
+türetilmez. `scripts/validate_geographic_regions.py` günlük önbellekten 2012–2025 LOYO
+tahminlerini yeniden üretip bölge bazında toplar; yıllık/aylık WAPE ve güven düzeyini
+`geographic-validation.json` dosyasına yazar. 81 ilin mevcut hata değerleriyle eşleşme kontrol edilir.
+Veri üretici bu çıktıyı il doğrulaması ve üyelik imzaları eşleşirse ekler; aksi halde
+`validation: null` olur. Arayüzde hata yalnızca uyumlaştırılmış seri için gösterilir.
 Harita alan birimi bağımsızdır; üç sensör sekmesinde de il/bölge seçilebilir.
 Yıl/ay aralığı ve ay ayrıntısı sağ grafik panelinde, sekmelerin üstündedir.
 

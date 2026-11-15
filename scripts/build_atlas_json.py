@@ -14,9 +14,9 @@ import json
 import sys
 from pathlib import Path
 try:
-    from .build_geographic_regions import build as build_geographic_regions
+    from .build_geographic_regions import build as build_geographic_regions, load_validation
 except ImportError:
-    from build_geographic_regions import build as build_geographic_regions
+    from build_geographic_regions import build as build_geographic_regions, load_validation
 
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "frontend"   # il serileri burada uretiliyor
@@ -112,7 +112,7 @@ def main():
     OUT.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     # İl serileri yenilenince yedi bölgenin toplamları da aynı veriden yenilenir.
     geo = json.loads((FE / "data" / "tr-provinces.json").read_text(encoding="utf-8"))
-    regional = build_geographic_regions(data, geo)
+    regional = build_geographic_regions(data, geo, load_validation(data))
     (FE / "data" / "geographic-regions.json").write_text(
         json.dumps(regional, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     print(f"yazildi: {OUT} ({OUT.stat().st_size} bayt, {len(provinces)} il, {len(regions)} bolge)\n{sensors}")
