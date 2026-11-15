@@ -17,7 +17,7 @@ Sunum (7 slayt) ve teslim formu. Veri güncellemek için: `python scripts/fetch_
 ## Open
 - İl gruplarını gerçek il poligonlarıyla tanımla (3–4 komşu il, benzer yanma rejimi) ve hatayı yeniden ölç. Kutularla ilk ölçüm yapıldı: `analysis/med/subregions.py`.
 - Gerçek il sınırlarıyla doğrulama (şimdiye kadar kutularla yapıldı)
-- Eleştiri yanıtı: `docs/CLAUDE_RESPONSE_TO_REVIEW.md` (deneyler `analysis/experiments/review_2026_11_14/`). Açık kalanlar o dosyanın "Yapılmayanlar" bölümünde; ilki gerçek il poligonları (geoBoundaries `data/raw/boundaries/` altında, `shapely` kurulu). Öne çıkan bulgu: zamana ileri testte hata LOYO'nun ~1,5 katı; `invarea_w` ürün adayı.
+- Eleştiri yanıtı: `docs/CLAUDE_RESPONSE_TO_REVIEW.md` (15 Kas'tan beri yalnızca yerelde, repo public olduğu için git'ten çıkarıldı; deneyler `analysis/experiments/review_2026_11_14/`). Açık kalanlar o dosyanın "Yapılmayanlar" bölümünde; ilki gerçek il poligonları (geoBoundaries `data/raw/boundaries/` altında, `shapely` kurulu). Öne çıkan bulgu: zamana ileri testte hata LOYO'nun ~1,5 katı; `invarea_w` ürün adayı.
 - 2026 verisi: FIRMS MAP_KEY gerekli
 - **Olay kümeleme denemesi (gece, en fazla 2 saat).** Amaç: büyük yangınlarda MODIS tespiti başına VIIRS tespitinin azalmasını yakalamak (2021-08 Marmaris/Milas +%38 aşırı tahmin). Yapılacak: MED/COAST'ta MODIS noktalarını yer + gün yakınlığına göre olaylara grupla (tarih için `data/raw` yeniden okunmalı; `med/cache/det_region` yalnızca yıl/ay içeriyor), olay başına VIIRS/MODIS oranını olay büyüklüğü ve FRP'ye göre modelle, `analysis/med/evaluate.py` ölçüleriyle bir yıl dışarıda bırakarak aylık çarpanla kıyasla (WAPE, yanlılık, yıl sıra korelasyonu; bölge, 1°, 0,25°). Sonuç ne olursa olsun `docs/REPORT.md`'ye yazılacak. Ortamda pandas/scikit-learn kurulu değil.
 - Terra/Aqua ayrı ağırlığı ürüne al (`analysis/med/evaluate.py:135`; bölge aylık %15,3 → %14,7).
@@ -42,6 +42,9 @@ Sunum (7 slayt) ve teslim formu. Veri güncellemek için: `python scripts/fetch_
 - Deploy için Render + Vercel hesapları
 
 ## Done
+
+- 15 Kas: Aylık CSV artık seçili seriden (Birleşik / MODIS ham / VIIRS ham): `value`, `median`, `percentile`, `level` aynı seriden; yeni `selected_series` sütunu, ham seride `source` = `modis_raw`/`viirs_raw`. Eskiden `value` hep birleşik seriydi, medyan seçili seriden geliyordu. Ham tespit indirmesi "MODIS + VIIRS ham tespitleri (CSV)" oldu. Antalya 2001–2025 Temmuz'la üç seri node'da denendi (MODIS 2021-07: 789 / medyan 7).
+- 15 Kas: `docs/CHATGPT_TECHNICAL_REVIEW.md` ve `docs/CLAUDE_RESPONSE_TO_REVIEW.md` git'ten çıkarıldı (yerelde duruyor, `.gitignore`'da). Geçmiş commit'lerde hâlâ görünür.
 
 - Atlas arayüzüne kalıcı TR / EN seçimi, İngilizce bölge araması ve dile göre grafik, tarih ve sayı biçimleri eklendi.
 - 15 Kas: Ülke aramasındaki "Diğer ülkeler yakında" etiketi listeden kaldırıldı (Türkiye dışı ad yazılınca çıkan not duruyor). Aynı işte kısa süre yayında kalan yer tutucu hatası (her görünümde "Ülke ara") düzeltildi; tarayıcıda üç görünüm denendi.

@@ -1,10 +1,10 @@
-import { t as msg, lang, locale, displayText, percent } from './i18n.js?v=20261115-i18n';
+import { t as msg, lang, locale, displayText, percent } from './i18n.js?v=20261115-csv';
 /* global maplibregl */
 import { regionGeometry } from './regions.js?v=20261115a';
-import { buildStyle, LAYER_GROUPS, RAMP, waterName } from './mapstyle.js?v=20261115-i18n';
+import { buildStyle, LAYER_GROUPS, RAMP, waterName } from './mapstyle.js?v=20261115-csv';
 import { MONTHS, MON3, LEVELS, fmt, quantile, inRange, reading, sentence, peaks, sourceOf, csvRows, hotspotRows,
-  calendar, calendarKey, compare, stepChart, setChartWidth } from './charts.js?v=20261115-i18n';
-import { DrawTool, drawnArea } from './draw.js?v=20261115-i18n';
+  calendar, calendarKey, compare, stepChart, setChartWidth } from './charts.js?v=20261115-csv';
+import { DrawTool, drawnArea } from './draw.js?v=20261115-csv';
 
 const $ = (s) => document.querySelector(s);
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -980,7 +980,7 @@ function downloadCsv() {
   const name = state.sel;
   const region = { region: name, country: 'TR', draw: '' }[state.scope] ?? data.validation?.[name]?.region ?? '';
   const lines = csvRows(name, region, areaData(name), state.from, state.to,
-    data.meta.viirs_from, state.win, rdFor(name), isPartial);
+    data.meta.viirs_from, state.win, rdFor(name), isPartial, state.sensor);
   save(csvBlob(lines), `burncal_aylik_${fileTag()}.csv`);
 }
 

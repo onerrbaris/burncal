@@ -18,3 +18,7 @@ analysis/agri/dl.log
 analysis/agri_trend/cache/
 analysis/out/jobs/
 *.pkl
+
+# AI inceleme yazışmaları: yerelde kalır, repoda yok
+docs/CHATGPT_TECHNICAL_REVIEW.md
+docs/CLAUDE_RESPONSE_TO_REVIEW.md

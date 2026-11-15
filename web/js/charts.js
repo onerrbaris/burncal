@@ -1,8 +1,8 @@
-import { t as msg, displayText, locale, ordinal } from './i18n.js?v=20261115-i18n';
+import { t as msg, displayText, locale, ordinal } from './i18n.js?v=20261115-csv';
 // Panel grafikleri: elle yazılmış SVG. Tek ölçek, tek renk tonu (kor), nötr mürekkep.
 // Bu dosyadaki istatistik işlevleri (inRange, reading, sentence, peaks, csvRows, hotspotRows) saf işlevlerdir;
 // tarayıcı dışında Node ile de sınanabilir.
-import { RAMP } from './mapstyle.js?v=20261115-i18n';
+import { RAMP } from './mapstyle.js?v=20261115-csv';
 
 // Ay dizileri canlı dışa aktarımdır; dil değişiminde mevcut seçim aynı ay indeksinde kalır.
 export let MONTHS, MON3;
@@ -113,16 +113,18 @@ export const sourceOf = (y, m, viirsFrom) => {
 const csvq = (s) => (/[",\n]/.test(s) ? `"${String(s).replace(/"/g, '""')}"` : s);
 const num = (v) => (v == null ? '' : Number.isInteger(v) ? String(v) : String(Math.round(v * 10) / 10));
 
-const CSV_HEAD = 'province,region,year,month,value,source,complete,raw_modis,raw_viirs,median,percentile,level';
-// Birleşmiş seri + ham sayılar; dönem yılları ve sezon penceresindeki aylar. Medyan/yüzdelik/düzey
-// seçili döneme göre (rd ile: süren ay bütün yılların aynı günleriyle). complete=0: ay henüz bitmedi.
-export function csvRows(name, region, p, from, to, viirsFrom, win, rd, partial) {
+const CSV_HEAD = 'province,region,selected_series,year,month,value,source,complete,raw_modis,raw_viirs,median,percentile,level';
+// Seçili seri (sensor: merged | modis | viirs) + ham sayılar; dönem yılları ve sezon penceresindeki aylar.
+// value, median, percentile ve level aynı seriden gelir (rd seçili seriyle okur; süren ay bütün yılların
+// aynı günleriyle). complete=0: ay henüz bitmedi.
+export function csvRows(name, region, p, from, to, viirsFrom, win, rd, partial, sensor = 'merged') {
   const lines = [CSV_HEAD];
-  for (const [y, row] of Object.entries(inRange(p.merged, from, to))) {
+  for (const [y, row] of Object.entries(inRange(p[sensor] || {}, from, to))) {
     row.forEach((v, m) => {
       if (v == null || m < win[0] || m > win[1]) return;
       const r = rd(+y, m) || {};
-      lines.push([csvq(name), region, y, m + 1, num(v), sourceOf(+y, m, viirsFrom), partial(+y, m) ? 0 : 1,
+      const src = sensor === 'merged' ? sourceOf(+y, m, viirsFrom) : `${sensor}_raw`;
+      lines.push([csvq(name), region, sensor, y, m + 1, num(v), src, partial(+y, m) ? 0 : 1,
         num(p.modis?.[y]?.[m]), num(p.viirs?.[y]?.[m]), num(r.med),
         r.pct == null ? '' : Math.round(r.pct), r.level || ''].join(','));
     });
