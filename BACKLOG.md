@@ -3,7 +3,7 @@
 Repo: https://github.com/onerrbaris/burncal (public). Yeni oturum: önce `docs/HANDOFF.md`. Bulgular: `docs/REPORT.md`. `ARCHITECTURE.md` taslaktır.
 
 ## Next step
-Takvimde belirgin düşük aylar (`web/js/charts.js` LOW_MIN=20, eşik p25) artık kademeli mavi: `LOW_RAMP` açık maviden koyuya, koyuluk = 1 − yüzdelik/25 (hiçbir yılı geçmeyen en koyu). Açıklamadaki mavi kutu da gradyan. Takvim tek başına başsız Chrome'da Adana ile çizilip görüldü; canlı sitede gözle bak.
+Takvimde belirgin düşük aylar (`web/js/charts.js` LOW_MIN=20, eşik p25) artık kademeli mavi: `LOW_RAMP` açık maviden koyuya, koyuluk = 1 − yüzdelik/25 (hiçbir yılı geçmeyen en koyu). Açıklamadaki mavi kutu da gradyan. Yeni düzey `verylow` (çok düşük, yüzdelik < 5); mavi karelerde küçük üçgen = düşük, büyük üçgen = çok düşük (yüksek tarafın nokta/karo simetriği). Ay kartı, CSV düzey sütunu ve yardım metni güncellendi. Takvim tek başına başsız Chrome'da Adana ile çizilip görüldü; canlı sitede gözle bak.
 Çiz ve Ülke eklendi (`web/js/draw.js`). Mobil genişlikte (≤760 px) dört alan düğmesi + arama yerleşimini ve dokunmatik çizimi tarayıcıda kontrol et; masaüstünde denendi.
 Yedi bölgenin LOYO doğrulaması tamamlandı (`docs/GEOGRAPHIC_VALIDATION.md`). Yöntem/üyelik değişirse `.venv/Scripts/python.exe scripts/validate_geographic_regions.py` → `python scripts/build_geographic_regions.py`. Bölge toplamları atlas veri üretiminde otomatik yenilenir.
 Küçük yıl kontrolünü masaüstü/mobilde görsel olarak kontrol et; renk ölçeği artık isteğe bağlı açılır.

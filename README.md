@@ -31,7 +31,7 @@ Example, Adana (from `docs/DEMO_ILLER.md`): the raw series shows a 2.6x rise at 
 - Period selection: start and end year, plus a month window (for example the June-October fire season). Totals, calendar, medians, rankings, the map and all downloads follow it.
 - Year x month calendar for the selected period, with high and extreme months flagged by shape, not colour alone.
 - Comparison of the selected year with the period median and inter-quartile band, month by month.
-- "Where does this month sit" card for any month (default: the latest data month): value, median, percentile and level (low / normal / high / extreme).
+- "Where does this month sit" card for any month (default: the latest data month): value, median, percentile and level (very low / low / normal / high / extreme).
 - Running month and year: when the data ends mid-month (current year from the FIRMS API), the partial month is compared with the same days of that month in every other year, and the partial year with the same January-to-date window. Nothing partial is compared with full months.
 - Top years and top months; raw versus harmonized annual chart with the 2012 sensor change and the regional monthly factors.
 - Validation confidence badge (leave-one-year-out error) and an inline caution for low-confidence provinces.

@@ -1,8 +1,8 @@
-import { t as msg, displayText, locale, ordinal } from './i18n.js?v=20261115-blue-ramp';
+import { t as msg, displayText, locale, ordinal } from './i18n.js?v=20261115-low-marks';
 // Panel grafikleri: elle yazılmış SVG. Tek ölçek, tek renk tonu (kor), nötr mürekkep.
 // Bu dosyadaki istatistik işlevleri (inRange, reading, sentence, peaks, csvRows, hotspotRows) saf işlevlerdir;
 // tarayıcı dışında Node ile de sınanabilir.
-import { RAMP } from './mapstyle.js?v=20261115-blue-ramp';
+import { RAMP } from './mapstyle.js?v=20261115-low-marks';
 
 // Ay dizileri canlı dışa aktarımdır; dil değişiminde mevcut seçim aynı ay indeksinde kalır.
 export let MONTHS, MON3;
@@ -31,6 +31,7 @@ export function quantile(arr, q) {
 // ── Dönem ve ay okuması ─────────────────────────────────
 // Düzey eşikleri: aynı takvim ayının dönemdeki diğer yıllarına göre yüzdelik.
 export const LEVELS = {
+  verylow: { label: 'çok düşük', mark: '▼' },
   low: { label: 'düşük', mark: '▽' },
   normal: { label: 'normal', mark: '' },
   high: { label: 'yüksek', mark: '●' },
@@ -72,7 +73,7 @@ export function reading(years, y, m, from, to) {
   const below = ref.filter((x) => x < v).length, eq = ref.filter((x) => x === v).length;
   const pct = (100 * (below + eq / 2)) / n;
   const sparse = v < SPARSE && quantile(ref, 0.75) < SPARSE;
-  const level = sparse ? 'sparse' : pct < 25 ? 'low' : pct <= 75 ? 'normal' : pct <= 95 ? 'high' : 'extreme';
+  const level = sparse ? 'sparse' : pct < 5 ? 'verylow' : pct < 25 ? 'low' : pct <= 75 ? 'normal' : pct <= 95 ? 'high' : 'extreme';
   return { ...base, pct: sparse ? null : pct, level, rank: 1 + ref.filter((x) => x > v).length, below, eq };
 }
 
@@ -244,7 +245,7 @@ export function calendar(years, from, to, sel, opt) {
       }
       const rdg = rd(yy, i), lv = rdg?.level, part = partial(yy, i);
       // Belirgin düşük: sezon içinde, bitmiş ay, yılların %25'inden azını geçmiş, tipik değer >= LOW_MIN.
-      const lowFlag = !out && !part && lv === 'low' && rdg.med >= LOW_MIN;
+      const lowFlag = !out && !part && (lv === 'low' || lv === 'verylow') && rdg.med >= LOW_MIN;
       // Mavinin koyuluğu: ay, yılların ne kadar azını geçmiş (%25'e yakın açık, hiçbirini geçmemiş en koyu).
       const fill = lowFlag ? lowColor(1 - rdg.pct / 25) : v === 0 ? 'rgba(255,255,255,0.06)' : rampColor(Math.sqrt(v / max));
       const tipLv = lv && lv !== 'normal' ? ` · ${displayText(LEVELS[lv].label)}` : '';
@@ -254,6 +255,9 @@ export function calendar(years, from, to, sel, opt) {
       const cx = x + (cw - 2) / 2, cy = y0 + ch / 2;
       if (!out && lv === 'high') marks += `<circle cx="${cx}" cy="${cy}" r="2.4" class="flag"/>`;
       else if (!out && lv === 'extreme') marks += `<path d="M${cx},${cy - 4.2}l4.2,4.2l-4.2,4.2l-4.2,-4.2z" class="flag"/>`;
+      // Düşük taraf yalnızca mavi (belirgin düşük) karelerde: küçük üçgen düşük, büyük üçgen çok düşük.
+      else if (lowFlag && lv === 'low') marks += `<path d="M${cx - 2.8},${cy - 1.8}h5.6l-2.8,4.4z" class="flag"/>`;
+      else if (lowFlag && lv === 'verylow') marks += `<path d="M${cx - 4.4},${cy - 3}h8.8l-4.4,7z" class="flag"/>`;
       if (yy === sel.year && i === sel.month) marks += `<rect x="${x - 1}" y="${y0 - 0.5}" width="${cw}" height="${ch + 1}" rx="3.5" class="cellsel"/>`;
     }
     if (yy === sel.year) s += `<rect x="${PAD_L - 1}" y="${y0 - 0.5}" width="${W - PAD_L - PAD_R + 2}" height="${ch + 1}" rx="4" class="rowsel"/>`;
@@ -269,6 +273,8 @@ export function calendarKey() {
     <span><svg viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="2.6" class="flag"/></svg>${msg("high.exceeds.of.years")}</span>
     <span><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M6,1.6l4.4,4.4l-4.4,4.4l-4.4,-4.4z" class="flag"/></svg>${msg("exceptional.exceeds.of.years")}</span>
     <span><i class="ramp" style="background:linear-gradient(90deg,${LOW_RAMP.join(',')})"></i>${msg("low.below.of.years", [LOW_MIN])}</span>
+    <span><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3.2,4.2h5.6l-2.8,4.4z" class="flag"/></svg>${msg("low.below.25")}</span>
+    <span><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M1.6,3h8.8l-4.4,7z" class="flag"/></svg>${msg("very.low.below.5")}</span>
   </div>`;
 }
 

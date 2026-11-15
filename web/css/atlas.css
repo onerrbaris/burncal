@@ -205,7 +205,7 @@ body.has-panel .rank { display: none; }
   background: var(--surface-2); border-left: 3px solid var(--ok); }
 .read.lv-high { border-left-color: var(--high); }
 .read.lv-extreme { border-left-color: var(--extreme); }
-.read.lv-low { border-left-color: var(--low); }
+.read.lv-low, .read.lv-verylow { border-left-color: var(--low); }
 .read.lv-sparse { border-left-color: var(--line-2); }
 .read-top { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; }
 #detailYear { width: 8ch; cursor: text; }
@@ -213,7 +213,7 @@ body.has-panel .rank { display: none; }
   border: 1px solid var(--line-2); color: var(--ink-2); }
 .read.lv-high .lvl { color: var(--high); border-color: currentColor; }
 .read.lv-extreme .lvl { color: var(--extreme); border-color: currentColor; }
-.read.lv-low .lvl { color: var(--low); border-color: currentColor; }
+.read.lv-low .lvl, .read.lv-verylow .lvl { color: var(--low); border-color: currentColor; }
 .read p.say { margin: 8px 0; font-size: 13.5px; color: var(--ink); }
 .nums { display: grid; grid-template-columns: repeat(4, auto); gap: 4px 12px; margin: 0; justify-content: space-between; }
 .nums div { min-width: 0; }

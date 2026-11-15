@@ -1,4 +1,4 @@
-import { lang } from './i18n.js?v=20261115-blue-ramp';
+import { lang } from './i18n.js?v=20261115-low-marks';
 // Harita stili: uydu tabanı + 3B arazi + yakınlaştıkça açılan vektör detay + il katmanları.
 // Karo kaynakları anahtarsızdır; değiştirmek için yalnızca SOURCES bloğunu düzenleyin.
 
