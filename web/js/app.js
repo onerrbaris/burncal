@@ -142,12 +142,10 @@ const COUNTRY_SOON = 'Diğer ülkeler yakında eklenecek';
 const searchNames = () => (state.scope === 'country' ? [COUNTRY] : mapNames());
 function renderAreaSearch() {
   const names = searchNames().sort((a, b) => a.localeCompare(b, 'tr'));
-  const country = state.scope === 'country';
-  $('#provList').innerHTML = names.map((n) => `<option value="${n}"${country ? ` label="${COUNTRY_SOON}"` : ''}>`).join('');
+  $('#provList').innerHTML = names.map((n) => `<option value="${n}">`).join('');
   const ph = country ? 'Ülke ara' : regionMap() ? 'Bölge ara' : 'İl ara';
   $('#search').placeholder = ph;
   $('#search').setAttribute('aria-label', ph);
-  $('#search').title = country ? `Şimdilik yalnızca Türkiye. ${COUNTRY_SOON}.` : '';
   $('#search').value = '';
   // Çizim görünümünde aranacak bir ad yok.
   $('.topbar .search').hidden = state.scope === 'draw';
